@@ -103,8 +103,7 @@ export async function withErrorHandling<T>(
   operation: () => Promise<T>,
   errorContext: string
 ): Promise<
-  | { success: true; data: T }
-  | { success: false; error: string; formatted: FormattedError }
+  { success: true; data: T } | { success: false; error: string; formatted: FormattedError }
 > {
   try {
     const data = await operation()

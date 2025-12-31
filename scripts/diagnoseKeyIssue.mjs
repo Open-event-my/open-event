@@ -72,10 +72,10 @@ if (!hasNewlines && key.length > 100) {
 if (issues.length === 0) {
   console.log('✅ Key format looks correct!')
   console.log('')
-  console.log('If you\'re still getting PKCS#8 errors:')
+  console.log("If you're still getting PKCS#8 errors:")
   console.log('1. Make sure you restarted Convex dev server after updating the key')
   console.log('2. Check for extra spaces or characters before/after the key')
-  console.log('3. Verify the key wasn\'t corrupted during copy/paste')
+  console.log("3. Verify the key wasn't corrupted during copy/paste")
 } else {
   console.log('❌ Issues found:')
   issues.forEach((issue, i) => {
@@ -93,4 +93,3 @@ if (issues.length === 0) {
   console.log('   - -----END PRIVATE KEY----- at the end')
   console.log('6. Save and restart Convex dev server')
 }
-

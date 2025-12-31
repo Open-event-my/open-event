@@ -16,23 +16,23 @@ This document outlines the procedures for detecting, responding to, and recoveri
 
 ### Security Incident Types
 
-| Type | Description | Severity | Examples |
-|------|-------------|----------|----------|
-| **Data Breach** | Unauthorized access to user data | Critical | Database exfiltration, API key leak |
-| **Account Compromise** | Unauthorized access to user accounts | High | Credential stuffing, session hijacking |
-| **Service Attack** | Attempt to disrupt service | High | DDoS, resource exhaustion |
-| **Malware/Injection** | Malicious code execution | Critical | XSS, SQL injection, code injection |
-| **Insider Threat** | Malicious internal actor | Critical | Data theft, sabotage |
-| **Vulnerability Exploitation** | Known vulnerability exploited | High | Zero-day, unpatched CVE |
+| Type                           | Description                          | Severity | Examples                               |
+| ------------------------------ | ------------------------------------ | -------- | -------------------------------------- |
+| **Data Breach**                | Unauthorized access to user data     | Critical | Database exfiltration, API key leak    |
+| **Account Compromise**         | Unauthorized access to user accounts | High     | Credential stuffing, session hijacking |
+| **Service Attack**             | Attempt to disrupt service           | High     | DDoS, resource exhaustion              |
+| **Malware/Injection**          | Malicious code execution             | Critical | XSS, SQL injection, code injection     |
+| **Insider Threat**             | Malicious internal actor             | Critical | Data theft, sabotage                   |
+| **Vulnerability Exploitation** | Known vulnerability exploited        | High     | Zero-day, unpatched CVE                |
 
 ### Severity Classification
 
-| Severity | Criteria | Response Time |
-|----------|----------|---------------|
+| Severity     | Criteria                                                 | Response Time        |
+| ------------ | -------------------------------------------------------- | -------------------- |
 | **Critical** | Active data breach, system compromise, widespread impact | Immediate (< 15 min) |
-| **High** | Attempted breach, vulnerability actively exploited | 1 hour |
-| **Medium** | Suspicious activity, potential vulnerability | 4 hours |
-| **Low** | Minor security concern, policy violation | 24 hours |
+| **High**     | Attempted breach, vulnerability actively exploited       | 1 hour               |
+| **Medium**   | Suspicious activity, potential vulnerability             | 4 hours              |
+| **Low**      | Minor security concern, policy violation                 | 24 hours             |
 
 ## Detection & Reporting
 
@@ -56,12 +56,12 @@ This document outlines the procedures for detecting, responding to, and recoveri
 
 ### Reporting Channels
 
-| Source | Channel | Response |
-|--------|---------|----------|
-| Automated Alert | PagerDuty/Slack | On-call responds |
-| User Report | support@openevent.com | Triage within 4 hours |
-| Security Researcher | security@openevent.com | Acknowledge within 24 hours |
-| Internal Discovery | #security Slack channel | Immediate triage |
+| Source              | Channel                 | Response                    |
+| ------------------- | ----------------------- | --------------------------- |
+| Automated Alert     | PagerDuty/Slack         | On-call responds            |
+| User Report         | support@openevent.com   | Triage within 4 hours       |
+| Security Researcher | security@openevent.com  | Acknowledge within 24 hours |
+| Internal Discovery  | #security Slack channel | Immediate triage            |
 
 ### Initial Report Template
 
@@ -73,9 +73,11 @@ This document outlines the procedures for detecting, responding to, and recoveri
 **Detection Method:** [How discovered]
 
 ### Incident Summary
+
 [Brief description of the incident]
 
 ### Affected Systems
+
 - [ ] Frontend
 - [ ] Backend (Convex)
 - [ ] Database
@@ -85,11 +87,13 @@ This document outlines the procedures for detecting, responding to, and recoveri
 - [ ] Third-party Services
 
 ### Potential Impact
+
 - Users affected: [Estimate]
 - Data at risk: [Types of data]
 - Services affected: [List]
 
 ### Initial Assessment
+
 - Severity: [Critical/High/Medium/Low]
 - Active threat: [Yes/No]
 - Containment needed: [Yes/No]
@@ -134,6 +138,7 @@ This document outlines the procedures for detecting, responding to, and recoveri
 ```
 
 **Template:**
+
 ```
 🚨 SECURITY INCIDENT ACKNOWLEDGED
 Time: [TIMESTAMP]
@@ -164,6 +169,7 @@ Status: Triaging
 #### Immediate Containment Actions
 
 **For Account Compromise:**
+
 ```bash
 # Force logout compromised user
 npx convex run admin/invalidateUserSessions --prod --args '{"userId": "xxx"}'
@@ -176,6 +182,7 @@ npx convex run admin/revokeUserApiKeys --prod --args '{"userId": "xxx"}'
 ```
 
 **For Data Breach:**
+
 ```bash
 # Disable affected API endpoints
 npx convex run admin/disableEndpoint --prod --args '{"endpoint": "xxx"}'
@@ -188,6 +195,7 @@ npx convex run admin/enableSecurityLogging --prod
 ```
 
 **For Service Attack:**
+
 ```bash
 # Enable aggressive rate limiting
 npx convex run admin/setRateLimitMode --prod --args '{"mode": "strict"}'
@@ -197,6 +205,7 @@ npx convex run admin/blockIP --prod --args '{"ip": "xxx.xxx.xxx.xxx"}'
 ```
 
 **For Malware/Injection:**
+
 ```bash
 # Take affected service offline
 vercel rm [deployment-url]
@@ -223,28 +232,31 @@ npx convex run queries/exportAuditLog --prod > audit_$(date +%Y%m%d_%H%M%S).json
 #### Identify Root Cause
 
 1. **Analyze logs:**
+
    ```bash
    # Search for attack patterns
    grep -i "unauthorized\|injection\|attack" security_incident_*.log
-   
+
    # Analyze authentication failures
    grep -i "auth\|login\|failed" security_incident_*.log | sort | uniq -c | sort -rn
    ```
 
 2. **Review code changes:**
+
    ```bash
    # Check recent deployments
    git log --oneline --since="7 days ago"
-   
+
    # Review security-relevant changes
    git log --oneline --all -- "convex/lib/security/*" "src/lib/security/*"
    ```
 
 3. **Check for vulnerabilities:**
+
    ```bash
    # Run dependency audit
    npm audit
-   
+
    # Check for known CVEs
    npm audit --json > vulnerability_report.json
    ```
@@ -252,10 +264,11 @@ npx convex run queries/exportAuditLog --prod > audit_$(date +%Y%m%d_%H%M%S).json
 #### Remove Threat
 
 1. **Patch vulnerabilities:**
+
    ```bash
    # Update vulnerable dependencies
    npm audit fix
-   
+
    # Deploy security patches
    npx convex deploy --prod
    vercel --prod
@@ -277,10 +290,11 @@ npx convex run queries/exportAuditLog --prod > audit_$(date +%Y%m%d_%H%M%S).json
 #### Restore Services
 
 1. **Verify system integrity:**
+
    ```bash
    # Run security tests
    npm run test:run -- --grep "security"
-   
+
    # Run E2E tests
    npm run test:e2e -- --grep "@smoke"
    ```
@@ -289,10 +303,11 @@ npx convex run queries/exportAuditLog --prod > audit_$(date +%Y%m%d_%H%M%S).json
    - See [Disaster Recovery Procedures](./DISASTER_RECOVERY.md)
 
 3. **Re-enable services:**
+
    ```bash
    # Gradually restore rate limits
    npx convex run admin/setRateLimitMode --prod --args '{"mode": "normal"}'
-   
+
    # Re-enable disabled endpoints
    npx convex run admin/enableEndpoint --prod --args '{"endpoint": "xxx"}'
    ```
@@ -309,18 +324,19 @@ npx convex run queries/exportAuditLog --prod > audit_$(date +%Y%m%d_%H%M%S).json
 
 ### Internal Communication
 
-| Audience | Channel | Timing | Content |
-|----------|---------|--------|---------|
-| Security Team | #security-incidents | Immediate | Full details |
-| Engineering | #engineering | 30 min | Technical summary |
-| Leadership | Email + Slack | 1 hour | Impact summary |
-| All Staff | Email | 4 hours | General notice |
+| Audience      | Channel             | Timing    | Content           |
+| ------------- | ------------------- | --------- | ----------------- |
+| Security Team | #security-incidents | Immediate | Full details      |
+| Engineering   | #engineering        | 30 min    | Technical summary |
+| Leadership    | Email + Slack       | 1 hour    | Impact summary    |
+| All Staff     | Email               | 4 hours   | General notice    |
 
 ### External Communication
 
 #### User Notification (if data breach)
 
 **Email Template:**
+
 ```
 Subject: Important Security Notice from Open Event
 
@@ -355,12 +371,13 @@ The Open Event Security Team
 #### Public Statement (if required)
 
 **Template:**
+
 ```
 SECURITY INCIDENT NOTICE
 
 Date: [Date]
 
-Open Event experienced a security incident on [date]. We have taken 
+Open Event experienced a security incident on [date]. We have taken
 immediate action to address the situation and protect our users.
 
 What Happened:
@@ -375,7 +392,7 @@ Affected Users:
 Next Steps:
 [What users should do]
 
-We are committed to transparency and will provide updates as our 
+We are committed to transparency and will provide updates as our
 investigation continues.
 
 Contact: security@openevent.com
@@ -383,11 +400,11 @@ Contact: security@openevent.com
 
 ### Regulatory Notification
 
-| Regulation | Requirement | Timeline |
-|------------|-------------|----------|
-| GDPR | Notify supervisory authority | 72 hours |
-| GDPR | Notify affected users | Without undue delay |
-| State Laws | Varies by jurisdiction | 30-90 days |
+| Regulation | Requirement                  | Timeline            |
+| ---------- | ---------------------------- | ------------------- |
+| GDPR       | Notify supervisory authority | 72 hours            |
+| GDPR       | Notify affected users        | Without undue delay |
+| State Laws | Varies by jurisdiction       | 30-90 days          |
 
 ## Recovery Procedures
 
@@ -396,6 +413,7 @@ Contact: security@openevent.com
 For compromised user accounts:
 
 1. **Reset credentials:**
+
    ```bash
    # Force password reset
    npx convex run admin/forcePasswordReset --prod --args '{"userId": "xxx"}'
@@ -415,6 +433,7 @@ For compromised user accounts:
 For data integrity issues:
 
 1. **Identify affected data:**
+
    ```bash
    # Query for modified records
    npx convex run queries/getModifiedRecords --prod --args '{"since": "timestamp"}'
@@ -432,6 +451,7 @@ For data integrity issues:
 ### Service Recovery
 
 1. **Deploy clean code:**
+
    ```bash
    # Rollback to known-good state
    git checkout [safe-commit]
@@ -453,46 +473,56 @@ For data integrity issues:
 ### Post-Incident Review
 
 **Timeline:**
+
 - Within 24 hours: Schedule review
 - Within 72 hours: Complete review
 - Within 1 week: Implement critical fixes
 
 **Review Template:**
+
 ```markdown
 # Security Incident Post-Mortem
 
 ## Incident Summary
+
 - **Date:** [Date]
 - **Duration:** [Time]
 - **Severity:** [Level]
 - **Type:** [Category]
 
 ## Impact
+
 - Users affected: [Number]
 - Data compromised: [Types]
 - Services affected: [List]
 - Financial impact: [Estimate]
 
 ## Timeline
-| Time | Event |
-|------|-------|
+
+| Time  | Event   |
+| ----- | ------- |
 | HH:MM | [Event] |
 
 ## Root Cause Analysis
+
 [Detailed technical analysis]
 
 ## What Went Well
+
 - [Positive aspects of response]
 
 ## What Could Be Improved
+
 - [Areas for improvement]
 
 ## Action Items
-| Item | Owner | Priority | Due Date |
-|------|-------|----------|----------|
-| [Action] | [Name] | [P1/P2/P3] | [Date] |
+
+| Item     | Owner  | Priority   | Due Date |
+| -------- | ------ | ---------- | -------- |
+| [Action] | [Name] | [P1/P2/P3] | [Date]   |
 
 ## Lessons Learned
+
 [Key takeaways]
 ```
 
@@ -543,6 +573,7 @@ Based on incident findings:
 ### Documentation Requirements
 
 Maintain records of:
+
 - All security incidents
 - Response actions taken
 - Communications sent
@@ -553,13 +584,13 @@ Maintain records of:
 
 ## Appendix: Emergency Contacts
 
-| Role | Contact | Availability |
-|------|---------|--------------|
-| Security Lead | [Contact] | 24/7 |
-| On-Call Engineer | [PagerDuty] | 24/7 |
-| Legal Counsel | [Contact] | Business hours |
-| PR/Communications | [Contact] | Business hours |
-| Convex Support | support@convex.dev | Business hours |
+| Role              | Contact            | Availability   |
+| ----------------- | ------------------ | -------------- |
+| Security Lead     | [Contact]          | 24/7           |
+| On-Call Engineer  | [PagerDuty]        | 24/7           |
+| Legal Counsel     | [Contact]          | Business hours |
+| PR/Communications | [Contact]          | Business hours |
+| Convex Support    | support@convex.dev | Business hours |
 
 ## Appendix: Security Incident Checklist
 
@@ -567,30 +598,35 @@ Maintain records of:
 ## Security Incident Response Checklist
 
 ### Detection & Triage
+
 - [ ] Incident acknowledged
 - [ ] Severity classified
 - [ ] Response team activated (if Critical/High)
 - [ ] Initial report created
 
 ### Containment
+
 - [ ] Immediate threats contained
 - [ ] Evidence preserved
 - [ ] Affected systems isolated
 - [ ] Enhanced monitoring enabled
 
 ### Eradication
+
 - [ ] Root cause identified
 - [ ] Vulnerabilities patched
 - [ ] Malicious content removed
 - [ ] Credentials rotated
 
 ### Recovery
+
 - [ ] Systems restored
 - [ ] Security verified
 - [ ] Services re-enabled
 - [ ] Monitoring confirmed
 
 ### Post-Incident
+
 - [ ] Users notified (if required)
 - [ ] Regulators notified (if required)
 - [ ] Post-incident review completed
@@ -600,6 +636,6 @@ Maintain records of:
 
 ---
 
-*Last Updated: December 2024*
-*Document Owner: Security Team*
-*Review Frequency: Quarterly*
+_Last Updated: December 2024_
+_Document Owner: Security Team_
+_Review Frequency: Quarterly_

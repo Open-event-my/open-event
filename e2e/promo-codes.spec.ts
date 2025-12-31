@@ -33,9 +33,7 @@ test.describe('Promo Codes Management', () => {
   })
 
   // Helper to navigate to an event's promo codes page
-  async function navigateToPromoCodesPage(
-    page: import('@playwright/test').Page
-  ): Promise<boolean> {
+  async function navigateToPromoCodesPage(page: import('@playwright/test').Page): Promise<boolean> {
     await page.goto('/dashboard/events')
     await page.waitForTimeout(2000)
 
@@ -521,11 +519,11 @@ test.describe('Promo Codes Management', () => {
       await expect(page.getByText(promoCode)).toBeVisible({ timeout: 10000 })
 
       // Find the row with our promo code and click the dropdown menu
-      const promoRow = page
-        .locator('.divide-y > div')
-        .filter({ hasText: promoCode })
-        .first()
-      const menuButton = promoRow.locator('button').filter({ has: page.locator('svg') }).last()
+      const promoRow = page.locator('.divide-y > div').filter({ hasText: promoCode }).first()
+      const menuButton = promoRow
+        .locator('button')
+        .filter({ has: page.locator('svg') })
+        .last()
       await menuButton.click()
 
       // Click Deactivate
@@ -593,11 +591,11 @@ test.describe('Promo Codes Management', () => {
       await expect(page.getByText('Inactive')).toBeVisible()
 
       // Open menu and activate
-      const promoRow = page
-        .locator('.divide-y > div')
-        .filter({ hasText: promoCode })
-        .first()
-      const menuButton = promoRow.locator('button').filter({ has: page.locator('svg') }).last()
+      const promoRow = page.locator('.divide-y > div').filter({ hasText: promoCode }).first()
+      const menuButton = promoRow
+        .locator('button')
+        .filter({ has: page.locator('svg') })
+        .last()
       await menuButton.click()
 
       await page.getByRole('menuitem', { name: /activate/i }).click()
@@ -637,9 +635,7 @@ test.describe('Promo Codes Management', () => {
 
       // For a new event, should show empty state
       await expect(page.getByText(/no promo codes yet/i)).toBeVisible()
-      await expect(
-        page.getByText(/create discount codes to offer special pricing/i)
-      ).toBeVisible()
+      await expect(page.getByText(/create discount codes to offer special pricing/i)).toBeVisible()
     })
 
     test('should use Generate button to create random code', async ({ page }) => {
@@ -692,11 +688,11 @@ test.describe('Promo Codes Management', () => {
       })
 
       // Open menu and delete
-      const promoRow = page
-        .locator('.divide-y > div')
-        .filter({ hasText: promoCode })
-        .first()
-      const menuButton = promoRow.locator('button').filter({ has: page.locator('svg') }).last()
+      const promoRow = page.locator('.divide-y > div').filter({ hasText: promoCode }).first()
+      const menuButton = promoRow
+        .locator('button')
+        .filter({ has: page.locator('svg') })
+        .last()
       await menuButton.click()
 
       const deleteItem = page.getByRole('menuitem', { name: /delete/i })

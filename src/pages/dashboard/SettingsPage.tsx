@@ -136,10 +136,15 @@ export function SettingsPage() {
     { label: 'Uppercase letter', met: /[A-Z]/.test(passwordData.newPassword) },
     { label: 'Lowercase letter', met: /[a-z]/.test(passwordData.newPassword) },
     { label: 'Number', met: /[0-9]/.test(passwordData.newPassword) },
-    { label: 'Special character', met: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(passwordData.newPassword) },
+    {
+      label: 'Special character',
+      met: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(passwordData.newPassword),
+    },
   ]
-  const allRequirementsMet = passwordRequirements.every(r => r.met)
-  const passwordsMatch = passwordData.newPassword === passwordData.confirmPassword && passwordData.confirmPassword.length > 0
+  const allRequirementsMet = passwordRequirements.every((r) => r.met)
+  const passwordsMatch =
+    passwordData.newPassword === passwordData.confirmPassword &&
+    passwordData.confirmPassword.length > 0
 
   const handlePasswordChange = async () => {
     if (!allRequirementsMet || !passwordsMatch || !passwordData.currentPassword) {
@@ -641,7 +646,9 @@ export function SettingsPage() {
                       id="currentPassword"
                       type={showCurrentPassword ? 'text' : 'password'}
                       value={passwordData.currentPassword}
-                      onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                      onChange={(e) =>
+                        setPasswordData((prev) => ({ ...prev, currentPassword: e.target.value }))
+                      }
                       placeholder="Enter your current password"
                       className="pr-10"
                     />
@@ -663,7 +670,9 @@ export function SettingsPage() {
                       id="newPassword"
                       type={showNewPassword ? 'text' : 'password'}
                       value={passwordData.newPassword}
-                      onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                      onChange={(e) =>
+                        setPasswordData((prev) => ({ ...prev, newPassword: e.target.value }))
+                      }
                       placeholder="Enter your new password"
                       className="pr-10"
                     />
@@ -703,11 +712,15 @@ export function SettingsPage() {
                       id="confirmPassword"
                       type={showConfirmPassword ? 'text' : 'password'}
                       value={passwordData.confirmPassword}
-                      onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                      onChange={(e) =>
+                        setPasswordData((prev) => ({ ...prev, confirmPassword: e.target.value }))
+                      }
                       placeholder="Confirm your new password"
                       className={cn(
                         'pr-10',
-                        passwordData.confirmPassword.length > 0 && !passwordsMatch && 'border-destructive focus-visible:ring-destructive'
+                        passwordData.confirmPassword.length > 0 &&
+                          !passwordsMatch &&
+                          'border-destructive focus-visible:ring-destructive'
                       )}
                     />
                     <button
@@ -744,7 +757,12 @@ export function SettingsPage() {
                   </button>
                   <button
                     onClick={handlePasswordChange}
-                    disabled={!allRequirementsMet || !passwordsMatch || !passwordData.currentPassword || isChangingPassword}
+                    disabled={
+                      !allRequirementsMet ||
+                      !passwordsMatch ||
+                      !passwordData.currentPassword ||
+                      isChangingPassword
+                    }
                     className={cn(
                       'flex items-center gap-2 px-4 py-2 text-sm rounded-lg',
                       'bg-primary text-primary-foreground font-medium',

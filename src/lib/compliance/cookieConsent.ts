@@ -1,20 +1,20 @@
 /**
  * Cookie Consent Manager
- * 
+ *
  * Manages user cookie consent preferences for GDPR compliance.
  * Stores consent preferences in localStorage and provides methods
  * to check consent status for different cookie categories.
  */
 
 export interface ConsentPreferences {
-  necessary: boolean;
-  analytics: boolean;
-  marketing: boolean;
-  timestamp: number;
+  necessary: boolean
+  analytics: boolean
+  marketing: boolean
+  timestamp: number
 }
 
-const CONSENT_STORAGE_KEY = 'cookie-consent-preferences';
-const CONSENT_VERSION = '1.0.0';
+const CONSENT_STORAGE_KEY = 'cookie-consent-preferences'
+const CONSENT_VERSION = '1.0.0'
 
 export class CookieConsentManager {
   /**
@@ -23,13 +23,13 @@ export class CookieConsentManager {
    */
   getConsent(): ConsentPreferences | null {
     try {
-      const stored = localStorage.getItem(CONSENT_STORAGE_KEY);
+      const stored = localStorage.getItem(CONSENT_STORAGE_KEY)
       if (!stored) {
-        return null;
+        return null
       }
 
-      const data = JSON.parse(stored);
-      
+      const data = JSON.parse(stored)
+
       // Validate the stored data structure
       if (
         typeof data.necessary === 'boolean' &&
@@ -37,13 +37,13 @@ export class CookieConsentManager {
         typeof data.marketing === 'boolean' &&
         typeof data.timestamp === 'number'
       ) {
-        return data as ConsentPreferences;
+        return data as ConsentPreferences
       }
 
-      return null;
+      return null
     } catch (error) {
-      console.error('Failed to get consent preferences:', error);
-      return null;
+      console.error('Failed to get consent preferences:', error)
+      return null
     }
   }
 
@@ -53,15 +53,13 @@ export class CookieConsentManager {
    */
   setConsent(preferences: ConsentPreferences): void {
     try {
-      localStorage.setItem(CONSENT_STORAGE_KEY, JSON.stringify(preferences));
-      
+      localStorage.setItem(CONSENT_STORAGE_KEY, JSON.stringify(preferences))
+
       // Dispatch custom event so other parts of the app can react
-      window.dispatchEvent(
-        new CustomEvent('consentChanged', { detail: preferences })
-      );
+      window.dispatchEvent(new CustomEvent('consentChanged', { detail: preferences }))
     } catch (error) {
-      console.error('Failed to set consent preferences:', error);
-      throw new Error('Failed to save consent preferences');
+      console.error('Failed to set consent preferences:', error)
+      throw new Error('Failed to save consent preferences')
     }
   }
 
@@ -71,15 +69,15 @@ export class CookieConsentManager {
    * @returns true if consent has been given, false otherwise
    */
   hasConsent(category: keyof ConsentPreferences): boolean {
-    const consent = this.getConsent();
-    
+    const consent = this.getConsent()
+
     if (!consent) {
       // No consent given yet - only necessary cookies are allowed
-      return category === 'necessary';
+      return category === 'necessary'
     }
 
-    const value = consent[category];
-    return typeof value === 'boolean' ? value : false;
+    const value = consent[category]
+    return typeof value === 'boolean' ? value : false
   }
 
   /**
@@ -87,7 +85,7 @@ export class CookieConsentManager {
    * @returns true if consent has been recorded, false otherwise
    */
   hasConsentBeenGiven(): boolean {
-    return this.getConsent() !== null;
+    return this.getConsent() !== null
   }
 
   /**
@@ -95,12 +93,12 @@ export class CookieConsentManager {
    */
   clearConsent(): void {
     try {
-      localStorage.removeItem(CONSENT_STORAGE_KEY);
-      
+      localStorage.removeItem(CONSENT_STORAGE_KEY)
+
       // Dispatch custom event
-      window.dispatchEvent(new CustomEvent('consentCleared'));
+      window.dispatchEvent(new CustomEvent('consentCleared'))
     } catch (error) {
-      console.error('Failed to clear consent preferences:', error);
+      console.error('Failed to clear consent preferences:', error)
     }
   }
 
@@ -111,7 +109,7 @@ export class CookieConsentManager {
   showConsentBanner(): void {
     // This will be implemented by the UI component
     // The component will listen for this call or check hasConsentBeenGiven()
-    window.dispatchEvent(new CustomEvent('showConsentBanner'));
+    window.dispatchEvent(new CustomEvent('showConsentBanner'))
   }
 
   /**
@@ -119,7 +117,7 @@ export class CookieConsentManager {
    * @returns The consent version string
    */
   getConsentVersion(): string {
-    return CONSENT_VERSION;
+    return CONSENT_VERSION
   }
 
   /**
@@ -131,7 +129,7 @@ export class CookieConsentManager {
       analytics: true,
       marketing: true,
       timestamp: Date.now(),
-    });
+    })
   }
 
   /**
@@ -143,7 +141,7 @@ export class CookieConsentManager {
       analytics: false,
       marketing: false,
       timestamp: Date.now(),
-    });
+    })
   }
 
   /**
@@ -151,18 +149,18 @@ export class CookieConsentManager {
    * @param updates Partial consent preferences to update
    */
   updateConsent(updates: Partial<Omit<ConsentPreferences, 'timestamp'>>): void {
-    const current = this.getConsent();
-    
+    const current = this.getConsent()
+
     const newPreferences: ConsentPreferences = {
       necessary: updates.necessary ?? current?.necessary ?? true,
       analytics: updates.analytics ?? current?.analytics ?? false,
       marketing: updates.marketing ?? current?.marketing ?? false,
       timestamp: Date.now(),
-    };
+    }
 
-    this.setConsent(newPreferences);
+    this.setConsent(newPreferences)
   }
 }
 
 // Export a singleton instance
-export const cookieConsentManager = new CookieConsentManager();
+export const cookieConsentManager = new CookieConsentManager()

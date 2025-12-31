@@ -35,9 +35,7 @@ const navigationItems = [
 ]
 
 // Superadmin-only navigation items
-const superadminItems = [
-  { label: 'Admin Management', icon: UserGear, path: '/admin/admins' },
-]
+const superadminItems = [{ label: 'Admin Management', icon: UserGear, path: '/admin/admins' }]
 
 const bottomItems = [{ label: 'Settings', icon: Gear, path: '/admin/settings' }]
 

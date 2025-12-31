@@ -6,10 +6,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import {
-  LOCKOUT_CONFIG,
-  formatLockoutDuration,
-} from '../../convex/accountLockout'
+import { LOCKOUT_CONFIG, formatLockoutDuration } from '../../convex/accountLockout'
 
 describe('Account Lockout Configuration', () => {
   describe('LOCKOUT_CONFIG', () => {
@@ -97,7 +94,12 @@ describe('Account Lockout Configuration', () => {
 
 describe('LockoutStatus Interface', () => {
   it('should correctly type check a not-locked status', () => {
-    const status: { isLocked: boolean; remainingAttempts: number; lockedUntil?: number; lockoutDuration?: number } = {
+    const status: {
+      isLocked: boolean
+      remainingAttempts: number
+      lockedUntil?: number
+      lockoutDuration?: number
+    } = {
       isLocked: false,
       remainingAttempts: 5,
     }

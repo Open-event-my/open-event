@@ -217,7 +217,12 @@ export function OpenSourcePage() {
                         rel="noopener noreferrer"
                         className="flex items-center gap-3 p-3 rounded-lg border border-border/40 hover:border-border hover:bg-muted/20 transition-all group"
                       >
-                        <OptimizedImage src={c.avatar_url} alt={c.login} lazy className="w-10 h-10 rounded-full" />
+                        <OptimizedImage
+                          src={c.avatar_url}
+                          alt={c.login}
+                          lazy
+                          className="w-10 h-10 rounded-full"
+                        />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-foreground group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                             {c.login}

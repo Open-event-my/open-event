@@ -5,6 +5,7 @@
 This design document outlines the technical approach for making Open Event production-ready. The platform currently has a solid foundation with React 19, TypeScript, Convex backend, and AI-powered features. However, it requires critical security hardening, monitoring infrastructure, compliance features, and operational improvements before serving real users in production.
 
 The design follows a layered approach:
+
 - **Security Layer**: CSRF protection, input sanitization, rate limiting, encryption
 - **Observability Layer**: Sentry integration, structured logging, metrics, alerting
 - **Compliance Layer**: GDPR features (data export, deletion), audit trails, cookie consent
@@ -26,39 +27,39 @@ graph TB
         A --> D[Security Headers]
         A --> E[Session Manager]
     end
-    
+
     subgraph "Security Layer"
         F[CSRF Protection]
         G[Input Sanitizer]
         H[Rate Limiter]
         I[Encryption Service]
     end
-    
+
     subgraph "Backend Layer"
         J[Convex Functions]
         K[Auth System]
         L[AI Agent]
     end
-    
+
     subgraph "Observability Layer"
         M[Structured Logger]
         N[Metrics Collector]
         O[Alert Manager]
     end
-    
+
     subgraph "Data Layer"
         P[Convex Database]
         Q[Backup Service]
         R[Audit Log]
     end
-    
+
     subgraph "External Services"
         S[Sentry]
         T[CDN]
         U[OpenAI API]
         V[Stripe]
     end
-    
+
     A --> F
     A --> G
     J --> H
@@ -127,20 +128,20 @@ GDPR-compliant data handling:
 ```typescript
 // convex/lib/security/csrf.ts
 interface CSRFConfig {
-  tokenLength: number;
-  cookieName: string;
-  headerName: string;
+  tokenLength: number
+  cookieName: string
+  headerName: string
 }
 
 interface CSRFToken {
-  token: string;
-  expiresAt: number;
+  token: string
+  expiresAt: number
 }
 
 class CSRFProtection {
-  generateToken(userId: string): CSRFToken;
-  validateToken(token: string, userId: string): boolean;
-  rotateToken(userId: string): CSRFToken;
+  generateToken(userId: string): CSRFToken
+  validateToken(token: string, userId: string): boolean
+  rotateToken(userId: string): CSRFToken
 }
 ```
 
@@ -149,15 +150,15 @@ class CSRFProtection {
 ```typescript
 // convex/lib/security/sanitizer.ts
 interface SanitizerConfig {
-  allowedTags: string[];
-  allowedAttributes: Record<string, string[]>;
-  maxLength: number;
+  allowedTags: string[]
+  allowedAttributes: Record<string, string[]>
+  maxLength: number
 }
 
 class InputSanitizer {
-  sanitizeHTML(input: string): string;
-  sanitizeText(input: string): string;
-  validateInput(input: unknown, schema: Schema): ValidationResult;
+  sanitizeHTML(input: string): string
+  sanitizeText(input: string): string
+  validateInput(input: unknown, schema: Schema): ValidationResult
 }
 ```
 
@@ -166,20 +167,20 @@ class InputSanitizer {
 ```typescript
 // convex/lib/security/rateLimiter.ts
 interface RateLimitConfig {
-  windowMs: number;
-  maxRequests: number;
-  keyGenerator: (ctx: Context) => string;
+  windowMs: number
+  maxRequests: number
+  keyGenerator: (ctx: Context) => string
 }
 
 interface RateLimitResult {
-  allowed: boolean;
-  remaining: number;
-  resetAt: number;
+  allowed: boolean
+  remaining: number
+  resetAt: number
 }
 
 class RateLimiter {
-  checkLimit(key: string, config: RateLimitConfig): Promise<RateLimitResult>;
-  resetLimit(key: string): Promise<void>;
+  checkLimit(key: string, config: RateLimitConfig): Promise<RateLimitResult>
+  resetLimit(key: string): Promise<void>
 }
 ```
 
@@ -188,15 +189,15 @@ class RateLimiter {
 ```typescript
 // convex/lib/security/encryption.ts
 interface EncryptionConfig {
-  algorithm: string;
-  keyDerivation: string;
+  algorithm: string
+  keyDerivation: string
 }
 
 class EncryptionService {
-  encrypt(plaintext: string, key: string): string;
-  decrypt(ciphertext: string, key: string): string;
-  hash(data: string): string;
-  compareHash(data: string, hash: string): boolean;
+  encrypt(plaintext: string, key: string): string
+  decrypt(ciphertext: string, key: string): string
+  hash(data: string): string
+  compareHash(data: string, hash: string): boolean
 }
 ```
 
@@ -207,18 +208,18 @@ class EncryptionService {
 ```typescript
 // src/lib/monitoring/sentry.ts
 interface SentryConfig {
-  dsn: string;
-  environment: string;
-  tracesSampleRate: number;
-  replaysSessionSampleRate: number;
+  dsn: string
+  environment: string
+  tracesSampleRate: number
+  replaysSessionSampleRate: number
 }
 
 class SentryMonitoring {
-  initialize(config: SentryConfig): void;
-  captureError(error: Error, context?: Record<string, unknown>): void;
-  captureMessage(message: string, level: 'info' | 'warning' | 'error'): void;
-  setUser(user: { id: string; email: string }): void;
-  addBreadcrumb(breadcrumb: Breadcrumb): void;
+  initialize(config: SentryConfig): void
+  captureError(error: Error, context?: Record<string, unknown>): void
+  captureMessage(message: string, level: 'info' | 'warning' | 'error'): void
+  setUser(user: { id: string; email: string }): void
+  addBreadcrumb(breadcrumb: Breadcrumb): void
 }
 ```
 
@@ -226,22 +227,22 @@ class SentryMonitoring {
 
 ```typescript
 // convex/lib/monitoring/logger.ts
-type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
 interface LogEntry {
-  level: LogLevel;
-  message: string;
-  timestamp: number;
-  context: Record<string, unknown>;
-  userId?: string;
-  requestId?: string;
+  level: LogLevel
+  message: string
+  timestamp: number
+  context: Record<string, unknown>
+  userId?: string
+  requestId?: string
 }
 
 class StructuredLogger {
-  debug(message: string, context?: Record<string, unknown>): void;
-  info(message: string, context?: Record<string, unknown>): void;
-  warn(message: string, context?: Record<string, unknown>): void;
-  error(message: string, error: Error, context?: Record<string, unknown>): void;
+  debug(message: string, context?: Record<string, unknown>): void
+  info(message: string, context?: Record<string, unknown>): void
+  warn(message: string, context?: Record<string, unknown>): void
+  error(message: string, error: Error, context?: Record<string, unknown>): void
 }
 ```
 
@@ -250,17 +251,17 @@ class StructuredLogger {
 ```typescript
 // convex/lib/monitoring/metrics.ts
 interface Metric {
-  name: string;
-  value: number;
-  timestamp: number;
-  tags: Record<string, string>;
+  name: string
+  value: number
+  timestamp: number
+  tags: Record<string, string>
 }
 
 class MetricsCollector {
-  recordCounter(name: string, value: number, tags?: Record<string, string>): void;
-  recordGauge(name: string, value: number, tags?: Record<string, string>): void;
-  recordHistogram(name: string, value: number, tags?: Record<string, string>): void;
-  recordTiming(name: string, durationMs: number, tags?: Record<string, string>): void;
+  recordCounter(name: string, value: number, tags?: Record<string, string>): void
+  recordGauge(name: string, value: number, tags?: Record<string, string>): void
+  recordHistogram(name: string, value: number, tags?: Record<string, string>): void
+  recordTiming(name: string, durationMs: number, tags?: Record<string, string>): void
 }
 ```
 
@@ -268,21 +269,21 @@ class MetricsCollector {
 
 ```typescript
 // convex/lib/monitoring/alerts.ts
-type AlertChannel = 'email' | 'slack' | 'pagerduty';
-type AlertSeverity = 'info' | 'warning' | 'critical';
+type AlertChannel = 'email' | 'slack' | 'pagerduty'
+type AlertSeverity = 'info' | 'warning' | 'critical'
 
 interface Alert {
-  title: string;
-  message: string;
-  severity: AlertSeverity;
-  channels: AlertChannel[];
-  metadata: Record<string, unknown>;
+  title: string
+  message: string
+  severity: AlertSeverity
+  channels: AlertChannel[]
+  metadata: Record<string, unknown>
 }
 
 class AlertManager {
-  sendAlert(alert: Alert): Promise<void>;
-  configureThresholds(metric: string, threshold: number, severity: AlertSeverity): void;
-  checkThresholds(): Promise<void>;
+  sendAlert(alert: Alert): Promise<void>
+  configureThresholds(metric: string, threshold: number, severity: AlertSeverity): void
+  checkThresholds(): Promise<void>
 }
 ```
 
@@ -293,21 +294,21 @@ class AlertManager {
 ```typescript
 // convex/lib/compliance/dataExport.ts
 interface ExportFormat {
-  format: 'json' | 'csv';
-  includeMetadata: boolean;
+  format: 'json' | 'csv'
+  includeMetadata: boolean
 }
 
 interface UserDataExport {
-  user: UserData;
-  events: EventData[];
-  orders: OrderData[];
-  organizations: OrganizationData[];
-  exportedAt: number;
+  user: UserData
+  events: EventData[]
+  orders: OrderData[]
+  organizations: OrganizationData[]
+  exportedAt: number
 }
 
 class DataExportService {
-  exportUserData(userId: string, format: ExportFormat): Promise<UserDataExport>;
-  generateExportFile(data: UserDataExport, format: ExportFormat): Promise<Blob>;
+  exportUserData(userId: string, format: ExportFormat): Promise<UserDataExport>
+  generateExportFile(data: UserDataExport, format: ExportFormat): Promise<Blob>
 }
 ```
 
@@ -316,21 +317,21 @@ class DataExportService {
 ```typescript
 // convex/lib/compliance/dataDeletion.ts
 interface DeletionRequest {
-  userId: string;
-  requestedAt: number;
-  reason?: string;
+  userId: string
+  requestedAt: number
+  reason?: string
 }
 
 interface DeletionResult {
-  success: boolean;
-  deletedRecords: Record<string, number>;
-  errors: string[];
+  success: boolean
+  deletedRecords: Record<string, number>
+  errors: string[]
 }
 
 class DataDeletionService {
-  requestDeletion(userId: string, reason?: string): Promise<DeletionRequest>;
-  executeDeletion(requestId: string): Promise<DeletionResult>;
-  anonymizeData(userId: string): Promise<void>;
+  requestDeletion(userId: string, reason?: string): Promise<DeletionRequest>
+  executeDeletion(requestId: string): Promise<DeletionResult>
+  anonymizeData(userId: string): Promise<void>
 }
 ```
 
@@ -338,22 +339,22 @@ class DataDeletionService {
 
 ```typescript
 // convex/lib/compliance/auditLog.ts
-type AuditAction = 'create' | 'read' | 'update' | 'delete' | 'export' | 'login' | 'logout';
+type AuditAction = 'create' | 'read' | 'update' | 'delete' | 'export' | 'login' | 'logout'
 
 interface AuditEntry {
-  userId: string;
-  action: AuditAction;
-  resource: string;
-  resourceId: string;
-  timestamp: number;
-  ipAddress?: string;
-  userAgent?: string;
-  changes?: Record<string, { old: unknown; new: unknown }>;
+  userId: string
+  action: AuditAction
+  resource: string
+  resourceId: string
+  timestamp: number
+  ipAddress?: string
+  userAgent?: string
+  changes?: Record<string, { old: unknown; new: unknown }>
 }
 
 class AuditLogger {
-  log(entry: Omit<AuditEntry, 'timestamp'>): Promise<void>;
-  query(filters: Partial<AuditEntry>, limit: number): Promise<AuditEntry[]>;
+  log(entry: Omit<AuditEntry, 'timestamp'>): Promise<void>
+  query(filters: Partial<AuditEntry>, limit: number): Promise<AuditEntry[]>
 }
 ```
 
@@ -362,17 +363,17 @@ class AuditLogger {
 ```typescript
 // src/lib/compliance/cookieConsent.ts
 interface ConsentPreferences {
-  necessary: boolean;
-  analytics: boolean;
-  marketing: boolean;
-  timestamp: number;
+  necessary: boolean
+  analytics: boolean
+  marketing: boolean
+  timestamp: number
 }
 
 class CookieConsentManager {
-  getConsent(): ConsentPreferences | null;
-  setConsent(preferences: ConsentPreferences): void;
-  hasConsent(category: keyof ConsentPreferences): boolean;
-  showConsentBanner(): void;
+  getConsent(): ConsentPreferences | null
+  setConsent(preferences: ConsentPreferences): void
+  hasConsent(category: keyof ConsentPreferences): boolean
+  showConsentBanner(): void
 }
 ```
 
@@ -383,25 +384,25 @@ class CookieConsentManager {
 ```typescript
 // convex/lib/resilience/backup.ts
 interface BackupConfig {
-  schedule: string; // cron expression
-  retention: number; // days
-  location: string;
-  encryption: boolean;
+  schedule: string // cron expression
+  retention: number // days
+  location: string
+  encryption: boolean
 }
 
 interface BackupMetadata {
-  id: string;
-  timestamp: number;
-  size: number;
-  location: string;
-  checksum: string;
+  id: string
+  timestamp: number
+  size: number
+  location: string
+  checksum: string
 }
 
 class BackupService {
-  createBackup(): Promise<BackupMetadata>;
-  restoreBackup(backupId: string): Promise<void>;
-  listBackups(): Promise<BackupMetadata[]>;
-  deleteOldBackups(retentionDays: number): Promise<void>;
+  createBackup(): Promise<BackupMetadata>
+  restoreBackup(backupId: string): Promise<void>
+  listBackups(): Promise<BackupMetadata[]>
+  deleteOldBackups(retentionDays: number): Promise<void>
 }
 ```
 
@@ -409,18 +410,18 @@ class BackupService {
 
 ```typescript
 // convex/lib/resilience/circuitBreaker.ts
-type CircuitState = 'closed' | 'open' | 'half-open';
+type CircuitState = 'closed' | 'open' | 'half-open'
 
 interface CircuitBreakerConfig {
-  failureThreshold: number;
-  successThreshold: number;
-  timeout: number;
+  failureThreshold: number
+  successThreshold: number
+  timeout: number
 }
 
 class CircuitBreaker {
-  execute<T>(fn: () => Promise<T>): Promise<T>;
-  getState(): CircuitState;
-  reset(): void;
+  execute<T>(fn: () => Promise<T>): Promise<T>
+  getState(): CircuitState
+  reset(): void
 }
 ```
 
@@ -429,23 +430,23 @@ class CircuitBreaker {
 ```typescript
 // convex/lib/resilience/aiResilience.ts
 interface AIConfig {
-  provider: 'openai' | 'anthropic';
-  model: string;
-  timeout: number;
-  maxRetries: number;
+  provider: 'openai' | 'anthropic'
+  model: string
+  timeout: number
+  maxRetries: number
 }
 
 interface AIResponse {
-  content: string;
-  provider: string;
-  cached: boolean;
+  content: string
+  provider: string
+  cached: boolean
 }
 
 class AIResilienceService {
-  callWithFallback(prompt: string, config: AIConfig): Promise<AIResponse>;
-  retryWithBackoff<T>(fn: () => Promise<T>, maxRetries: number): Promise<T>;
-  getCachedResponse(prompt: string): Promise<AIResponse | null>;
-  cacheResponse(prompt: string, response: AIResponse): Promise<void>;
+  callWithFallback(prompt: string, config: AIConfig): Promise<AIResponse>
+  retryWithBackoff<T>(fn: () => Promise<T>, maxRetries: number): Promise<T>
+  getCachedResponse(prompt: string): Promise<AIResponse | null>
+  cacheResponse(prompt: string, response: AIResponse): Promise<void>
 }
 ```
 
@@ -456,21 +457,21 @@ class AIResilienceService {
 ```typescript
 // src/lib/performance/cdn.ts
 interface CDNConfig {
-  provider: string;
-  regions: string[];
-  cacheRules: CacheRule[];
+  provider: string
+  regions: string[]
+  cacheRules: CacheRule[]
 }
 
 interface CacheRule {
-  pattern: string;
-  ttl: number;
-  headers: Record<string, string>;
+  pattern: string
+  ttl: number
+  headers: Record<string, string>
 }
 
 class CDNManager {
-  configureCDN(config: CDNConfig): void;
-  purgeCache(pattern: string): Promise<void>;
-  getStats(): Promise<CDNStats>;
+  configureCDN(config: CDNConfig): void
+  purgeCache(pattern: string): Promise<void>
+  getStats(): Promise<CDNStats>
 }
 ```
 
@@ -479,15 +480,15 @@ class CDNManager {
 ```typescript
 // convex/lib/performance/cache.ts
 interface CacheConfig {
-  ttl: number;
-  maxSize: number;
+  ttl: number
+  maxSize: number
 }
 
 class CacheManager {
-  get<T>(key: string): Promise<T | null>;
-  set<T>(key: string, value: T, ttl?: number): Promise<void>;
-  delete(key: string): Promise<void>;
-  clear(): Promise<void>;
+  get<T>(key: string): Promise<T | null>
+  set<T>(key: string, value: T, ttl?: number): Promise<void>
+  delete(key: string): Promise<void>
+  clear(): Promise<void>
 }
 ```
 
@@ -497,18 +498,18 @@ class CacheManager {
 
 ```typescript
 // src/lib/config/envValidator.ts
-import { z } from 'zod';
+import { z } from 'zod'
 
 const envSchema = z.object({
   VITE_CONVEX_URL: z.string().url(),
   VITE_SENTRY_DSN: z.string().url().optional(),
   VITE_STRIPE_PUBLIC_KEY: z.string().startsWith('pk_'),
   // ... other env vars
-});
+})
 
 class EnvironmentValidator {
-  validate(): void;
-  getConfig(): z.infer<typeof envSchema>;
+  validate(): void
+  getConfig(): z.infer<typeof envSchema>
 }
 ```
 
@@ -519,28 +520,28 @@ class EnvironmentValidator {
 ```typescript
 // CSRF Tokens
 interface CSRFTokenDoc {
-  userId: string;
-  token: string;
-  expiresAt: number;
-  createdAt: number;
+  userId: string
+  token: string
+  expiresAt: number
+  createdAt: number
 }
 
 // Rate Limit Tracking
 interface RateLimitDoc {
-  key: string;
-  count: number;
-  windowStart: number;
-  windowEnd: number;
+  key: string
+  count: number
+  windowStart: number
+  windowEnd: number
 }
 
 // Encrypted API Keys
 interface EncryptedAPIKeyDoc {
-  userId: string;
-  service: string;
-  encryptedKey: string;
-  iv: string;
-  createdAt: number;
-  lastUsed: number;
+  userId: string
+  service: string
+  encryptedKey: string
+  iv: string
+  createdAt: number
+  lastUsed: number
 }
 ```
 
@@ -549,31 +550,31 @@ interface EncryptedAPIKeyDoc {
 ```typescript
 // Log Entries
 interface LogDoc {
-  level: LogLevel;
-  message: string;
-  timestamp: number;
-  context: Record<string, unknown>;
-  userId?: string;
-  requestId?: string;
-  stackTrace?: string;
+  level: LogLevel
+  message: string
+  timestamp: number
+  context: Record<string, unknown>
+  userId?: string
+  requestId?: string
+  stackTrace?: string
 }
 
 // Metrics
 interface MetricDoc {
-  name: string;
-  value: number;
-  timestamp: number;
-  tags: Record<string, string>;
+  name: string
+  value: number
+  timestamp: number
+  tags: Record<string, string>
 }
 
 // Alerts
 interface AlertDoc {
-  title: string;
-  message: string;
-  severity: AlertSeverity;
-  triggeredAt: number;
-  resolvedAt?: number;
-  metadata: Record<string, unknown>;
+  title: string
+  message: string
+  severity: AlertSeverity
+  triggeredAt: number
+  resolvedAt?: number
+  metadata: Record<string, unknown>
 }
 ```
 
@@ -582,52 +583,52 @@ interface AlertDoc {
 ```typescript
 // Data Export Requests
 interface DataExportRequestDoc {
-  userId: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
-  requestedAt: number;
-  completedAt?: number;
-  downloadUrl?: string;
-  expiresAt?: number;
+  userId: string
+  status: 'pending' | 'processing' | 'completed' | 'failed'
+  requestedAt: number
+  completedAt?: number
+  downloadUrl?: string
+  expiresAt?: number
 }
 
 // Data Deletion Requests
 interface DataDeletionRequestDoc {
-  userId: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
-  requestedAt: number;
-  scheduledFor: number;
-  completedAt?: number;
-  reason?: string;
+  userId: string
+  status: 'pending' | 'processing' | 'completed' | 'failed'
+  requestedAt: number
+  scheduledFor: number
+  completedAt?: number
+  reason?: string
 }
 
 // Audit Log Entries
 interface AuditLogDoc {
-  userId: string;
-  action: AuditAction;
-  resource: string;
-  resourceId: string;
-  timestamp: number;
-  ipAddress?: string;
-  userAgent?: string;
-  changes?: Record<string, { old: unknown; new: unknown }>;
+  userId: string
+  action: AuditAction
+  resource: string
+  resourceId: string
+  timestamp: number
+  ipAddress?: string
+  userAgent?: string
+  changes?: Record<string, { old: unknown; new: unknown }>
 }
 
 // Cookie Consent
 interface CookieConsentDoc {
-  userId: string;
-  necessary: boolean;
-  analytics: boolean;
-  marketing: boolean;
-  acceptedAt: number;
-  version: string;
+  userId: string
+  necessary: boolean
+  analytics: boolean
+  marketing: boolean
+  acceptedAt: number
+  version: string
 }
 
 // Terms Acceptance
 interface TermsAcceptanceDoc {
-  userId: string;
-  version: string;
-  acceptedAt: number;
-  ipAddress?: string;
+  userId: string
+  version: string
+  acceptedAt: number
+  ipAddress?: string
 }
 ```
 
@@ -636,35 +637,35 @@ interface TermsAcceptanceDoc {
 ```typescript
 // Backup Metadata
 interface BackupDoc {
-  id: string;
-  timestamp: number;
-  size: number;
-  location: string;
-  checksum: string;
-  encrypted: boolean;
-  status: 'pending' | 'completed' | 'failed';
-  expiresAt: number;
+  id: string
+  timestamp: number
+  size: number
+  location: string
+  checksum: string
+  encrypted: boolean
+  status: 'pending' | 'completed' | 'failed'
+  expiresAt: number
 }
 
 // Backup Verification
 interface BackupVerificationDoc {
-  backupId: string;
-  verifiedAt: number;
-  success: boolean;
-  errors?: string[];
+  backupId: string
+  verifiedAt: number
+  success: boolean
+  errors?: string[]
 }
 ```
 
-
 ## Correctness Properties
 
-*A property is a characteristic or behavior that should hold true across all valid executions of a system—essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+_A property is a characteristic or behavior that should hold true across all valid executions of a system—essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees._
 
 ### Property Reflection
 
 After analyzing all 120 acceptance criteria, I identified the following testable properties. Many criteria are about documentation, operational procedures, or infrastructure configuration which cannot be tested as runtime properties. I've consolidated related properties to avoid redundancy:
 
 **Consolidated Properties:**
+
 - Input validation properties (1.8, 9.9) can be combined into a single comprehensive input validation property
 - Logging properties (2.2, 2.7, 3.10, 10.6, 11.5, 12.6) can be consolidated into event-specific logging properties
 - Encryption properties (1.5, 3.7, 4.7) can be combined into a single encryption-at-rest property
@@ -674,217 +675,216 @@ After analyzing all 120 acceptance criteria, I identified the following testable
 ### Security Properties
 
 **Property 1: CSRF Token Validation**
-*For any* state-changing mutation operation, the system should require and validate a CSRF token before executing the operation.
+_For any_ state-changing mutation operation, the system should require and validate a CSRF token before executing the operation.
 **Validates: Requirements 1.2**
 
 **Property 2: XSS Prevention Through Sanitization**
-*For any* user-generated content that is rendered in the UI, the system should sanitize the content to remove or escape potentially malicious scripts.
+_For any_ user-generated content that is rendered in the UI, the system should sanitize the content to remove or escape potentially malicious scripts.
 **Validates: Requirements 1.3**
 
 **Property 3: Request Size Enforcement**
-*For any* incoming HTTP request, if the request size exceeds the configured limit, the system should reject the request with a 413 status code.
+_For any_ incoming HTTP request, if the request size exceeds the configured limit, the system should reject the request with a 413 status code.
 **Validates: Requirements 1.4**
 
 **Property 4: Encryption at Rest**
-*For any* sensitive data field (API keys, tokens, passwords), the stored value in the database should be encrypted and not readable as plaintext.
+_For any_ sensitive data field (API keys, tokens, passwords), the stored value in the database should be encrypted and not readable as plaintext.
 **Validates: Requirements 1.5, 3.7, 4.7**
 
 **Property 5: Rate Limiting Enforcement**
-*For any* public API endpoint, when a client exceeds the configured rate limit, subsequent requests should be rejected with a 429 status code until the rate limit window resets.
+_For any_ public API endpoint, when a client exceeds the configured rate limit, subsequent requests should be rejected with a 429 status code until the rate limit window resets.
 **Validates: Requirements 1.6**
 
 **Property 6: Input Validation and Sanitization**
-*For any* API endpoint accepting user input, invalid or malicious input should be rejected with a clear validation error before any processing occurs.
+_For any_ API endpoint accepting user input, invalid or malicious input should be rejected with a clear validation error before any processing occurs.
 **Validates: Requirements 1.8, 9.9**
 
 ### Monitoring Properties
 
 **Property 7: Structured Log Format**
-*For any* log entry created by the system, it should contain the required fields: level, message, timestamp, and context object.
+_For any_ log entry created by the system, it should contain the required fields: level, message, timestamp, and context object.
 **Validates: Requirements 2.2**
 
 **Property 8: Critical Error Alerting**
-*For any* error classified as critical severity, an alert should be sent to the configured alerting channels within 60 seconds.
+_For any_ error classified as critical severity, an alert should be sent to the configured alerting channels within 60 seconds.
 **Validates: Requirements 2.3**
 
 **Property 9: Performance Metrics Collection**
-*For any* API request, performance metrics (response time, status code) should be recorded in the metrics system.
+_For any_ API request, performance metrics (response time, status code) should be recorded in the metrics system.
 **Validates: Requirements 2.4**
 
 **Property 10: Authentication Event Logging**
-*For any* authentication event (login, logout, failed attempt), an audit log entry should be created with timestamp, user ID, and event type.
+_For any_ authentication event (login, logout, failed attempt), an audit log entry should be created with timestamp, user ID, and event type.
 **Validates: Requirements 2.7**
 
 **Property 11: API Usage Tracking**
-*For any* API call made by a user or organization, usage metrics should be recorded including endpoint, timestamp, and caller identity.
+_For any_ API call made by a user or organization, usage metrics should be recorded including endpoint, timestamp, and caller identity.
 **Validates: Requirements 2.8**
 
 **Property 12: Database Query Performance Monitoring**
-*For any* database query executed, performance metrics (duration, query type) should be collected and logged if duration exceeds threshold.
+_For any_ database query executed, performance metrics (duration, query type) should be collected and logged if duration exceeds threshold.
 **Validates: Requirements 2.9**
 
 ### Compliance Properties
 
 **Property 13: Complete Data Export**
-*For any* user requesting data export, the exported data should include all personal data associated with that user across all tables (user profile, events, orders, organizations).
+_For any_ user requesting data export, the exported data should include all personal data associated with that user across all tables (user profile, events, orders, organizations).
 **Validates: Requirements 3.1**
 
 **Property 14: Complete Data Deletion**
-*For any* user account deletion request, all associated data should be purged from the database including related records in all tables.
+_For any_ user account deletion request, all associated data should be purged from the database including related records in all tables.
 **Validates: Requirements 3.2**
 
 **Property 15: Terms Acceptance Tracking**
-*For any* user accepting terms of service, a record should be created with the user ID, terms version, timestamp, and IP address.
+_For any_ user accepting terms of service, a record should be created with the user ID, terms version, timestamp, and IP address.
 **Validates: Requirements 3.4**
 
 **Property 16: Audit Trail Creation**
-*For any* data modification operation (create, update, delete), an audit log entry should be created capturing the user, action, resource, and changes made.
+_For any_ data modification operation (create, update, delete), an audit log entry should be created capturing the user, action, resource, and changes made.
 **Validates: Requirements 3.5**
 
 **Property 17: Data Retention Policy Enforcement**
-*For any* data record subject to retention policies, if the record age exceeds the retention period, it should be automatically deleted during the cleanup process.
+_For any_ data record subject to retention policies, if the record age exceeds the retention period, it should be automatically deleted during the cleanup process.
 **Validates: Requirements 3.6**
 
 **Property 18: Analytics Data Anonymization**
-*For any* data used in analytics, personally identifiable information (email, name, IP address) should be anonymized or hashed.
+_For any_ data used in analytics, personally identifiable information (email, name, IP address) should be anonymized or hashed.
 **Validates: Requirements 3.8**
 
 **Property 19: Admin Action Audit Logging**
-*For any* action performed by an admin user, an audit log entry should be created with enhanced detail including the admin's identity and the action's impact.
+_For any_ action performed by an admin user, an audit log entry should be created with enhanced detail including the admin's identity and the action's impact.
 **Validates: Requirements 3.10**
 
 ### Backup and Recovery Properties
 
 **Property 20: Backup Retention Period**
-*For any* backup created, it should not be deleted until at least 30 days have passed since its creation date.
+_For any_ backup created, it should not be deleted until at least 30 days have passed since its creation date.
 **Validates: Requirements 4.6**
 
 **Property 21: Backup Encryption**
-*For any* backup file created, the backup data should be encrypted before storage.
+_For any_ backup file created, the backup data should be encrypted before storage.
 **Validates: Requirements 4.7**
 
 **Property 22: Backup Status Monitoring**
-*For any* backup operation (success or failure), the result should be recorded in the monitoring system with timestamp and status.
+_For any_ backup operation (success or failure), the result should be recorded in the monitoring system with timestamp and status.
 **Validates: Requirements 4.8**
 
 ### Performance Properties
 
 **Property 23: Image Optimization**
-*For any* image asset served by the application, it should be in WebP format and use lazy loading attributes.
+_For any_ image asset served by the application, it should be in WebP format and use lazy loading attributes.
 **Validates: Requirements 6.3**
 
 **Property 24: Database Query Caching**
-*For any* database query that is repeated within the cache TTL window, the cached result should be returned instead of executing the query again.
+_For any_ database query that is repeated within the cache TTL window, the cached result should be returned instead of executing the query again.
 **Validates: Requirements 6.4**
 
 **Property 25: Heavy Dependency Lazy Loading**
-*For any* heavy dependency (tldraw, recharts, PDF libraries), it should be loaded dynamically only when needed rather than in the initial bundle.
+_For any_ heavy dependency (tldraw, recharts, PDF libraries), it should be loaded dynamically only when needed rather than in the initial bundle.
 **Validates: Requirements 6.8**
 
 ### Configuration Properties
 
 **Property 26: Configuration Validation Error Messages**
-*For any* missing or invalid configuration value, the system should fail startup with a clear error message indicating which configuration is problematic.
+_For any_ missing or invalid configuration value, the system should fail startup with a clear error message indicating which configuration is problematic.
 **Validates: Requirements 9.2**
 
 ### AI Resilience Properties
 
 **Property 27: AI Fallback on Unavailability**
-*For any* AI request that fails due to provider unavailability, the system should use a fallback mechanism (cached response, alternative provider, or graceful degradation message).
+_For any_ AI request that fails due to provider unavailability, the system should use a fallback mechanism (cached response, alternative provider, or graceful degradation message).
 **Validates: Requirements 10.1, 10.7**
 
 **Property 28: AI Response Validation**
-*For any* AI response received, it should be validated for completeness and safety before being displayed to users.
+_For any_ AI response received, it should be validated for completeness and safety before being displayed to users.
 **Validates: Requirements 10.2**
 
 **Property 29: AI Retry with Exponential Backoff**
-*For any* failed AI request due to transient errors, the system should retry with exponentially increasing delays (1s, 2s, 4s, 8s, 16s) up to a maximum of 5 attempts.
+_For any_ failed AI request due to transient errors, the system should retry with exponentially increasing delays (1s, 2s, 4s, 8s, 16s) up to a maximum of 5 attempts.
 **Validates: Requirements 10.3**
 
 **Property 30: AI Request Timeout**
-*For any* AI request, if no response is received within 30 seconds, the request should be cancelled and an error should be returned.
+_For any_ AI request, if no response is received within 30 seconds, the request should be cancelled and an error should be returned.
 **Validates: Requirements 10.4**
 
 **Property 31: AI Circuit Breaker**
-*For any* AI provider, after 5 consecutive failures, the circuit breaker should open and prevent further requests for 5 minutes.
+_For any_ AI provider, after 5 consecutive failures, the circuit breaker should open and prevent further requests for 5 minutes.
 **Validates: Requirements 10.5**
 
 **Property 32: AI Error Logging**
-*For any* AI request that fails, a detailed error log should be created including the prompt, error type, and provider information.
+_For any_ AI request that fails, a detailed error log should be created including the prompt, error type, and provider information.
 **Validates: Requirements 10.6**
 
 **Property 33: AI Response Caching**
-*For any* AI query that has been made before, if a cached response exists and is within the cache TTL, the cached response should be returned instead of making a new API call.
+_For any_ AI query that has been made before, if a cached response exists and is within the cache TTL, the cached response should be returned instead of making a new API call.
 **Validates: Requirements 10.8**
 
 **Property 34: AI Usage Metrics**
-*For any* AI API call, usage metrics should be recorded including tokens used, cost, latency, and provider.
+_For any_ AI API call, usage metrics should be recorded including tokens used, cost, latency, and provider.
 **Validates: Requirements 10.9**
 
 ### Error Handling Properties
 
 **Property 35: User-Friendly Error Messages**
-*For any* error displayed to end users, the error message should not contain stack traces, internal system details, or technical jargon.
+_For any_ error displayed to end users, the error message should not contain stack traces, internal system details, or technical jargon.
 **Validates: Requirements 11.1**
 
 **Property 36: Error Recovery Suggestions**
-*For any* error shown to users, the error message should include actionable recovery suggestions when applicable.
+_For any_ error shown to users, the error message should include actionable recovery suggestions when applicable.
 **Validates: Requirements 11.3**
 
 **Property 37: Server-Side Error Logging**
-*For any* error that occurs, detailed error information (stack trace, context, user ID) should be logged server-side for debugging.
+_For any_ error that occurs, detailed error information (stack trace, context, user ID) should be logged server-side for debugging.
 **Validates: Requirements 11.5**
 
 **Property 38: Transient Failure Retry**
-*For any* operation that fails due to transient errors (network timeout, temporary unavailability), the system should automatically retry the operation up to 3 times.
+_For any_ operation that fails due to transient errors (network timeout, temporary unavailability), the system should automatically retry the operation up to 3 times.
 **Validates: Requirements 11.6**
 
 **Property 39: Async Operation Loading States**
-*For any* asynchronous operation initiated by user action, a loading indicator should be displayed until the operation completes or fails.
+_For any_ asynchronous operation initiated by user action, a loading indicator should be displayed until the operation completes or fails.
 **Validates: Requirements 11.7**
 
 **Property 40: Optimistic UI Updates with Rollback**
-*For any* mutation operation with optimistic updates, if the operation fails, the UI should roll back to the previous state and display an error.
+_For any_ mutation operation with optimistic updates, if the operation fails, the UI should roll back to the previous state and display an error.
 **Validates: Requirements 11.8**
 
 **Property 41: Form Validation Before Submission**
-*For any* form submission, client-side validation should be performed and any validation errors should prevent submission until resolved.
+_For any_ form submission, client-side validation should be performed and any validation errors should prevent submission until resolved.
 **Validates: Requirements 11.9**
 
 **Property 42: Clear Validation Error Messages**
-*For any* form field validation error, the error message should clearly indicate which field has an error and what needs to be corrected.
+_For any_ form field validation error, the error message should clearly indicate which field has an error and what needs to be corrected.
 **Validates: Requirements 11.10**
 
 ### Payment Security Properties
 
 **Property 43: No Credit Card Storage**
-*For any* payment transaction, credit card numbers should never be stored in the application database—only Stripe tokens should be stored.
+_For any_ payment transaction, credit card numbers should never be stored in the application database—only Stripe tokens should be stored.
 **Validates: Requirements 12.1**
 
 **Property 44: Webhook Signature Verification**
-*For any* incoming webhook from Stripe, the signature should be verified before processing the webhook payload.
+_For any_ incoming webhook from Stripe, the signature should be verified before processing the webhook payload.
 **Validates: Requirements 12.3**
 
 **Property 45: Payment Failure Handling**
-*For any* payment that fails, the system should handle the failure gracefully by logging the error, notifying the user, and not creating an order.
+_For any_ payment that fails, the system should handle the failure gracefully by logging the error, notifying the user, and not creating an order.
 **Validates: Requirements 12.4**
 
 **Property 46: Payment Idempotency**
-*For any* payment operation, if the same idempotency key is used multiple times, only one payment should be processed and subsequent requests should return the same result.
+_For any_ payment operation, if the same idempotency key is used multiple times, only one payment should be processed and subsequent requests should return the same result.
 **Validates: Requirements 12.5**
 
 **Property 47: Payment Event Audit Logging**
-*For any* payment-related event (charge, refund, dispute), an audit log entry should be created with full details for compliance.
+_For any_ payment-related event (charge, refund, dispute), an audit log entry should be created with full details for compliance.
 **Validates: Requirements 12.6**
 
 **Property 48: Server-Side Payment Validation**
-*For any* payment request, the payment amount and currency should be validated server-side to prevent client-side manipulation.
+_For any_ payment request, the payment amount and currency should be validated server-side to prevent client-side manipulation.
 **Validates: Requirements 12.8**
 
 **Property 49: Fraud Detection Alerts**
-*For any* payment that triggers fraud detection rules (unusual amount, velocity, location), an alert should be sent to administrators for review.
+_For any_ payment that triggers fraud detection rules (unusual amount, velocity, location), an alert should be sent to administrators for review.
 **Validates: Requirements 12.9**
-
 
 ## Error Handling
 
@@ -924,10 +924,10 @@ class ErrorBoundary extends React.Component {
           componentStack: errorInfo.componentStack,
         },
       },
-    });
-    
+    })
+
     // Show user-friendly error page
-    this.setState({ hasError: true });
+    this.setState({ hasError: true })
   }
 }
 
@@ -937,22 +937,22 @@ async function handleAPIError(error: ConvexError) {
     return {
       message: 'Too many requests. Please try again in a few minutes.',
       retryAfter: error.data.retryAfter,
-    };
+    }
   }
-  
+
   if (error.code === 'VALIDATION_ERROR') {
     return {
       message: 'Please check your input and try again.',
       fields: error.data.fields,
-    };
+    }
   }
-  
+
   // Log detailed error server-side
-  logger.error('API error', { error, userId: getCurrentUserId() });
-  
+  logger.error('API error', { error, userId: getCurrentUserId() })
+
   return {
     message: 'Something went wrong. Please try again later.',
-  };
+  }
 }
 ```
 
@@ -967,8 +967,8 @@ export function handleError(error: unknown, context: Context): never {
     stack: error instanceof Error ? error.stack : undefined,
     userId: context.auth?.userId,
     functionName: context.functionName,
-  });
-  
+  })
+
   // Send alert for critical errors
   if (isCriticalError(error)) {
     alertManager.sendAlert({
@@ -977,22 +977,22 @@ export function handleError(error: unknown, context: Context): never {
       severity: 'critical',
       channels: ['email', 'slack'],
       metadata: { functionName: context.functionName },
-    });
+    })
   }
-  
+
   // Throw user-friendly error
   if (error instanceof ValidationError) {
     throw new ConvexError({
       code: 'VALIDATION_ERROR',
       message: 'Invalid input provided',
       data: { fields: error.fields },
-    });
+    })
   }
-  
+
   throw new ConvexError({
     code: 'INTERNAL_ERROR',
     message: 'An unexpected error occurred',
-  });
+  })
 }
 ```
 
@@ -1006,27 +1006,27 @@ async function retryWithBackoff<T>(
   maxRetries: number = 5,
   baseDelay: number = 1000
 ): Promise<T> {
-  let lastError: Error;
-  
+  let lastError: Error
+
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      return await fn();
+      return await fn()
     } catch (error) {
-      lastError = error as Error;
-      
+      lastError = error as Error
+
       // Don't retry on non-transient errors
       if (!isTransientError(error)) {
-        throw error;
+        throw error
       }
-      
+
       // Calculate delay with exponential backoff and jitter
-      const delay = baseDelay * Math.pow(2, attempt);
-      const jitter = Math.random() * 1000;
-      await sleep(delay + jitter);
+      const delay = baseDelay * Math.pow(2, attempt)
+      const jitter = Math.random() * 1000
+      await sleep(delay + jitter)
     }
   }
-  
-  throw lastError!;
+
+  throw lastError!
 }
 ```
 
@@ -1034,48 +1034,48 @@ async function retryWithBackoff<T>(
 
 ```typescript
 class CircuitBreaker {
-  private state: 'closed' | 'open' | 'half-open' = 'closed';
-  private failureCount = 0;
-  private successCount = 0;
-  private lastFailureTime = 0;
-  
+  private state: 'closed' | 'open' | 'half-open' = 'closed'
+  private failureCount = 0
+  private successCount = 0
+  private lastFailureTime = 0
+
   async execute<T>(fn: () => Promise<T>): Promise<T> {
     if (this.state === 'open') {
       if (Date.now() - this.lastFailureTime > this.config.timeout) {
-        this.state = 'half-open';
+        this.state = 'half-open'
       } else {
-        throw new Error('Circuit breaker is open');
+        throw new Error('Circuit breaker is open')
       }
     }
-    
+
     try {
-      const result = await fn();
-      this.onSuccess();
-      return result;
+      const result = await fn()
+      this.onSuccess()
+      return result
     } catch (error) {
-      this.onFailure();
-      throw error;
+      this.onFailure()
+      throw error
     }
   }
-  
+
   private onSuccess() {
-    this.failureCount = 0;
-    
+    this.failureCount = 0
+
     if (this.state === 'half-open') {
-      this.successCount++;
+      this.successCount++
       if (this.successCount >= this.config.successThreshold) {
-        this.state = 'closed';
-        this.successCount = 0;
+        this.state = 'closed'
+        this.successCount = 0
       }
     }
   }
-  
+
   private onFailure() {
-    this.failureCount++;
-    this.lastFailureTime = Date.now();
-    
+    this.failureCount++
+    this.lastFailureTime = Date.now()
+
     if (this.failureCount >= this.config.failureThreshold) {
-      this.state = 'open';
+      this.state = 'open'
     }
   }
 }
@@ -1088,6 +1088,7 @@ class CircuitBreaker {
 This feature requires a dual testing approach combining unit tests and property-based tests:
 
 **Unit Tests**: Verify specific examples, edge cases, and integration points
+
 - Security header configuration
 - Error boundary behavior
 - Specific validation rules
@@ -1095,6 +1096,7 @@ This feature requires a dual testing approach combining unit tests and property-
 - Environment variable validation
 
 **Property-Based Tests**: Verify universal properties across all inputs
+
 - Input sanitization for all user content
 - CSRF token validation for all mutations
 - Rate limiting for all endpoints
@@ -1110,6 +1112,7 @@ npm install --save-dev fast-check
 ```
 
 Each property test will:
+
 - Run minimum 100 iterations to ensure comprehensive coverage
 - Include a comment tag referencing the design property
 - Generate realistic test data using custom arbitraries
@@ -1117,7 +1120,7 @@ Each property test will:
 Example property test structure:
 
 ```typescript
-import fc from 'fast-check';
+import fc from 'fast-check'
 
 /**
  * Feature: production-readiness, Property 2: XSS Prevention Through Sanitization
@@ -1128,17 +1131,17 @@ test('sanitizes all user-generated content to prevent XSS', () => {
     fc.property(
       fc.string(), // Generate random strings including potential XSS
       (userInput) => {
-        const sanitized = sanitizeHTML(userInput);
-        
+        const sanitized = sanitizeHTML(userInput)
+
         // Verify no script tags remain
-        expect(sanitized).not.toMatch(/<script/i);
-        expect(sanitized).not.toMatch(/javascript:/i);
-        expect(sanitized).not.toMatch(/onerror=/i);
+        expect(sanitized).not.toMatch(/<script/i)
+        expect(sanitized).not.toMatch(/javascript:/i)
+        expect(sanitized).not.toMatch(/onerror=/i)
       }
     ),
     { numRuns: 100 }
-  );
-});
+  )
+})
 ```
 
 ### Test Coverage Goals
@@ -1218,6 +1221,7 @@ Security test scenarios:
 Implement production readiness features in phases:
 
 **Phase 1: Critical Security (Week 1-2)**
+
 - CSRF protection
 - Input sanitization
 - Rate limiting
@@ -1225,12 +1229,14 @@ Implement production readiness features in phases:
 - Session timeout
 
 **Phase 2: Monitoring & Observability (Week 2-3)**
+
 - Sentry integration
 - Structured logging
 - Metrics collection
 - Alerting system
 
 **Phase 3: Compliance (Week 3-4)**
+
 - Data export
 - Data deletion
 - Audit logging
@@ -1238,12 +1244,14 @@ Implement production readiness features in phases:
 - Terms tracking
 
 **Phase 4: Resilience (Week 4-5)**
+
 - Backup system
 - AI fallbacks
 - Circuit breakers
 - Retry logic
 
 **Phase 5: Performance & Operations (Week 5-6)**
+
 - CDN setup
 - Caching
 - Lazy loading
@@ -1356,7 +1364,8 @@ Configure security headers in Vite:
 export default defineConfig({
   server: {
     headers: {
-      'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.convex.cloud https://api.openai.com https://api.stripe.com;",
+      'Content-Security-Policy':
+        "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.convex.cloud https://api.openai.com https://api.stripe.com;",
       'X-Frame-Options': 'DENY',
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': 'strict-origin-when-cross-origin',
@@ -1364,7 +1373,7 @@ export default defineConfig({
       'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
     },
   },
-});
+})
 ```
 
 ## Conclusion
@@ -1372,6 +1381,7 @@ export default defineConfig({
 This design provides a comprehensive approach to making Open Event production-ready. The implementation follows industry best practices for security, monitoring, compliance, and resilience. The phased rollout allows for incremental delivery while maintaining system stability.
 
 Key success metrics:
+
 - Zero security incidents in first 90 days
 - 99.9% uptime
 - < 100ms p95 API response time

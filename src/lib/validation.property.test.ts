@@ -342,7 +342,6 @@ describe('Form Validation - Property Tests', () => {
     })
   })
 
-
   /**
    * Feature: production-readiness, Property 42: Clear Validation Error Messages
    * Validates: Requirements 11.10
@@ -510,10 +509,7 @@ describe('Form Validation - Property Tests', () => {
     it('should provide consistent error message format', () => {
       fc.assert(
         fc.property(
-          fc.oneof(
-            fc.constant(''),
-            fc.string({ minLength: 201, maxLength: 250 })
-          ),
+          fc.oneof(fc.constant(''), fc.string({ minLength: 201, maxLength: 250 })),
           (input) => {
             const titleResult = validateEventTitle(input)
             const nameResult = validateBusinessName(input)
@@ -590,7 +586,7 @@ describe('Form Validation - Property Tests', () => {
     })
 
     it('should handle special characters in email validation', () => {
-      const specialChars = '!#$%&\'*+-/=?^_`{|}~'.split('')
+      const specialChars = "!#$%&'*+-/=?^_`{|}~".split('')
       const specialString = fc
         .array(fc.constantFrom(...specialChars), { minLength: 1, maxLength: 10 })
         .map((arr) => arr.join(''))
@@ -620,20 +616,17 @@ describe('Form Validation - Property Tests', () => {
 
     it('should handle boundary values correctly', () => {
       fc.assert(
-        fc.property(
-          fc.constantFrom(199, 200, 201, 9999, 10000, 10001),
-          (length) => {
-            const input = 'a'.repeat(length)
+        fc.property(fc.constantFrom(199, 200, 201, 9999, 10000, 10001), (length) => {
+          const input = 'a'.repeat(length)
 
-            // Title boundary (200)
-            const titleResult = validateEventTitle(input)
-            expect(titleResult.valid).toBe(length <= 200)
+          // Title boundary (200)
+          const titleResult = validateEventTitle(input)
+          expect(titleResult.valid).toBe(length <= 200)
 
-            // Description boundary (10000)
-            const descResult = validateEventDescription(input)
-            expect(descResult.valid).toBe(length <= 10000)
-          }
-        ),
+          // Description boundary (10000)
+          const descResult = validateEventDescription(input)
+          expect(descResult.valid).toBe(length <= 10000)
+        }),
         { numRuns: 100 }
       )
     })
@@ -659,17 +652,14 @@ describe('Form Validation - Property Tests', () => {
 
     it('should handle null-like values in role validation', () => {
       fc.assert(
-        fc.property(
-          fc.constantFrom(undefined, null, '', 'invalid'),
-          (role) => {
-            // Should not throw for invalid roles
-            expect(() => isAdminRole(role as string | undefined)).not.toThrow()
-            expect(() => hasRolePrivilege(role as string | undefined, 'organizer')).not.toThrow()
+        fc.property(fc.constantFrom(undefined, null, '', 'invalid'), (role) => {
+          // Should not throw for invalid roles
+          expect(() => isAdminRole(role as string | undefined)).not.toThrow()
+          expect(() => hasRolePrivilege(role as string | undefined, 'organizer')).not.toThrow()
 
-            // Invalid roles should not be admin
-            expect(isAdminRole(role as string | undefined)).toBe(false)
-          }
-        ),
+          // Invalid roles should not be admin
+          expect(isAdminRole(role as string | undefined)).toBe(false)
+        }),
         { numRuns: 100 }
       )
     })

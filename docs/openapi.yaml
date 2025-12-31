@@ -4,16 +4,16 @@ info:
   description: |
     The Open Event API allows you to programmatically manage events, access vendor/sponsor directories, 
     and receive real-time notifications via webhooks.
-    
+
     ## Authentication
     All API requests (except public endpoints) require an API key. Include your API key using:
     - `X-API-Key` header (recommended)
     - `Authorization: Bearer <key>` header
-    
+
     ## Rate Limiting
     - Default: 1,000 requests/hour
     - Rate limit headers included in all responses
-    
+
     ## Response Format
     All responses follow a consistent JSON envelope with `success`, `data`, and optional `meta` fields.
   version: 1.0.0
@@ -196,7 +196,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-
 
   /vendors:
     get:
@@ -445,7 +444,6 @@ paths:
                         items:
                           $ref: '#/components/schemas/WebhookEventType'
 
-
   /public/events:
     get:
       tags:
@@ -612,18 +610,17 @@ paths:
                         message:
                           type: string
 
-
 components:
   securitySchemes:
     ApiKeyAuth:
       type: apiKey
       in: header
       name: X-API-Key
-      description: API key for authentication (format: oe_live_xxx or oe_test_xxx)
+      description: 'API key for authentication (format: oe_live_xxx or oe_test_xxx)'
     BearerAuth:
       type: http
       scheme: bearer
-      description: Bearer token authentication (use API key as token)
+      description: 'Bearer token authentication (use API key as token)'
 
   parameters:
     PageParam:
@@ -894,7 +891,6 @@ components:
           type: string
         timezone:
           type: string
-
 
     Vendor:
       type: object

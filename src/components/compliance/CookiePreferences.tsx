@@ -1,14 +1,11 @@
-import { useState, useEffect } from 'react';
-import { Cookie, Check } from '@phosphor-icons/react';
-import { Button } from '@/components/ui/button';
-import {
-  cookieConsentManager,
-  type ConsentPreferences,
-} from '@/lib/compliance/cookieConsent';
-import { cn } from '@/lib/utils';
+import { useState, useEffect } from 'react'
+import { Cookie, Check } from '@phosphor-icons/react'
+import { Button } from '@/components/ui/button'
+import { cookieConsentManager, type ConsentPreferences } from '@/lib/compliance/cookieConsent'
+import { cn } from '@/lib/utils'
 
 interface CookiePreferencesProps {
-  className?: string;
+  className?: string
 }
 
 export function CookiePreferences({ className }: CookiePreferencesProps) {
@@ -17,48 +14,48 @@ export function CookiePreferences({ className }: CookiePreferencesProps) {
     analytics: false,
     marketing: false,
     timestamp: Date.now(),
-  });
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
+  })
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveSuccess, setSaveSuccess] = useState(false)
 
   useEffect(() => {
     // Load current preferences
-    const current = cookieConsentManager.getConsent();
+    const current = cookieConsentManager.getConsent()
     if (current) {
-      setPreferences(current);
+      setPreferences(current)
     }
-  }, []);
+  }, [])
 
   const handleToggle = (category: keyof Omit<ConsentPreferences, 'timestamp'>) => {
     if (category === 'necessary') {
       // Necessary cookies cannot be disabled
-      return;
+      return
     }
 
     setPreferences((prev) => ({
       ...prev,
       [category]: !prev[category],
-    }));
-  };
+    }))
+  }
 
   const handleSave = () => {
-    setIsSaving(true);
-    setSaveSuccess(false);
+    setIsSaving(true)
+    setSaveSuccess(false)
 
     try {
       cookieConsentManager.setConsent({
         ...preferences,
         timestamp: Date.now(),
-      });
+      })
 
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
+      setSaveSuccess(true)
+      setTimeout(() => setSaveSuccess(false), 3000)
     } catch (error) {
-      console.error('Failed to save preferences:', error);
+      console.error('Failed to save preferences:', error)
     } finally {
-      setIsSaving(false);
+      setIsSaving(false)
     }
-  };
+  }
 
   const handleAcceptAll = () => {
     setPreferences({
@@ -66,8 +63,8 @@ export function CookiePreferences({ className }: CookiePreferencesProps) {
       analytics: true,
       marketing: true,
       timestamp: Date.now(),
-    });
-  };
+    })
+  }
 
   const handleRejectAll = () => {
     setPreferences({
@@ -75,8 +72,8 @@ export function CookiePreferences({ className }: CookiePreferencesProps) {
       analytics: false,
       marketing: false,
       timestamp: Date.now(),
-    });
-  };
+    })
+  }
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString('en-US', {
@@ -85,8 +82,8 @@ export function CookiePreferences({ className }: CookiePreferencesProps) {
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-    });
-  };
+    })
+  }
 
   return (
     <div className={cn('space-y-6', className)}>
@@ -96,12 +93,9 @@ export function CookiePreferences({ className }: CookiePreferencesProps) {
           <Cookie className="size-6 text-primary" weight="duotone" />
         </div>
         <div className="flex-1">
-          <h2 className="text-xl font-semibold text-foreground">
-            Cookie Preferences
-          </h2>
+          <h2 className="text-xl font-semibold text-foreground">Cookie Preferences</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Manage your cookie preferences and control how we use cookies on
-            this website.
+            Manage your cookie preferences and control how we use cookies on this website.
           </p>
           {preferences.timestamp > 0 && (
             <p className="mt-2 text-xs text-muted-foreground">
@@ -118,18 +112,15 @@ export function CookiePreferences({ className }: CookiePreferencesProps) {
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 space-y-1">
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-semibold text-foreground">
-                  Necessary Cookies
-                </h3>
+                <h3 className="text-sm font-semibold text-foreground">Necessary Cookies</h3>
                 <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                   Always Active
                 </span>
               </div>
               <p className="text-sm text-muted-foreground">
-                These cookies are essential for the website to function properly.
-                They enable core functionality such as security, network
-                management, and accessibility. You cannot opt-out of these
-                cookies.
+                These cookies are essential for the website to function properly. They enable core
+                functionality such as security, network management, and accessibility. You cannot
+                opt-out of these cookies.
               </p>
             </div>
             <div className="flex-shrink-0">
@@ -144,13 +135,11 @@ export function CookiePreferences({ className }: CookiePreferencesProps) {
         <div className="rounded-lg border border-border bg-card p-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 space-y-1">
-              <h3 className="text-sm font-semibold text-foreground">
-                Analytics Cookies
-              </h3>
+              <h3 className="text-sm font-semibold text-foreground">Analytics Cookies</h3>
               <p className="text-sm text-muted-foreground">
-                These cookies help us understand how visitors interact with our
-                website by collecting and reporting information anonymously. This
-                helps us improve the user experience.
+                These cookies help us understand how visitors interact with our website by
+                collecting and reporting information anonymously. This helps us improve the user
+                experience.
               </p>
             </div>
             <button
@@ -177,13 +166,11 @@ export function CookiePreferences({ className }: CookiePreferencesProps) {
         <div className="rounded-lg border border-border bg-card p-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 space-y-1">
-              <h3 className="text-sm font-semibold text-foreground">
-                Marketing Cookies
-              </h3>
+              <h3 className="text-sm font-semibold text-foreground">Marketing Cookies</h3>
               <p className="text-sm text-muted-foreground">
-                These cookies are used to deliver personalized advertisements
-                that are relevant to you and your interests. They also help us
-                measure the effectiveness of our marketing campaigns.
+                These cookies are used to deliver personalized advertisements that are relevant to
+                you and your interests. They also help us measure the effectiveness of our marketing
+                campaigns.
               </p>
             </div>
             <button
@@ -210,20 +197,10 @@ export function CookiePreferences({ className }: CookiePreferencesProps) {
       {/* Actions */}
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRejectAll}
-            disabled={isSaving}
-          >
+          <Button variant="outline" size="sm" onClick={handleRejectAll} disabled={isSaving}>
             Reject All
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleAcceptAll}
-            disabled={isSaving}
-          >
+          <Button variant="outline" size="sm" onClick={handleAcceptAll} disabled={isSaving}>
             Accept All
           </Button>
         </div>
@@ -250,5 +227,5 @@ export function CookiePreferences({ className }: CookiePreferencesProps) {
         </div>
       )}
     </div>
-  );
+  )
 }

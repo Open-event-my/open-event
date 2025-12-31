@@ -4,7 +4,7 @@
 
 This implementation plan breaks down the production readiness feature into discrete, manageable tasks. The plan follows a phased approach prioritizing critical security features first, followed by monitoring, compliance, resilience, and performance optimizations.
 
-Each task builds incrementally on previous work, with checkpoints to ensure stability. Testing tasks are marked as optional (*) to allow for faster MVP delivery if needed.
+Each task builds incrementally on previous work, with checkpoints to ensure stability. Testing tasks are marked as optional (\*) to allow for faster MVP delivery if needed.
 
 ## Tasks
 
@@ -22,11 +22,9 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Add CSRF token storage in Convex database schema
     - Create token generation with expiration
     - _Requirements: 1.2_
-  
   - [x] 2.2 Write property test for CSRF validation
     - **Property 1: CSRF Token Validation**
     - **Validates: Requirements 1.2**
-  
   - [x] 2.3 Add CSRF middleware to all mutations
     - Create wrapper function to validate CSRF tokens
     - Apply to all state-changing operations
@@ -38,11 +36,9 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Add HTML sanitization using DOMPurify or similar
     - Add text sanitization and validation
     - _Requirements: 1.3, 1.8_
-  
   - [x] 3.2 Write property test for XSS prevention
     - **Property 2: XSS Prevention Through Sanitization**
     - **Validates: Requirements 1.3**
-  
   - [x] 3.3 Write property test for input validation
     - **Property 6: Input Validation and Sanitization**
     - **Validates: Requirements 1.8**
@@ -53,11 +49,9 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Add rate limit tracking in Convex database schema
     - Implement sliding window algorithm
     - _Requirements: 1.6_
-  
   - [x] 4.2 Write property test for rate limiting
     - **Property 5: Rate Limiting Enforcement**
     - **Validates: Requirements 1.6**
-  
   - [x] 4.3 Apply rate limiting to public endpoints
     - Add rate limiting middleware to API routes
     - Configure limits per endpoint type
@@ -69,11 +63,9 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Add encryption for API keys at rest
     - Implement secure key derivation
     - _Requirements: 1.5, 3.7, 4.7_
-  
   - [x] 5.2 Write property test for encryption at rest
     - **Property 4: Encryption at Rest**
     - **Validates: Requirements 1.5, 3.7, 4.7**
-  
   - [x] 5.3 Migrate existing API keys to encrypted storage
     - Create migration script
     - Encrypt all existing API keys
@@ -84,12 +76,10 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Add CSP, HSTS, X-Frame-Options headers
     - Configure in `vite.config.ts`
     - _Requirements: 1.9, 1.10_
-  
   - [x] 6.2 Implement session timeout on frontend
     - Create session manager in `src/lib/security/sessionManager.ts`
     - Track user activity and enforce 15-minute timeout
     - _Requirements: 1.7_
-  
   - [x] 6.3 Write unit tests for security headers
     - Test that all required headers are present
     - _Requirements: 1.9, 1.10_
@@ -99,7 +89,6 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Create middleware to check request size
     - Reject requests exceeding limit with 413 status
     - _Requirements: 1.4_
-  
   - [x] 7.2 Write property test for request size enforcement
     - **Property 3: Request Size Enforcement**
     - **Validates: Requirements 1.4**
@@ -117,12 +106,10 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Configure Sentry in `src/main.tsx`
     - Add error boundary integration
     - _Requirements: 2.1_
-  
   - [x] 9.2 Initialize Sentry in backend
     - Install @sentry/node for Convex
     - Configure Sentry in Convex functions
     - _Requirements: 2.1_
-  
   - [x] 9.3 Write unit test for Sentry initialization
     - Verify Sentry is properly initialized
     - _Requirements: 2.1_
@@ -133,11 +120,9 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Add log levels (debug, info, warn, error)
     - Include context, userId, requestId in logs
     - _Requirements: 2.2_
-  
   - [x] 10.2 Write property test for log structure
     - **Property 7: Structured Log Format**
     - **Validates: Requirements 2.2**
-  
   - [x] 10.3 Replace console.log with structured logger
     - Update all logging calls throughout codebase
     - Remove debug logging that exposes sensitive data
@@ -148,13 +133,11 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Implement `MetricsCollector` class in `convex/lib/monitoring/metrics.ts`
     - Add metrics for API requests, database queries
     - _Requirements: 2.4, 2.8, 2.9_
-  
   - [x] 11.2 Write property tests for metrics collection
     - **Property 9: Performance Metrics Collection**
     - **Property 11: API Usage Tracking**
     - **Property 12: Database Query Performance Monitoring**
     - **Validates: Requirements 2.4, 2.8, 2.9**
-  
   - [x] 11.3 Add metrics collection to all API endpoints
     - Wrap endpoints with metrics middleware
     - Track response times, status codes, user/org
@@ -166,11 +149,9 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Add support for email, Slack, PagerDuty channels
     - Configure alert thresholds
     - _Requirements: 2.3, 2.10_
-  
   - [x] 12.2 Write property test for critical error alerting
     - **Property 8: Critical Error Alerting**
     - **Validates: Requirements 2.3**
-  
   - [x] 12.3 Integrate alerting with error handling
     - Send alerts for critical errors
     - Configure alert routing rules
@@ -181,7 +162,6 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Log login, logout, failed attempts
     - Include timestamp, userId, IP address
     - _Requirements: 2.7_
-  
   - [x] 13.2 Write property test for auth event logging
     - **Property 10: Authentication Event Logging**
     - **Validates: Requirements 2.7**
@@ -201,11 +181,9 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Add function to collect all user data
     - Generate JSON export file
     - _Requirements: 3.1_
-  
   - [x] 15.2 Write property test for complete data export
     - **Property 13: Complete Data Export**
     - **Validates: Requirements 3.1**
-  
   - [x] 15.3 Add data export UI
     - Create export request page in settings
     - Add download functionality
@@ -217,11 +195,9 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Add function to purge all user data
     - Handle cascading deletions
     - _Requirements: 3.2_
-  
   - [x] 16.2 Write property test for complete data deletion
     - **Property 14: Complete Data Deletion**
     - **Validates: Requirements 3.2**
-  
   - [x] 16.3 Add account deletion UI
     - Create deletion request page in settings
     - Add confirmation dialog
@@ -233,12 +209,10 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Add audit log schema to database
     - Track all data operations
     - _Requirements: 3.5, 3.10_
-  
   - [x] 17.2 Write property tests for audit logging
     - **Property 16: Audit Trail Creation**
     - **Property 19: Admin Action Audit Logging**
     - **Validates: Requirements 3.5, 3.10**
-  
   - [x] 17.3 Add audit logging to all mutations
     - Wrap mutations with audit logging
     - Log admin actions with enhanced detail
@@ -249,12 +223,10 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Implement `CookieConsentManager` class in `src/lib/compliance/cookieConsent.ts`
     - Add consent preferences storage
     - _Requirements: 3.3_
-  
   - [x] 18.2 Add cookie consent banner UI
     - Create consent banner component
     - Add preferences management page
     - _Requirements: 3.3_
-  
   - [x] 18.3 Write unit test for cookie consent
     - Test consent tracking and enforcement
     - _Requirements: 3.3_
@@ -264,11 +236,9 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Create terms acceptance table
     - Track version, timestamp, IP address
     - _Requirements: 3.4_
-  
   - [x] 19.2 Write property test for terms tracking
     - **Property 15: Terms Acceptance Tracking**
     - **Validates: Requirements 3.4**
-  
   - [x] 19.3 Add terms acceptance UI
     - Show terms on signup and when updated
     - Require acceptance before proceeding
@@ -279,7 +249,6 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Add retention policy configuration
     - Implement automatic cleanup cron job
     - _Requirements: 3.6_
-  
   - [x] 20.2 Write property test for retention enforcement
     - **Property 17: Data Retention Policy Enforcement**
     - **Validates: Requirements 3.6**
@@ -289,7 +258,6 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Hash or remove PII from analytics data
     - Update analytics queries
     - _Requirements: 3.8_
-  
   - [x] 21.2 Write property test for anonymization
     - **Property 18: Analytics Data Anonymization**
     - **Validates: Requirements 3.8**
@@ -308,23 +276,19 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Add backup metadata schema
     - Implement backup creation function
     - _Requirements: 4.1, 4.6, 4.7, 4.8_
-  
   - [x] 23.2 Write property tests for backup system
     - **Property 20: Backup Retention Period**
     - **Property 21: Backup Encryption**
     - **Property 22: Backup Status Monitoring**
     - **Validates: Requirements 4.6, 4.7, 4.8**
-  
   - [x] 23.3 Set up automated daily backups
     - Configure cron job for daily backups
     - Set up backup storage location
     - _Requirements: 4.1_
-  
   - [x] 23.4 Implement backup restoration
     - Add restore function
     - Test restoration procedure
     - _Requirements: 4.5_
-  
   - [x] 23.5 Write unit test for backup restoration
     - Test point-in-time recovery
     - _Requirements: 4.5_
@@ -334,7 +298,6 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Implement `CircuitBreaker` class in `convex/lib/resilience/circuitBreaker.ts`
     - Add state management (closed, open, half-open)
     - _Requirements: 10.5_
-  
   - [x] 24.2 Write property test for circuit breaker
     - **Property 31: AI Circuit Breaker**
     - **Validates: Requirements 10.5**
@@ -346,7 +309,6 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Implement response caching
     - Add fallback mechanisms
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.7, 10.8_
-  
   - [x] 25.2 Write property tests for AI resilience
     - **Property 27: AI Fallback on Unavailability**
     - **Property 28: AI Response Validation**
@@ -354,17 +316,14 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - **Property 30: AI Request Timeout**
     - **Property 33: AI Response Caching**
     - **Validates: Requirements 10.1, 10.2, 10.3, 10.4, 10.7, 10.8**
-  
   - [x] 25.3 Integrate circuit breaker with AI calls
     - Wrap AI API calls with circuit breaker
     - Configure failure thresholds
     - _Requirements: 10.5_
-  
   - [x] 25.4 Add AI error logging and metrics
     - Log all AI errors with context
     - Track AI usage and costs
     - _Requirements: 10.6, 10.9_
-  
   - [x] 25.5 Write property tests for AI logging and metrics
     - **Property 32: AI Error Logging**
     - **Property 34: AI Usage Metrics**
@@ -376,7 +335,6 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Add OpenAI and Anthropic implementations
     - Add provider switching logic
     - _Requirements: 10.10_
-  
   - [x] 26.2 Write unit test for multi-provider support
     - Test provider switching
     - _Requirements: 10.10_
@@ -396,7 +354,6 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Integrate with Sentry
     - Add user-friendly error page
     - _Requirements: 11.2_
-  
   - [x] 28.2 Write unit test for error boundary
     - Test error catching and display
     - _Requirements: 11.2_
@@ -406,12 +363,10 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Strip stack traces and technical details
     - Add recovery suggestions
     - _Requirements: 11.1, 11.3_
-  
   - [x] 29.2 Write property tests for error messages
     - **Property 35: User-Friendly Error Messages**
     - **Property 36: Error Recovery Suggestions**
     - **Validates: Requirements 11.1, 11.3**
-  
   - [x] 29.3 Update all error displays
     - Replace technical errors with friendly messages
     - Add recovery suggestions where applicable
@@ -422,7 +377,6 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Design and implement custom error pages
     - Add navigation back to app
     - _Requirements: 11.4_
-  
   - [x] 30.2 Write unit test for error pages
     - Test error page rendering
     - _Requirements: 11.4_
@@ -432,7 +386,6 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Log stack traces, context, user ID server-side
     - Ensure no sensitive data in client-side logs
     - _Requirements: 11.5_
-  
   - [x] 31.2 Write property test for server-side logging
     - **Property 37: Server-Side Error Logging**
     - **Validates: Requirements 11.5**
@@ -442,7 +395,6 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Implement retry with exponential backoff
     - Detect transient vs permanent errors
     - _Requirements: 11.6_
-  
   - [x] 32.2 Write property test for retry mechanism
     - **Property 38: Transient Failure Retry**
     - **Validates: Requirements 11.6**
@@ -451,16 +403,13 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
   - [x] 33.1 Add loading indicators
     - Show loading states for all async operations
     - _Requirements: 11.7_
-  
   - [x] 33.2 Write property test for loading states
     - **Property 39: Async Operation Loading States**
     - **Validates: Requirements 11.7**
-  
   - [x] 33.3 Implement optimistic UI updates
     - Add optimistic updates for mutations
     - Implement rollback on failure
     - _Requirements: 11.8_
-  
   - [x] 33.4 Write property test for optimistic updates
     - **Property 40: Optimistic UI Updates with Rollback**
     - **Validates: Requirements 11.8**
@@ -470,7 +419,6 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Validate all forms before submission
     - Show clear validation errors
     - _Requirements: 11.9, 11.10_
-  
   - [x] 34.2 Write property tests for form validation
     - **Property 41: Form Validation Before Submission**
     - **Property 42: Clear Validation Error Messages**
@@ -490,15 +438,12 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Audit codebase for credit card storage
     - Ensure only Stripe tokens are stored
     - _Requirements: 12.1_
-  
   - [x] 36.2 Write property test for no credit card storage
     - **Property 43: No Credit Card Storage**
     - **Validates: Requirements 12.1**
-  
   - [x] 36.3 Verify Stripe Elements usage
     - Ensure PCI-compliant Stripe Elements are used
     - _Requirements: 12.2_
-  
   - [x] 36.4 Write unit test for Stripe Elements
     - Test Stripe Elements integration
     - _Requirements: 12.2_
@@ -508,7 +453,6 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Verify Stripe webhook signatures
     - Reject invalid webhooks
     - _Requirements: 12.3_
-  
   - [x] 37.2 Write property test for webhook verification
     - **Property 44: Webhook Signature Verification**
     - **Validates: Requirements 12.3**
@@ -518,7 +462,6 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Handle payment failures without creating orders
     - Show user-friendly error messages
     - _Requirements: 12.4_
-  
   - [x] 38.2 Write property test for payment failure handling
     - **Property 45: Payment Failure Handling**
     - **Validates: Requirements 12.4**
@@ -528,7 +471,6 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Generate and use idempotency keys
     - Prevent duplicate charges
     - _Requirements: 12.5_
-  
   - [x] 39.2 Write property test for payment idempotency
     - **Property 46: Payment Idempotency**
     - **Validates: Requirements 12.5**
@@ -538,7 +480,6 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Log charges, refunds, disputes
     - Include full details for compliance
     - _Requirements: 12.6_
-  
   - [x] 40.2 Write property test for payment logging
     - **Property 47: Payment Event Audit Logging**
     - **Validates: Requirements 12.6**
@@ -548,7 +489,6 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Implement refund operations
     - Add refund UI for admins
     - _Requirements: 12.7_
-  
   - [x] 41.2 Write unit test for refund workflow
     - Test refund operations
     - _Requirements: 12.7_
@@ -558,7 +498,6 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Validate amounts server-side
     - Prevent client-side manipulation
     - _Requirements: 12.8_
-  
   - [x] 42.2 Write property test for payment validation
     - **Property 48: Server-Side Payment Validation**
     - **Validates: Requirements 12.8**
@@ -568,7 +507,6 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Detect unusual patterns
     - Send alerts for suspicious payments
     - _Requirements: 12.9_
-  
   - [x] 43.2 Write property test for fraud detection
     - **Property 49: Fraud Detection Alerts**
     - **Validates: Requirements 12.9**
@@ -588,7 +526,6 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Convert all images to WebP
     - Add lazy loading attributes
     - _Requirements: 6.3_
-  
   - [x] 45.2 Write property test for image optimization
     - **Property 23: Image Optimization**
     - **Validates: Requirements 6.3**
@@ -599,7 +536,6 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Implement `CacheManager` class in `convex/lib/performance/cache.ts`
     - Add caching for frequent queries
     - _Requirements: 6.4_
-  
   - [x] 46.2 Write property test for query caching
     - **Property 24: Database Query Caching**
     - **Validates: Requirements 6.4**
@@ -609,7 +545,6 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Lazy load tldraw, recharts, PDF libraries
     - Update imports throughout codebase
     - _Requirements: 6.8_
-  
   - [x] 47.2 Write property test for lazy loading
     - **Property 25: Heavy Dependency Lazy Loading**
     - **Validates: Requirements 6.8**
@@ -620,7 +555,6 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Update service worker configuration
     - Add caching rules for static assets
     - _Requirements: 6.9_
-  
   - [x] 48.2 Write unit test for service worker caching
     - Test caching strategy
     - _Requirements: 6.9_
@@ -640,24 +574,19 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Add validation for all required env vars
     - Fail fast on startup with clear errors
     - _Requirements: 9.1, 9.2, 9.6, 9.9_
-  
   - [x] 50.2 Write unit tests for environment validation
     - Test validation errors
     - Test configuration health check
     - _Requirements: 9.1, 9.2_
-  
   - [x] 50.3 Add environment-specific configurations
     - Create configs for dev, staging, prod
     - _Requirements: 9.3_
-  
   - [x] 50.4 Write unit test for environment configs
     - Test environment-specific settings
     - _Requirements: 9.3_
-  
   - [x] 50.5 Create configuration health check endpoint
     - Add endpoint to verify configuration status
     - _Requirements: 9.10_
-  
   - [x] 50.6 Write unit test for health check endpoint
     - Test health check returns config status
     - _Requirements: 9.10_
@@ -679,30 +608,24 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Document deployment steps
     - Include rollback procedures
     - _Requirements: 8.1, 8.5_
-  
   - [x] 53.2 Write operations runbook
     - Document common issues and solutions
     - Include troubleshooting steps
     - _Requirements: 8.2_
-  
   - [x] 53.3 Write incident response procedures
     - Document incident handling process
     - Include escalation paths
     - _Requirements: 8.3_
-  
   - [x] 53.4 Write disaster recovery procedures
     - Document backup restoration steps
     - Include RTO and RPO targets
     - _Requirements: 4.4, 4.10_
-  
   - [x] 53.5 Write database migration procedures
     - Document migration and rollback steps
     - _Requirements: 8.6_
-  
   - [x] 53.6 Write security incident response plan
     - Document security incident handling
     - _Requirements: 8.7_
-  
   - [x] 53.7 Write monitoring dashboard setup guide
     - Document dashboard configuration
     - _Requirements: 8.9_
@@ -712,17 +635,14 @@ Each task builds incrementally on previous work, with checkpoints to ensure stab
     - Create OpenAPI/Swagger spec
     - Include all endpoints
     - _Requirements: 7.1_
-  
   - [x] 54.2 Add API examples and error documentation
     - Document example requests/responses
     - Document all error codes
     - _Requirements: 7.2, 7.3_
-  
   - [x] 54.3 Write authentication guide
     - Document auth flows
     - Include rate limiting info
     - _Requirements: 7.4, 7.5_
-  
   - [x] 54.4 Document webhooks and versioning
     - Document webhook events
     - Document versioning strategy

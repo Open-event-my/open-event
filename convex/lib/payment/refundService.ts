@@ -10,7 +10,7 @@
  * Requirements: 12.7
  */
 
-import { logger } from '../monitoring/logger';
+import { logger } from '../monitoring/logger'
 
 // ============================================================================
 // Types
@@ -21,23 +21,23 @@ import { logger } from '../monitoring/logger';
  */
 export interface RefundRequest {
   /** Order ID to refund */
-  orderId: string;
+  orderId: string
   /** Order number for display */
-  orderNumber: string;
+  orderNumber: string
   /** Total order amount in cents */
-  orderTotal: number;
+  orderTotal: number
   /** Amount to refund in cents (optional, defaults to full refund) */
-  refundAmount?: number;
+  refundAmount?: number
   /** Reason for refund */
-  reason?: string;
+  reason?: string
   /** Currency code */
-  currency: string;
+  currency: string
   /** Stripe payment intent ID */
-  stripePaymentIntentId?: string;
+  stripePaymentIntentId?: string
   /** Current payment status */
-  paymentStatus: string;
+  paymentStatus: string
   /** User ID requesting the refund */
-  requestedBy: string;
+  requestedBy: string
 }
 
 /**
@@ -45,15 +45,15 @@ export interface RefundRequest {
  */
 export interface RefundValidationResult {
   /** Whether the refund request is valid */
-  isValid: boolean;
+  isValid: boolean
   /** Validation errors */
-  errors: string[];
+  errors: string[]
   /** Validation warnings */
-  warnings: string[];
+  warnings: string[]
   /** Calculated refund amount */
-  refundAmount: number;
+  refundAmount: number
   /** Whether this is a partial refund */
-  isPartial: boolean;
+  isPartial: boolean
 }
 
 /**
@@ -61,52 +61,52 @@ export interface RefundValidationResult {
  */
 export interface RefundResult {
   /** Whether the refund was successful */
-  success: boolean;
+  success: boolean
   /** Stripe refund ID */
-  refundId?: string;
+  refundId?: string
   /** Amount refunded in cents */
-  amount: number;
+  amount: number
   /** Whether this was a partial refund */
-  isPartial: boolean;
+  isPartial: boolean
   /** Error message if failed */
-  errorMessage?: string;
+  errorMessage?: string
   /** User-friendly message */
-  userMessage: string;
+  userMessage: string
 }
 
 /**
  * Refund status
  */
-export type RefundStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+export type RefundStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled'
 
 /**
  * Refund record for tracking
  */
 export interface RefundRecord {
   /** Order ID */
-  orderId: string;
+  orderId: string
   /** Order number */
-  orderNumber: string;
+  orderNumber: string
   /** Stripe refund ID */
-  stripeRefundId?: string;
+  stripeRefundId?: string
   /** Amount refunded in cents */
-  amount: number;
+  amount: number
   /** Currency */
-  currency: string;
+  currency: string
   /** Refund status */
-  status: RefundStatus;
+  status: RefundStatus
   /** Reason for refund */
-  reason?: string;
+  reason?: string
   /** Whether this is a partial refund */
-  isPartial: boolean;
+  isPartial: boolean
   /** User who requested the refund */
-  requestedBy: string;
+  requestedBy: string
   /** Timestamp when refund was requested */
-  requestedAt: number;
+  requestedAt: number
   /** Timestamp when refund was completed */
-  completedAt?: number;
+  completedAt?: number
   /** Error message if failed */
-  errorMessage?: string;
+  errorMessage?: string
 }
 
 // ============================================================================
@@ -117,44 +117,51 @@ export interface RefundRecord {
  * Validates a refund request
  */
 export function validateRefundRequest(request: RefundRequest): RefundValidationResult {
-  const errors: string[] = [];
-  const warnings: string[] = [];
+  const errors: string[] = []
+  const warnings: string[] = []
 
   // Check order ID
   if (!request.orderId) {
-    errors.push('Order ID is required');
+    errors.push('Order ID is required')
   }
 
   // Check payment status - can only refund completed orders
   if (request.paymentStatus !== 'completed') {
-    errors.push(`Cannot refund order with status: ${request.paymentStatus}. Only completed orders can be refunded.`);
+    errors.push(
+      `Cannot refund order with status: ${request.paymentStatus}. Only completed orders can be refunded.`
+    )
   }
 
   // Check Stripe payment intent
   if (!request.stripePaymentIntentId) {
-    errors.push('No payment intent found for this order. Was the payment completed through Stripe?');
+    errors.push('No payment intent found for this order. Was the payment completed through Stripe?')
   }
 
   // Validate refund amount
-  const refundAmount = request.refundAmount ?? request.orderTotal;
-  
+  const refundAmount = request.refundAmount ?? request.orderTotal
+
   if (refundAmount <= 0) {
-    errors.push('Refund amount must be greater than zero');
+    errors.push('Refund amount must be greater than zero')
   }
 
   if (refundAmount > request.orderTotal) {
-    errors.push(`Refund amount (${formatCents(refundAmount)}) cannot exceed order total (${formatCents(request.orderTotal)})`);
+    errors.push(
+      `Refund amount (${formatCents(refundAmount)}) cannot exceed order total (${formatCents(request.orderTotal)})`
+    )
   }
 
   // Check for very small refunds
-  if (refundAmount < 50) { // Less than $0.50
-    warnings.push('Refund amount is very small. Stripe may have minimum refund requirements.');
+  if (refundAmount < 50) {
+    // Less than $0.50
+    warnings.push('Refund amount is very small. Stripe may have minimum refund requirements.')
   }
 
   // Check for partial refund
-  const isPartial = refundAmount < request.orderTotal;
+  const isPartial = refundAmount < request.orderTotal
   if (isPartial) {
-    warnings.push(`This is a partial refund of ${formatCents(refundAmount)} out of ${formatCents(request.orderTotal)}`);
+    warnings.push(
+      `This is a partial refund of ${formatCents(refundAmount)} out of ${formatCents(request.orderTotal)}`
+    )
   }
 
   return {
@@ -163,7 +170,7 @@ export function validateRefundRequest(request: RefundRequest): RefundValidationR
     warnings,
     refundAmount,
     isPartial,
-  };
+  }
 }
 
 /**
@@ -176,23 +183,23 @@ export function canUserRefund(
 ): { canRefund: boolean; reason?: string } {
   // Superadmins can refund any order
   if (userRole === 'superadmin') {
-    return { canRefund: true };
+    return { canRefund: true }
   }
 
   // Admins can refund any order
   if (userRole === 'admin') {
-    return { canRefund: true };
+    return { canRefund: true }
   }
 
   // Organizers can only refund their own events' orders
   if (userId === orderOrganizerId) {
-    return { canRefund: true };
+    return { canRefund: true }
   }
 
   return {
     canRefund: false,
     reason: 'You do not have permission to refund this order',
-  };
+  }
 }
 
 /**
@@ -205,15 +212,15 @@ export function isOrderRefunded(
   orderTotal?: number
 ): { isRefunded: boolean; isPartiallyRefunded: boolean } {
   if (paymentStatus === 'refunded') {
-    return { isRefunded: true, isPartiallyRefunded: false };
+    return { isRefunded: true, isPartiallyRefunded: false }
   }
 
   if (refundedAt && refundAmount && orderTotal) {
-    const isPartiallyRefunded = refundAmount < orderTotal;
-    return { isRefunded: true, isPartiallyRefunded };
+    const isPartiallyRefunded = refundAmount < orderTotal
+    return { isRefunded: true, isPartiallyRefunded }
   }
 
-  return { isRefunded: false, isPartiallyRefunded: false };
+  return { isRefunded: false, isPartiallyRefunded: false }
 }
 
 /**
@@ -223,8 +230,8 @@ export function calculateMaxRefundableAmount(
   orderTotal: number,
   previousRefundAmount?: number
 ): number {
-  const alreadyRefunded = previousRefundAmount ?? 0;
-  return Math.max(0, orderTotal - alreadyRefunded);
+  const alreadyRefunded = previousRefundAmount ?? 0
+  return Math.max(0, orderTotal - alreadyRefunded)
 }
 
 // ============================================================================
@@ -248,7 +255,7 @@ export function createRefundRecord(
     isPartial: validation.isPartial,
     requestedBy: request.requestedBy,
     requestedAt: Date.now(),
-  };
+  }
 }
 
 /**
@@ -266,7 +273,7 @@ export function completeRefundRecord(
     stripeRefundId,
     completedAt: Date.now(),
     errorMessage,
-  };
+  }
 }
 
 /**
@@ -280,14 +287,14 @@ export function createRefundResultMessage(
   errorMessage?: string
 ): string {
   if (success) {
-    const formattedAmount = formatCents(amount, currency);
+    const formattedAmount = formatCents(amount, currency)
     if (isPartial) {
-      return `Partial refund of ${formattedAmount} processed successfully`;
+      return `Partial refund of ${formattedAmount} processed successfully`
     }
-    return `Full refund of ${formattedAmount} processed successfully`;
+    return `Full refund of ${formattedAmount} processed successfully`
   }
 
-  return errorMessage || 'Refund could not be processed. Please try again or contact support.';
+  return errorMessage || 'Refund could not be processed. Please try again or contact support.'
 }
 
 /**
@@ -301,9 +308,9 @@ export function isRefundErrorRetryable(errorMessage: string): boolean {
     /try again/i,
     /rate limit/i,
     /service unavailable/i,
-  ];
+  ]
 
-  return retryablePatterns.some(pattern => pattern.test(errorMessage));
+  return retryablePatterns.some((pattern) => pattern.test(errorMessage))
 }
 
 // ============================================================================
@@ -314,11 +321,11 @@ export function isRefundErrorRetryable(errorMessage: string): boolean {
  * Formats cents to a currency string
  */
 export function formatCents(cents: number, currency: string = 'USD'): string {
-  const amount = cents / 100;
+  const amount = cents / 100
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: currency.toUpperCase(),
-  }).format(amount);
+  }).format(amount)
 }
 
 /**
@@ -339,21 +346,21 @@ export function logRefundEvent(
     isPartial: record.isPartial,
     requestedBy: record.requestedBy,
     ...additionalContext,
-  });
+  })
 }
 
 /**
  * Sanitizes refund reason for storage (removes PII, limits length)
  */
 export function sanitizeRefundReason(reason?: string): string | undefined {
-  if (!reason) return undefined;
+  if (!reason) return undefined
 
   // Limit length
-  let sanitized = reason.substring(0, 500);
+  let sanitized = reason.substring(0, 500)
 
   // Remove potential PII patterns (emails, phone numbers)
-  sanitized = sanitized.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[email]');
-  sanitized = sanitized.replace(/\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/g, '[phone]');
+  sanitized = sanitized.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[email]')
+  sanitized = sanitized.replace(/\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/g, '[phone]')
 
-  return sanitized.trim();
+  return sanitized.trim()
 }

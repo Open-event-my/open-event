@@ -64,7 +64,9 @@ export function AdminDashboard() {
   const user = useQuery(api.queries.auth.getCurrentUser)
   const analytics = useQuery(api.adminAnalytics.getDashboardAnalytics, { period: analyticsPeriod })
   const eventStatusDist = useQuery(api.adminAnalytics.getEventStatusDistribution)
-  const applicationTrends = useQuery(api.adminAnalytics.getApplicationTrends, { period: analyticsPeriod })
+  const applicationTrends = useQuery(api.adminAnalytics.getApplicationTrends, {
+    period: analyticsPeriod,
+  })
   const users = useQuery(api.admin.listAllUsers, { limit: 10 })
   const moderationLogs = useQuery(api.moderation.getModerationLogs, { limit: 5 })
   const suspendedCount = useQuery(api.moderation.getSuspendedUsersCount)
@@ -508,7 +510,10 @@ export function AdminDashboard() {
                       ]
                         .filter((d) => d.value > 0)
                         .map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={PIE_COLORS[index % PIE_COLORS.length]}
+                          />
                         ))}
                     </Pie>
                     <RechartsTooltip
@@ -705,11 +710,41 @@ export function AdminDashboard() {
         </div>
         <div className="grid gap-2 p-4 sm:grid-cols-2 lg:grid-cols-5">
           {[
-            { type: 'users' as const, label: 'Users', icon: Users, color: 'text-blue-600', bgColor: 'bg-blue-500/10' },
-            { type: 'vendors' as const, label: 'Vendors', icon: Storefront, color: 'text-orange-600', bgColor: 'bg-orange-500/10' },
-            { type: 'sponsors' as const, label: 'Sponsors', icon: Handshake, color: 'text-purple-600', bgColor: 'bg-purple-500/10' },
-            { type: 'events' as const, label: 'Events', icon: CalendarBlank, color: 'text-emerald-600', bgColor: 'bg-emerald-500/10' },
-            { type: 'moderationLogs' as const, label: 'Mod Logs', icon: ShieldCheck, color: 'text-amber-600', bgColor: 'bg-amber-500/10' },
+            {
+              type: 'users' as const,
+              label: 'Users',
+              icon: Users,
+              color: 'text-blue-600',
+              bgColor: 'bg-blue-500/10',
+            },
+            {
+              type: 'vendors' as const,
+              label: 'Vendors',
+              icon: Storefront,
+              color: 'text-orange-600',
+              bgColor: 'bg-orange-500/10',
+            },
+            {
+              type: 'sponsors' as const,
+              label: 'Sponsors',
+              icon: Handshake,
+              color: 'text-purple-600',
+              bgColor: 'bg-purple-500/10',
+            },
+            {
+              type: 'events' as const,
+              label: 'Events',
+              icon: CalendarBlank,
+              color: 'text-emerald-600',
+              bgColor: 'bg-emerald-500/10',
+            },
+            {
+              type: 'moderationLogs' as const,
+              label: 'Mod Logs',
+              icon: ShieldCheck,
+              color: 'text-amber-600',
+              bgColor: 'bg-amber-500/10',
+            },
           ].map((item) => {
             const Icon = item.icon
             return (

@@ -87,9 +87,7 @@ export function ServerErrorPage({ errorId, message }: ServerErrorPageProps) {
           </div>
 
           {/* Error ID */}
-          {errorId && (
-            <p className="text-xs text-muted-foreground mb-6">Error ID: {errorId}</p>
-          )}
+          {errorId && <p className="text-xs text-muted-foreground mb-6">Error ID: {errorId}</p>}
 
           {/* Support Contact */}
           <div className="pt-6 border-t border-border">

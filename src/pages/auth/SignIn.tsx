@@ -31,21 +31,36 @@ export function SignIn() {
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth()
   const authToken = useAuthToken()
   const navigate = useNavigate()
-  
+
   // Query user to check role for redirect
-  const user = useQuery(
-    api.queries.auth.getCurrentUser,
-    (isAuthenticated || authToken) ? {} : 'skip'
-  )
-  
+  const user = useQuery(api.queries.auth.getCurrentUser, isAuthenticated || authToken ? {} : 'skip')
+
   // #region agent log
   useEffect(() => {
     if (isAuthenticated || authToken) {
-      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'src/pages/auth/SignIn.tsx:35',message:'User query state',data:{isAuthenticated,hasAuthToken:!!authToken,userState:user === undefined ? 'loading' : user === null ? 'null' : 'loaded',hasUser:!!user,userRole:user?.role},timestamp:Date.now(),sessionId:'debug-session',runId:'signin-user-query',hypothesisId:'U1'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'src/pages/auth/SignIn.tsx:35',
+          message: 'User query state',
+          data: {
+            isAuthenticated,
+            hasAuthToken: !!authToken,
+            userState: user === undefined ? 'loading' : user === null ? 'null' : 'loaded',
+            hasUser: !!user,
+            userRole: user?.role,
+          },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'signin-user-query',
+          hypothesisId: 'U1',
+        }),
+      }).catch(() => {})
     }
   }, [isAuthenticated, authToken, user])
   // #endregion
-  
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -61,21 +76,64 @@ export function SignIn() {
       if (user === undefined) {
         // Still loading user data - wait a bit longer
         // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'src/pages/auth/SignIn.tsx:48',message:'Waiting for user query to complete',data:{isAuthenticated,hasAuthToken:!!authToken,userState:'loading'},timestamp:Date.now(),sessionId:'debug-session',runId:'signin-redirect',hypothesisId:'R0'})}).catch(()=>{});
+        fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            location: 'src/pages/auth/SignIn.tsx:48',
+            message: 'Waiting for user query to complete',
+            data: { isAuthenticated, hasAuthToken: !!authToken, userState: 'loading' },
+            timestamp: Date.now(),
+            sessionId: 'debug-session',
+            runId: 'signin-redirect',
+            hypothesisId: 'R0',
+          }),
+        }).catch(() => {})
         // #endregion
         return
       }
-      
+
       // User query completed
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'src/pages/auth/SignIn.tsx:55',message:'Redirect decision based on role',data:{isAuthenticated,hasAuthToken:!!authToken,hasUser:!!user,userRole:user?.role,userState:user === null ? 'null' : 'loaded',willRedirectToAdmin:user?.role === 'admin' || user?.role === 'superadmin'},timestamp:Date.now(),sessionId:'debug-session',runId:'signin-redirect',hypothesisId:'R1'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'src/pages/auth/SignIn.tsx:55',
+          message: 'Redirect decision based on role',
+          data: {
+            isAuthenticated,
+            hasAuthToken: !!authToken,
+            hasUser: !!user,
+            userRole: user?.role,
+            userState: user === null ? 'null' : 'loaded',
+            willRedirectToAdmin: user?.role === 'admin' || user?.role === 'superadmin',
+          },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'signin-redirect',
+          hypothesisId: 'R1',
+        }),
+      }).catch(() => {})
       // #endregion
-      
+
       // If user is null but we have authToken, there might be an auth error
       // Wait a bit longer and retry, or redirect to dashboard as fallback
       if (user === null && authToken) {
         // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'src/pages/auth/SignIn.tsx:62',message:'User query returned null despite authToken - possible auth error',data:{isAuthenticated,hasAuthToken:!!authToken},timestamp:Date.now(),sessionId:'debug-session',runId:'signin-redirect',hypothesisId:'R3'})}).catch(()=>{});
+        fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            location: 'src/pages/auth/SignIn.tsx:62',
+            message: 'User query returned null despite authToken - possible auth error',
+            data: { isAuthenticated, hasAuthToken: !!authToken },
+            timestamp: Date.now(),
+            sessionId: 'debug-session',
+            runId: 'signin-redirect',
+            hypothesisId: 'R3',
+          }),
+        }).catch(() => {})
         // #endregion
         // Fallback: redirect to dashboard if user query fails
         // This might happen if there's an OIDC verification error
@@ -83,12 +141,25 @@ export function SignIn() {
         navigate('/dashboard', { replace: true })
         return
       }
-      
+
       setRedirecting(true)
       // Redirect to /admin if user is admin or superadmin, otherwise /dashboard
-      const redirectPath = (user?.role === 'admin' || user?.role === 'superadmin') ? '/admin' : '/dashboard'
+      const redirectPath =
+        user?.role === 'admin' || user?.role === 'superadmin' ? '/admin' : '/dashboard'
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'src/pages/auth/SignIn.tsx:72',message:'Navigating after role check',data:{redirectPath,userRole:user?.role},timestamp:Date.now(),sessionId:'debug-session',runId:'signin-redirect',hypothesisId:'R2'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'src/pages/auth/SignIn.tsx:72',
+          message: 'Navigating after role check',
+          data: { redirectPath, userRole: user?.role },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'signin-redirect',
+          hypothesisId: 'R2',
+        }),
+      }).catch(() => {})
       // #endregion
       navigate(redirectPath, { replace: true })
     }
@@ -122,34 +193,115 @@ export function SignIn() {
     setLoading(true)
     try {
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'src/pages/auth/SignIn.tsx:73',message:'Before signIn call',data:{email,hasPassword:!!password},timestamp:Date.now(),sessionId:'debug-session',runId:'signin-attempt',hypothesisId:'E'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'src/pages/auth/SignIn.tsx:73',
+          message: 'Before signIn call',
+          data: { email, hasPassword: !!password },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'signin-attempt',
+          hypothesisId: 'E',
+        }),
+      }).catch(() => {})
       // #endregion
       await signIn('password', { email, password, flow: 'signIn' })
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'src/pages/auth/SignIn.tsx:90',message:'signIn success',data:{email,isAuthenticated,isLoading:authLoading,hasAuthToken:!!authToken},timestamp:Date.now(),sessionId:'debug-session',runId:'signin-attempt',hypothesisId:'F'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'src/pages/auth/SignIn.tsx:90',
+          message: 'signIn success',
+          data: { email, isAuthenticated, isLoading: authLoading, hasAuthToken: !!authToken },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'signin-attempt',
+          hypothesisId: 'F',
+        }),
+      }).catch(() => {})
       // #endregion
       toast.success('Welcome back!')
       // Wait for auth state to update before navigating
       // The useEffect hook will handle navigation when isAuthenticated becomes true or authToken is available
       setRedirecting(true)
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'src/pages/auth/SignIn.tsx:95',message:'Set redirecting=true, waiting for auth state update',data:{email,isAuthenticated,isLoading:authLoading,hasAuthToken:!!authToken},timestamp:Date.now(),sessionId:'debug-session',runId:'signin-attempt',hypothesisId:'N1'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'src/pages/auth/SignIn.tsx:95',
+          message: 'Set redirecting=true, waiting for auth state update',
+          data: { email, isAuthenticated, isLoading: authLoading, hasAuthToken: !!authToken },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'signin-attempt',
+          hypothesisId: 'N1',
+        }),
+      }).catch(() => {})
       // #endregion
-      
+
       // Fallback: If auth state doesn't update within 2 seconds, navigate anyway if we have a token
       // This handles cases where useConvexAuth() is slow to update
       setTimeout(() => {
         // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'src/pages/auth/SignIn.tsx:100',message:'Fallback timeout check',data:{email,isAuthenticated,isLoading:authLoading,hasAuthToken:!!authToken,hasUser:!!user,userRole:user?.role,willNavigate:!!authToken},timestamp:Date.now(),sessionId:'debug-session',runId:'signin-attempt',hypothesisId:'T1'})}).catch(()=>{});
+        fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            location: 'src/pages/auth/SignIn.tsx:100',
+            message: 'Fallback timeout check',
+            data: {
+              email,
+              isAuthenticated,
+              isLoading: authLoading,
+              hasAuthToken: !!authToken,
+              hasUser: !!user,
+              userRole: user?.role,
+              willNavigate: !!authToken,
+            },
+            timestamp: Date.now(),
+            sessionId: 'debug-session',
+            runId: 'signin-attempt',
+            hypothesisId: 'T1',
+          }),
+        }).catch(() => {})
         // #endregion
         if (authToken && !isAuthenticated) {
           // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'src/pages/auth/SignIn.tsx:103',message:'Fallback navigation - token exists but isAuthenticated is false',data:{email,hasAuthToken:!!authToken,hasUser:!!user,userRole:user?.role},timestamp:Date.now(),sessionId:'debug-session',runId:'signin-attempt',hypothesisId:'T2'})}).catch(()=>{});
+          fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              location: 'src/pages/auth/SignIn.tsx:103',
+              message: 'Fallback navigation - token exists but isAuthenticated is false',
+              data: { email, hasAuthToken: !!authToken, hasUser: !!user, userRole: user?.role },
+              timestamp: Date.now(),
+              sessionId: 'debug-session',
+              runId: 'signin-attempt',
+              hypothesisId: 'T2',
+            }),
+          }).catch(() => {})
           // #endregion
           // Check user role for redirect path
-          const redirectPath = (user?.role === 'admin' || user?.role === 'superadmin') ? '/admin' : '/dashboard'
+          const redirectPath =
+            user?.role === 'admin' || user?.role === 'superadmin' ? '/admin' : '/dashboard'
           // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'src/pages/auth/SignIn.tsx:107',message:'Fallback navigation with role check',data:{redirectPath,userRole:user?.role},timestamp:Date.now(),sessionId:'debug-session',runId:'signin-attempt',hypothesisId:'T3'})}).catch(()=>{});
+          fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              location: 'src/pages/auth/SignIn.tsx:107',
+              message: 'Fallback navigation with role check',
+              data: { redirectPath, userRole: user?.role },
+              timestamp: Date.now(),
+              sessionId: 'debug-session',
+              runId: 'signin-attempt',
+              hypothesisId: 'T3',
+            }),
+          }).catch(() => {})
           // #endregion
           navigate(redirectPath, { replace: true })
         }
@@ -159,7 +311,25 @@ export function SignIn() {
       const errorMsg = error instanceof Error ? error.message : String(error)
       const errorStack = error instanceof Error ? error.stack : undefined
       const isPkcs8Error = errorMsg.includes('pkcs8') || errorMsg.includes('PKCS')
-      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'src/pages/auth/SignIn.tsx:82',message:'signIn error',data:{error:errorMsg,errorName:error instanceof Error?error.name:'unknown',isPkcs8Error,hasStack:!!errorStack,email},timestamp:Date.now(),sessionId:'debug-session',runId:'signin-attempt',hypothesisId:'G'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'src/pages/auth/SignIn.tsx:82',
+          message: 'signIn error',
+          data: {
+            error: errorMsg,
+            errorName: error instanceof Error ? error.name : 'unknown',
+            isPkcs8Error,
+            hasStack: !!errorStack,
+            email,
+          },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'signin-attempt',
+          hypothesisId: 'G',
+        }),
+      }).catch(() => {})
       // #endregion
       toast.error(getErrorMessage(error) || 'Invalid email or password')
     } finally {

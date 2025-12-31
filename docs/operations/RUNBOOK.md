@@ -30,12 +30,12 @@ npx convex dashboard --prod
 
 ### Common Quick Fixes
 
-| Issue | Quick Fix |
-|-------|-----------|
-| Frontend not loading | Clear CDN cache, check hosting status |
-| Auth not working | Verify SITE_URL and OAuth credentials |
-| AI not responding | Check OpenAI API key and rate limits |
-| Slow queries | Check Convex dashboard for slow functions |
+| Issue                | Quick Fix                                 |
+| -------------------- | ----------------------------------------- |
+| Frontend not loading | Clear CDN cache, check hosting status     |
+| Auth not working     | Verify SITE_URL and OAuth credentials     |
+| AI not responding    | Check OpenAI API key and rate limits      |
+| Slow queries         | Check Convex dashboard for slow functions |
 
 ---
 
@@ -44,6 +44,7 @@ npx convex dashboard --prod
 ### Issue: Users Cannot Sign In
 
 **Symptoms:**
+
 - Sign in form submits but nothing happens
 - "Invalid credentials" error for valid users
 - OAuth redirect fails
@@ -61,10 +62,12 @@ npx convex env list --prod | grep -i "auth\|site"
 **Resolution Steps:**
 
 1. **Check SITE_URL configuration:**
+
    ```bash
    # Verify SITE_URL matches your domain
    npx convex env get SITE_URL --prod
    ```
+
    - Must match exactly (including https://)
    - No trailing slash
 
@@ -86,6 +89,7 @@ npx convex env list --prod | grep -i "auth\|site"
 ### Issue: Sessions Expiring Too Quickly
 
 **Symptoms:**
+
 - Users logged out unexpectedly
 - "Session expired" errors
 
@@ -98,12 +102,14 @@ npx convex env list --prod | grep -i "auth\|site"
 ### Issue: Password Reset Not Working
 
 **Symptoms:**
+
 - Reset email not received
 - Reset link expired immediately
 
 **Resolution:**
 
 1. **Check email configuration:**
+
    ```bash
    npx convex env get AUTH_RESEND_KEY --prod
    npx convex env get EMAIL_FROM --prod
@@ -121,6 +127,7 @@ npx convex env list --prod | grep -i "auth\|site"
 ### Issue: Slow Query Performance
 
 **Symptoms:**
+
 - Pages loading slowly
 - Timeout errors
 - High latency in Convex dashboard
@@ -134,6 +141,7 @@ npx convex env list --prod | grep -i "auth\|site"
 **Resolution:**
 
 1. **Add missing indexes:**
+
    ```typescript
    // In convex/schema.ts
    events: defineTable({...})
@@ -153,6 +161,7 @@ npx convex env list --prod | grep -i "auth\|site"
 ### Issue: Data Inconsistency
 
 **Symptoms:**
+
 - Missing records
 - Duplicate entries
 - Orphaned references
@@ -160,12 +169,14 @@ npx convex env list --prod | grep -i "auth\|site"
 **Resolution:**
 
 1. **Identify affected records:**
+
    ```bash
    # Run data integrity check
    npx convex run queries/dataIntegrityCheck --prod
    ```
 
 2. **Fix orphaned records:**
+
    ```bash
    # Run cleanup migration
    npx convex run migrations/cleanupOrphanedRecords --prod
@@ -178,6 +189,7 @@ npx convex env list --prod | grep -i "auth\|site"
 ### Issue: Database Connection Errors
 
 **Symptoms:**
+
 - "Failed to connect" errors
 - Intermittent query failures
 
@@ -194,6 +206,7 @@ npx convex env list --prod | grep -i "auth\|site"
 ### Issue: AI Assistant Not Responding
 
 **Symptoms:**
+
 - Chat shows "thinking" indefinitely
 - "AI service unavailable" error
 - Empty responses
@@ -226,6 +239,7 @@ npx convex env get OPENAI_API_KEY --prod
 ### Issue: AI Responses Are Slow
 
 **Symptoms:**
+
 - Long wait times for AI responses
 - Timeouts
 
@@ -242,6 +256,7 @@ npx convex env get OPENAI_API_KEY --prod
 ### Issue: AI Generating Incorrect Responses
 
 **Symptoms:**
+
 - Hallucinated information
 - Wrong tool calls
 - Inappropriate responses
@@ -265,6 +280,7 @@ npx convex env get OPENAI_API_KEY --prod
 ### Issue: Payments Failing
 
 **Symptoms:**
+
 - "Payment failed" errors
 - Stripe webhook errors
 - Orders not created after payment
@@ -295,6 +311,7 @@ npx convex logs --prod | grep -i "stripe\|payment\|order"
 ### Issue: Refunds Not Processing
 
 **Symptoms:**
+
 - Refund button not working
 - Refund stuck in "pending"
 
@@ -311,6 +328,7 @@ npx convex logs --prod | grep -i "stripe\|payment\|order"
 ### Issue: High Memory Usage
 
 **Symptoms:**
+
 - Slow response times
 - Out of memory errors
 - Function timeouts
@@ -329,6 +347,7 @@ npx convex logs --prod | grep -i "stripe\|payment\|order"
 ### Issue: High Latency
 
 **Symptoms:**
+
 - Slow page loads
 - API timeouts
 - Poor user experience
@@ -340,6 +359,7 @@ npx convex logs --prod | grep -i "stripe\|payment\|order"
    - Check cache hit rates
 
 2. **Optimize bundle size:**
+
    ```bash
    # Analyze bundle
    npm run build -- --analyze
@@ -352,12 +372,14 @@ npx convex logs --prod | grep -i "stripe\|payment\|order"
 ### Issue: Rate Limiting Triggered
 
 **Symptoms:**
+
 - 429 Too Many Requests errors
 - Users blocked from actions
 
 **Resolution:**
 
 1. **Identify rate-limited users:**
+
    ```bash
    npx convex logs --prod | grep "rate limit"
    ```
@@ -377,6 +399,7 @@ npx convex logs --prod | grep -i "stripe\|payment\|order"
 ### Issue: Blank Page / App Not Loading
 
 **Symptoms:**
+
 - White screen
 - JavaScript errors in console
 - Assets not loading
@@ -386,10 +409,11 @@ npx convex logs --prod | grep -i "stripe\|payment\|order"
 1. **Check browser console for errors**
 
 2. **Verify build artifacts:**
+
    ```bash
    # Rebuild
    npm run build
-   
+
    # Check dist folder
    ls -la dist/
    ```
@@ -405,6 +429,7 @@ npx convex logs --prod | grep -i "stripe\|payment\|order"
 ### Issue: PWA Not Working
 
 **Symptoms:**
+
 - App not installable
 - Offline mode not working
 - Service worker errors
@@ -471,14 +496,14 @@ npx convex logs --prod --since "1 hour ago" > logs.txt
 
 ## Escalation Matrix
 
-| Severity | Response Time | Escalation Path |
-|----------|---------------|-----------------|
-| Critical (site down) | 15 minutes | On-call → Tech Lead → CTO |
-| High (major feature broken) | 1 hour | On-call → Tech Lead |
-| Medium (minor feature broken) | 4 hours | On-call |
-| Low (cosmetic issues) | 24 hours | Regular ticket |
+| Severity                      | Response Time | Escalation Path           |
+| ----------------------------- | ------------- | ------------------------- |
+| Critical (site down)          | 15 minutes    | On-call → Tech Lead → CTO |
+| High (major feature broken)   | 1 hour        | On-call → Tech Lead       |
+| Medium (minor feature broken) | 4 hours       | On-call                   |
+| Low (cosmetic issues)         | 24 hours      | Regular ticket            |
 
 ---
 
-*Last Updated: December 2024*
-*Document Owner: Platform Team*
+_Last Updated: December 2024_
+_Document Owner: Platform Team_

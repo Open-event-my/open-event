@@ -11,6 +11,7 @@ Successfully implemented a comprehensive encryption service for securing sensiti
 A robust encryption service using industry-standard cryptography:
 
 **Features:**
+
 - **Algorithm**: AES-256-GCM (authenticated encryption)
 - **Key Derivation**: PBKDF2 with 100,000 iterations (OWASP recommended)
 - **Unique Salts**: Each encryption uses a unique 256-bit salt
@@ -20,22 +21,23 @@ A robust encryption service using industry-standard cryptography:
 - **Constant-Time Comparison**: Prevents timing attacks
 
 **API:**
+
 ```typescript
 // Encrypt data
-const encrypted = await encryptionService.encrypt(plaintext, masterKey);
+const encrypted = await encryptionService.encrypt(plaintext, masterKey)
 
 // Decrypt data
-const plaintext = await encryptionService.decrypt(encrypted, masterKey);
+const plaintext = await encryptionService.decrypt(encrypted, masterKey)
 
 // Hash data (one-way)
-const hash = await encryptionService.hash(data);
+const hash = await encryptionService.hash(data)
 
 // Compare hash (constant-time)
-const matches = await encryptionService.compareHash(data, hash);
+const matches = await encryptionService.compareHash(data, hash)
 
 // Helper functions for API keys
-const encrypted = await encryptAPIKey(apiKey, masterKey);
-const decrypted = await decryptAPIKey(encrypted, masterKey);
+const encrypted = await encryptAPIKey(apiKey, masterKey)
+const decrypted = await decryptAPIKey(encrypted, masterKey)
 ```
 
 ### 2. Property-Based Tests (`convex/lib/security/encryption.property.test.ts`)
@@ -43,6 +45,7 @@ const decrypted = await decryptAPIKey(encrypted, masterKey);
 Comprehensive property-based testing with 13 test properties covering:
 
 **Test Coverage:**
+
 - ✅ Round-trip encryption preserves data (100 iterations)
 - ✅ Encrypted data is not readable as plaintext
 - ✅ Same plaintext produces different ciphertext (due to unique salts/IVs)
@@ -64,6 +67,7 @@ Comprehensive property-based testing with 13 test properties covering:
 Updated the `apiKeys` table to support encrypted storage:
 
 **New Fields:**
+
 ```typescript
 encryptedKey: v.optional(v.string()),     // Encrypted API key ciphertext
 encryptionIV: v.optional(v.string()),     // Initialization vector
@@ -72,6 +76,7 @@ encryptionSalt: v.optional(v.string()),   // Salt for key derivation
 ```
 
 **Backward Compatibility:**
+
 - Kept `keyHash` field optional for legacy keys
 - System supports both encrypted and hashed keys during transition
 
@@ -80,17 +85,20 @@ encryptionSalt: v.optional(v.string()),   // Salt for key derivation
 Updated API key creation and validation:
 
 **New Key Creation:**
+
 - Generates secure random API keys
 - Encrypts keys before storage using AES-256-GCM
 - Stores encrypted data with IV, tag, and salt
 - Returns plaintext key once (cannot be retrieved again without decryption)
 
 **Key Validation:**
+
 - Supports both encrypted keys (new) and hashed keys (legacy)
 - Decrypts stored keys for validation
 - Maintains backward compatibility
 
 **Environment Variable:**
+
 ```bash
 ENCRYPTION_KEY=your-32-character-or-longer-secret-key
 ```
@@ -100,11 +108,13 @@ ENCRYPTION_KEY=your-32-character-or-longer-secret-key
 Comprehensive migration tooling:
 
 **Functions:**
+
 - `markApiKeysForRegeneration`: Adds migration notice to existing keys
 - `revokeUnmigratedApiKeys`: Revokes keys after transition period
 - `getMigrationStatus`: Tracks migration progress
 
 **Migration Strategy:**
+
 - Existing hashed keys cannot be decrypted (one-way operation)
 - Users must regenerate their API keys
 - Transition period allows both systems to coexist
@@ -113,6 +123,7 @@ Comprehensive migration tooling:
 ### 6. Migration Documentation (`convex/migrations/API_KEY_ENCRYPTION_MIGRATION.md`)
 
 Complete migration guide including:
+
 - Step-by-step migration instructions
 - Security considerations
 - Testing procedures
@@ -146,6 +157,7 @@ Complete migration guide including:
 ## Testing Results
 
 All 13 property-based tests passed with 100 iterations each:
+
 - Total test runs: 1,300 (13 properties × 100 iterations)
 - Success rate: 100%
 - No failures or edge cases found
@@ -156,9 +168,9 @@ All 13 property-based tests passed with 100 iterations each:
 
 ```typescript
 // In your Convex mutation
-const plainKey = generateApiKey('live');
-const masterKey = process.env.ENCRYPTION_KEY;
-const encrypted = await encryptAPIKey(plainKey, masterKey);
+const plainKey = generateApiKey('live')
+const masterKey = process.env.ENCRYPTION_KEY
+const encrypted = await encryptAPIKey(plainKey, masterKey)
 
 // Store in database
 await ctx.db.insert('apiKeys', {
@@ -169,27 +181,27 @@ await ctx.db.insert('apiKeys', {
   encryptionTag: encrypted.tag,
   encryptionSalt: encrypted.salt,
   // ... other fields
-});
+})
 ```
 
 ### Validating an Encrypted API Key
 
 ```typescript
 // Retrieve from database
-const key = await ctx.db.get(keyId);
+const key = await ctx.db.get(keyId)
 
 // Decrypt for validation
-const masterKey = process.env.ENCRYPTION_KEY;
+const masterKey = process.env.ENCRYPTION_KEY
 const encrypted = {
   ciphertext: key.encryptedKey,
   iv: key.encryptionIV,
   tag: key.encryptionTag,
   salt: key.encryptionSalt,
-};
-const decryptedKey = await decryptAPIKey(encrypted, masterKey);
+}
+const decryptedKey = await decryptAPIKey(encrypted, masterKey)
 
 // Validate against provided key
-const isValid = decryptedKey === providedKey;
+const isValid = decryptedKey === providedKey
 ```
 
 ## Next Steps
@@ -204,6 +216,7 @@ const isValid = decryptedKey === providedKey;
 ## Files Created/Modified
 
 **Created:**
+
 - `convex/lib/security/encryption.ts` - Encryption service implementation
 - `convex/lib/security/encryption.property.test.ts` - Property-based tests
 - `convex/migrations/migrateApiKeysToEncryption.ts` - Migration script
@@ -211,6 +224,7 @@ const isValid = decryptedKey === providedKey;
 - `convex/lib/security/ENCRYPTION_IMPLEMENTATION.md` - This document
 
 **Modified:**
+
 - `convex/lib/security/index.ts` - Added encryption exports
 - `convex/schema.ts` - Added encryption fields to apiKeys table
 - `convex/apiKeys.ts` - Updated to use encryption for new keys
@@ -225,6 +239,7 @@ const isValid = decryptedKey === providedKey;
 ## Compliance
 
 This implementation helps achieve:
+
 - **GDPR Compliance**: Encrypted personal data at rest
 - **PCI DSS**: Encrypted sensitive authentication data
 - **SOC 2**: Strong encryption controls
@@ -233,6 +248,7 @@ This implementation helps achieve:
 ## Support
 
 For questions or issues:
+
 - Review the migration guide: `API_KEY_ENCRYPTION_MIGRATION.md`
 - Check property tests: `encryption.property.test.ts`
 - Review design document: `.kiro/specs/production-readiness/design.md`

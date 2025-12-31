@@ -269,10 +269,12 @@ describe('Service Worker Cache Configuration', () => {
     describe('getCacheStats', () => {
       it('should return cache statistics', async () => {
         const mockCache = {
-          keys: vi.fn().mockResolvedValue([
-            new Request('https://example.com/file1.js'),
-            new Request('https://example.com/file2.js'),
-          ]),
+          keys: vi
+            .fn()
+            .mockResolvedValue([
+              new Request('https://example.com/file1.js'),
+              new Request('https://example.com/file2.js'),
+            ]),
           match: vi.fn().mockResolvedValue({
             clone: () => ({
               blob: () => Promise.resolve(new Blob(['test content'], { type: 'text/plain' })),

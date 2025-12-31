@@ -11,11 +11,7 @@
  */
 
 import { useState, useCallback, useMemo } from 'react'
-import type {
-  FormSchema,
-  FormValidationResult,
-  FieldValidationResult,
-} from '@/lib/formValidation'
+import type { FormSchema, FormValidationResult, FieldValidationResult } from '@/lib/formValidation'
 import { validateField, validateForm } from '@/lib/formValidation'
 
 /**
@@ -290,8 +286,7 @@ export function useFormValidation<T extends Record<string, unknown>>(
   const getFieldError = useCallback(
     (fieldName: keyof T): string | undefined => {
       const shouldShowError =
-        state.isSubmitted ||
-        (validateOnBlur && state.touched[fieldName as string])
+        state.isSubmitted || (validateOnBlur && state.touched[fieldName as string])
 
       if (!shouldShowError) return undefined
 
@@ -306,8 +301,7 @@ export function useFormValidation<T extends Record<string, unknown>>(
   const hasFieldError = useCallback(
     (fieldName: keyof T): boolean => {
       const shouldShowError =
-        state.isSubmitted ||
-        (validateOnBlur && state.touched[fieldName as string])
+        state.isSubmitted || (validateOnBlur && state.touched[fieldName as string])
 
       if (!shouldShowError) return false
 

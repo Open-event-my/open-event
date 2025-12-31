@@ -163,7 +163,9 @@ export const getDashboardAnalytics = query({
       rejected: rejectedApps.length,
       approvalRate:
         allApplications.length > 0
-          ? Math.round((approvedApps.length / (approvedApps.length + rejectedApps.length || 1)) * 100)
+          ? Math.round(
+              (approvedApps.length / (approvedApps.length + rejectedApps.length || 1)) * 100
+            )
           : 0,
     }
 
@@ -187,7 +189,9 @@ export const getDashboardAnalytics = query({
 
     const eventChange =
       prevPeriodEvents.length > 0
-        ? Math.round(((periodEvents.length - prevPeriodEvents.length) / prevPeriodEvents.length) * 100)
+        ? Math.round(
+            ((periodEvents.length - prevPeriodEvents.length) / prevPeriodEvents.length) * 100
+          )
         : periodEvents.length > 0
           ? 100
           : 0

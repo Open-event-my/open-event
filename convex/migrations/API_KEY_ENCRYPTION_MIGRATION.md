@@ -7,11 +7,13 @@ This migration transitions the API key storage system from hash-based storage to
 ## Why This Migration?
 
 **Previous Approach (Hashing):**
+
 - API keys were hashed using SHA-256 before storage
 - Keys could not be retrieved after creation
 - Users had to save keys immediately or regenerate them
 
 **New Approach (Encryption):**
+
 - API keys are encrypted using AES-256-GCM before storage
 - Keys can be securely retrieved by authenticated users
 - Enhanced security with authenticated encryption
@@ -36,11 +38,13 @@ ENCRYPTION_KEY=your-32-character-or-longer-secret-key-here
 ```
 
 **Requirements:**
+
 - Key must be at least 32 characters long
 - Use a cryptographically secure random string
 - Store securely (never commit to version control)
 
 **Generate a secure key:**
+
 ```bash
 # Using Node.js
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
@@ -65,6 +69,7 @@ keyHash: v.optional(v.string()),
 ```
 
 Deploy the schema changes:
+
 ```bash
 npm run dev:backend  # or npx convex dev
 ```
@@ -79,6 +84,7 @@ Mark existing API keys for regeneration:
 ```
 
 This will:
+
 - Add a migration notice to all existing API keys
 - Inform users they need to regenerate their keys
 - Keep existing keys active during transition period
@@ -88,6 +94,7 @@ This will:
 Send notifications to users with active API keys:
 
 **Email Template:**
+
 ```
 Subject: Action Required: Regenerate Your API Keys
 
@@ -116,6 +123,7 @@ Check migration status:
 ```
 
 Returns:
+
 ```json
 {
   "totalKeys": 150,
@@ -136,6 +144,7 @@ After giving users sufficient time (recommended: 30-90 days), revoke unmigrated 
 ```
 
 This will:
+
 - Revoke all keys that still have the migration notice
 - Force users to regenerate their keys
 
@@ -146,13 +155,13 @@ This will:
 ```typescript
 // Create a new API key (will use encryption)
 const result = await ctx.runMutation(api.apiKeys.create, {
-  name: "Test Key",
-  permissions: ["events:read"],
-  environment: "test"
-});
+  name: 'Test Key',
+  permissions: ['events:read'],
+  environment: 'test',
+})
 
 // Key is returned once
-console.log(result.key); // oe_test_abc123...
+console.log(result.key) // oe_test_abc123...
 ```
 
 ### Test Key Validation
@@ -160,9 +169,9 @@ console.log(result.key); // oe_test_abc123...
 ```typescript
 // Validate the key (works with both encrypted and hashed keys)
 const isValid = await ctx.runQuery(internal.apiKeys.validateKey, {
-  keyPrefix: "oe_test_abc123",
-  keyHash: await hashApiKey("oe_test_abc123...")
-});
+  keyPrefix: 'oe_test_abc123',
+  keyHash: await hashApiKey('oe_test_abc123...'),
+})
 ```
 
 ### Test Backward Compatibility
@@ -196,6 +205,7 @@ If issues arise, you can rollback by:
 ### Compliance
 
 This migration helps meet:
+
 - **Requirement 1.5**: Encrypt API keys at rest
 - **Requirement 3.7**: Encrypt sensitive data at rest
 - **Requirement 4.7**: Encrypt backup data
@@ -213,6 +223,7 @@ This migration helps meet:
 ### Error: "Decryption failed"
 
 **Possible causes:**
+
 - Wrong encryption key
 - Corrupted encrypted data
 - Key was created with different encryption key
@@ -222,6 +233,7 @@ This migration helps meet:
 ### Migration Not Progressing
 
 **Check:**
+
 1. Users have been notified
 2. Migration notice is visible in API key descriptions
 3. Users understand they need to regenerate keys
@@ -229,6 +241,7 @@ This migration helps meet:
 ## Timeline
 
 **Recommended Timeline:**
+
 - **Week 1**: Deploy schema changes and migration script
 - **Week 2-4**: Notify users and monitor adoption
 - **Week 5-12**: Transition period (both systems work)
@@ -237,6 +250,7 @@ This migration helps meet:
 ## Support
 
 For questions or issues:
+
 - Check the migration status regularly
 - Monitor error logs for decryption failures
 - Provide clear documentation to users

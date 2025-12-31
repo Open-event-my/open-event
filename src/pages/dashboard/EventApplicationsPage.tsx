@@ -51,7 +51,8 @@ export function EventApplicationsPage() {
   const [showDetailModal, setShowDetailModal] = useState(false)
 
   // Validate eventId - reject invalid values like "new", "edit", etc.
-  const isValidEventId = eventId && eventId !== 'new' && eventId !== 'edit' && /^[a-z0-9]+$/.test(eventId)
+  const isValidEventId =
+    eventId && eventId !== 'new' && eventId !== 'edit' && /^[a-z0-9]+$/.test(eventId)
 
   const event = useQuery(api.events.get, isValidEventId ? { id: eventId as Id<'events'> } : 'skip')
 

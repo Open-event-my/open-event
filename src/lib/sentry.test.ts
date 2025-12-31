@@ -49,7 +49,6 @@ describe('Sentry Frontend Initialization', () => {
     )
   })
 
-
   it('should not initialize Sentry when DSN is not provided', async () => {
     // No DSN in environment
     delete import.meta.env.VITE_SENTRY_DSN

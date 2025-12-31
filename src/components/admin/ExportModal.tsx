@@ -70,8 +70,10 @@ export function ExportModal({ open, onOpenChange, exportType }: ExportModalProps
     } = {}
     if (dateFrom) filters.createdAfter = new Date(dateFrom).getTime()
     if (dateTo) filters.createdBefore = new Date(dateTo).getTime()
-    if (roleFilter && roleFilter !== 'all') filters.role = roleFilter as 'admin' | 'organizer' | 'superadmin'
-    if (statusFilter && statusFilter !== 'all') filters.status = statusFilter as 'active' | 'suspended' | 'pending'
+    if (roleFilter && roleFilter !== 'all')
+      filters.role = roleFilter as 'admin' | 'organizer' | 'superadmin'
+    if (statusFilter && statusFilter !== 'all')
+      filters.status = statusFilter as 'active' | 'suspended' | 'pending'
     return Object.keys(filters).length > 0 ? filters : undefined
   }
 

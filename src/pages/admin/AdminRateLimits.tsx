@@ -227,7 +227,12 @@ export function AdminRateLimits() {
                       style={{ width: `${Math.min(percentUsed, 100)}%` }}
                     />
                   </div>
-                  <span className={cn('text-sm font-medium min-w-[80px] text-right', isNearLimit && 'text-orange-600')}>
+                  <span
+                    className={cn(
+                      'text-sm font-medium min-w-[80px] text-right',
+                      isNearLimit && 'text-orange-600'
+                    )}
+                  >
                     {item.requests} / {maxRequests}
                   </span>
                   {isNearLimit && <Warning size={16} className="text-orange-500" weight="fill" />}

@@ -6,7 +6,10 @@
 import { v } from 'convex/values'
 import { query, internalQuery } from './_generated/server'
 import { getCurrentUser, isAdminRole } from './lib/auth'
-import { anonymizeEventForAnalytics, anonymizeUserForAnalytics } from './lib/compliance/analyticsAnonymization'
+import {
+  anonymizeEventForAnalytics,
+  anonymizeUserForAnalytics,
+} from './lib/compliance/analyticsAnonymization'
 
 // ============================================================================
 // Helper Functions
@@ -1407,7 +1410,9 @@ export const getAnonymizedEventTrends = query({
 
     // Filter by date range
     const eventsInRange = anonymizedEvents.filter(
-      (e) => (e.createdAt || e._creationTime || 0) >= startDate && (e.createdAt || e._creationTime || 0) <= endDate
+      (e) =>
+        (e.createdAt || e._creationTime || 0) >= startDate &&
+        (e.createdAt || e._creationTime || 0) <= endDate
     )
 
     // Group by period (using anonymized data)
@@ -1476,7 +1481,9 @@ export const getAnonymizedUserAnalytics = query({
 
     // Filter by date range
     const usersInRange = anonymizedUsers.filter(
-      (u) => (u.createdAt || u._creationTime || 0) >= startDate && (u.createdAt || u._creationTime || 0) <= endDate
+      (u) =>
+        (u.createdAt || u._creationTime || 0) >= startDate &&
+        (u.createdAt || u._creationTime || 0) <= endDate
     )
 
     // Group by period
@@ -1544,7 +1551,9 @@ export const getAnonymizedSessionAnalytics = query({
 
     // Filter by date range
     const sessionsInRange = allSessions.filter(
-      (s) => (s.createdAt || s._creationTime || 0) >= startDate && (s.createdAt || s._creationTime || 0) <= endDate
+      (s) =>
+        (s.createdAt || s._creationTime || 0) >= startDate &&
+        (s.createdAt || s._creationTime || 0) <= endDate
     )
 
     // Anonymize sessions (remove IP and user agent PII)

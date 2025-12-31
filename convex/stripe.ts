@@ -86,17 +86,14 @@ export const createCheckoutSession = action({
     }
 
     // Check idempotency - prevent duplicate checkout sessions
-    const idempotencyCheck = await ctx.runMutation(
-      paymentIdempotency.checkAndCreate,
-      {
-        orderId: args.orderId,
-        operation: 'checkout',
-      }
-    )
+    const idempotencyCheck = await ctx.runMutation(paymentIdempotency.checkAndCreate, {
+      orderId: args.orderId,
+      operation: 'checkout',
+    })
 
     if (idempotencyCheck.isDuplicate && idempotencyCheck.record) {
       const record = idempotencyCheck.record
-      
+
       // If previous operation completed successfully, return cached result
       if (record.status === 'completed' && record.result) {
         try {
@@ -110,7 +107,7 @@ export const createCheckoutSession = action({
           // Invalid cached result, continue with new session
         }
       }
-      
+
       // If previous operation is still pending, check if session exists
       if (record.status === 'pending' && orderData.stripeSessionId) {
         try {
@@ -125,7 +122,7 @@ export const createCheckoutSession = action({
           // Session expired or invalid, continue with new session
         }
       }
-      
+
       // If previous operation failed, allow retry
       if (record.status === 'failed') {
         logger.info('Previous checkout attempt failed, allowing retry', {
@@ -198,19 +195,19 @@ export const createCheckoutSession = action({
     // SERVER-SIDE PAYMENT VALIDATION
     // Validates that amounts have not been tampered with client-side
     // =========================================================================
-    
+
     // Calculate total from line items (what we're sending to Stripe)
     const lineItemsTotal = lineItems.reduce((sum, item) => {
-      return sum + (item.price_data?.unit_amount || 0) * (item.quantity || 1);
-    }, 0);
-    
+      return sum + (item.price_data?.unit_amount || 0) * (item.quantity || 1)
+    }, 0)
+
     // Validate checkout amounts match order total
     const paymentValidation = validateCheckoutAmounts(
       orderData.total,
       lineItemsTotal,
       orderData.currency
-    );
-    
+    )
+
     if (!paymentValidation.isValid) {
       logger.error('Server-side payment validation failed', undefined, {
         orderId: args.orderId,
@@ -218,70 +215,69 @@ export const createCheckoutSession = action({
         orderTotal: orderData.total,
         lineItemsTotal,
         errors: paymentValidation.errors,
-      });
+      })
       throw new Error(
-        'Payment validation failed: amounts do not match. ' +
-        'Please refresh and try again.'
-      );
+        'Payment validation failed: amounts do not match. ' + 'Please refresh and try again.'
+      )
     }
-    
+
     // Log warnings if any
     if (paymentValidation.warnings.length > 0) {
       logger.warn('Payment validation warnings', {
         orderId: args.orderId,
         orderNumber: orderData.orderNumber,
         warnings: paymentValidation.warnings,
-      });
-    }
-
-    try {
-    // Create checkout session with enhanced options and idempotency key
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      payment_method_types: ['card'],
-      line_items: lineItems,
-      customer_email: orderData.buyerEmail,
-      client_reference_id: orderData.orderNumber,
-      metadata: {
-        orderId: args.orderId,
-        orderNumber: orderData.orderNumber,
-        eventId: orderData.eventId,
-        eventTitle: event.title,
-      },
-      payment_intent_data: {
-        metadata: {
-          orderId: args.orderId,
-          orderNumber: orderData.orderNumber,
-        },
-      },
-      success_url: `${args.successUrl}?session_id={CHECKOUT_SESSION_ID}&order=${orderData.orderNumber}`,
-      cancel_url: `${args.cancelUrl}?order=${orderData.orderNumber}`,
-      expires_at: Math.floor(Date.now() / 1000) + 30 * 60, // 30 minutes
-      // Enable automatic tax if configured
-      // automatic_tax: { enabled: true },
-    })
-
-    // Update order with session ID
-    await ctx.runMutation(api.orders.setStripeSession, {
-      orderId: args.orderId,
-      stripeSessionId: session.id,
-    })
-
-    const result = {
-      sessionId: session.id,
-      url: session.url!,
-    }
-
-    // Mark idempotency record as completed with cached result
-    if (idempotencyCheck.record) {
-      await ctx.runMutation(paymentIdempotency.complete, {
-        idempotencyKey: idempotencyCheck.record.idempotencyKey,
-        status: 'completed',
-        result: JSON.stringify(result),
       })
     }
 
-    return result
+    try {
+      // Create checkout session with enhanced options and idempotency key
+      const session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        payment_method_types: ['card'],
+        line_items: lineItems,
+        customer_email: orderData.buyerEmail,
+        client_reference_id: orderData.orderNumber,
+        metadata: {
+          orderId: args.orderId,
+          orderNumber: orderData.orderNumber,
+          eventId: orderData.eventId,
+          eventTitle: event.title,
+        },
+        payment_intent_data: {
+          metadata: {
+            orderId: args.orderId,
+            orderNumber: orderData.orderNumber,
+          },
+        },
+        success_url: `${args.successUrl}?session_id={CHECKOUT_SESSION_ID}&order=${orderData.orderNumber}`,
+        cancel_url: `${args.cancelUrl}?order=${orderData.orderNumber}`,
+        expires_at: Math.floor(Date.now() / 1000) + 30 * 60, // 30 minutes
+        // Enable automatic tax if configured
+        // automatic_tax: { enabled: true },
+      })
+
+      // Update order with session ID
+      await ctx.runMutation(api.orders.setStripeSession, {
+        orderId: args.orderId,
+        stripeSessionId: session.id,
+      })
+
+      const result = {
+        sessionId: session.id,
+        url: session.url!,
+      }
+
+      // Mark idempotency record as completed with cached result
+      if (idempotencyCheck.record) {
+        await ctx.runMutation(paymentIdempotency.complete, {
+          idempotencyKey: idempotencyCheck.record.idempotencyKey,
+          status: 'completed',
+          result: JSON.stringify(result),
+        })
+      }
+
+      return result
     } catch (error) {
       // Mark idempotency record as failed
       if (idempotencyCheck.record) {
@@ -483,7 +479,8 @@ export const handleWebhook = action({
             currency: dispute.currency,
             stripeEventId: event.id,
             stripeDisputeId: dispute.id,
-            stripeChargeId: typeof dispute.charge === 'string' ? dispute.charge : dispute.charge?.id,
+            stripeChargeId:
+              typeof dispute.charge === 'string' ? dispute.charge : dispute.charge?.id,
             disputeReason: dispute.reason || undefined,
           })
 
@@ -499,8 +496,12 @@ export const handleWebhook = action({
           })
 
           // Determine dispute outcome
-          const disputeEventType = dispute.status === 'won' ? 'dispute_won' : 
-                                   dispute.status === 'lost' ? 'dispute_lost' : 'dispute_closed';
+          const disputeEventType =
+            dispute.status === 'won'
+              ? 'dispute_won'
+              : dispute.status === 'lost'
+                ? 'dispute_lost'
+                : 'dispute_closed'
 
           // Log payment audit event for dispute closure
           await PaymentAuditLogger.logDispute(ctx, disputeEventType, {
@@ -510,7 +511,8 @@ export const handleWebhook = action({
             currency: dispute.currency,
             stripeEventId: event.id,
             stripeDisputeId: dispute.id,
-            stripeChargeId: typeof dispute.charge === 'string' ? dispute.charge : dispute.charge?.id,
+            stripeChargeId:
+              typeof dispute.charge === 'string' ? dispute.charge : dispute.charge?.id,
             disputeReason: dispute.reason || undefined,
             metadata: {
               status: dispute.status,
@@ -569,17 +571,14 @@ export const createRefund = action({
     }
 
     // Check idempotency - prevent duplicate refunds
-    const idempotencyCheck = await ctx.runMutation(
-      paymentIdempotency.checkAndCreate,
-      {
-        orderId: args.orderId,
-        operation: 'refund',
-      }
-    )
+    const idempotencyCheck = await ctx.runMutation(paymentIdempotency.checkAndCreate, {
+      orderId: args.orderId,
+      operation: 'refund',
+    })
 
     if (idempotencyCheck.isDuplicate && idempotencyCheck.record) {
       const record = idempotencyCheck.record
-      
+
       // If previous refund completed successfully, return cached result
       if (record.status === 'completed' && record.result) {
         try {
@@ -593,12 +592,12 @@ export const createRefund = action({
           // Invalid cached result, continue with new refund
         }
       }
-      
+
       // If previous refund is still pending, throw error
       if (record.status === 'pending') {
         throw new Error('A refund operation is already in progress for this order')
       }
-      
+
       // If previous refund failed, allow retry
       if (record.status === 'failed') {
         logger.info('Previous refund attempt failed, allowing retry', {
@@ -688,7 +687,7 @@ export const createRefund = action({
       return result
     } catch (stripeError) {
       const message = stripeError instanceof Error ? stripeError.message : 'Unknown Stripe error'
-      
+
       // Log payment audit event for failed refund
       await PaymentAuditLogger.logRefund(ctx, 'refund_failed', {
         orderId: args.orderId,
@@ -701,7 +700,7 @@ export const createRefund = action({
         refundReason: args.reason,
         errorMessage: message,
       })
-      
+
       // Mark idempotency record as failed
       if (idempotencyCheck.record) {
         await ctx.runMutation(paymentIdempotency.complete, {
@@ -710,7 +709,7 @@ export const createRefund = action({
           errorMessage: message,
         })
       }
-      
+
       logger.error('Stripe refund failed', stripeError, {
         orderNumber: order.orderNumber,
         message,

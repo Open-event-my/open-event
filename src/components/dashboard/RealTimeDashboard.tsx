@@ -479,7 +479,9 @@ export function RealTimeDashboard() {
                       border: '1px solid hsl(var(--border))',
                       borderRadius: '8px',
                     }}
-                    formatter={(value) => value !== undefined ? `$${Number(value).toLocaleString()}` : ''}
+                    formatter={(value) =>
+                      value !== undefined ? `$${Number(value).toLocaleString()}` : ''
+                    }
                   />
                   <Bar dataKey="budget" fill={COLORS.success} name="Budget" />
                 </BarChart>

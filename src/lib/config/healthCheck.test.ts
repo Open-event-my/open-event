@@ -293,9 +293,7 @@ describe('healthCheck', () => {
           healthy: false,
           environment: 'development',
           timestamp: Date.now(),
-          checks: [
-            { name: 'VITE_CONVEX_URL', status: 'fail', message: 'Missing', required: true },
-          ],
+          checks: [{ name: 'VITE_CONVEX_URL', status: 'fail', message: 'Missing', required: true }],
         },
         backend: null,
         overall: {

@@ -11,11 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import {
-  createAIProvider,
-  isProviderAvailable,
-  getDefaultProvider,
-} from './factory'
+import { createAIProvider, isProviderAvailable, getDefaultProvider } from './factory'
 import { OpenAIProvider } from './providers/openai'
 import { AnthropicProvider } from './providers/anthropic'
 import type { ProviderCredentials } from './types'
@@ -47,9 +43,7 @@ describe('AI Provider Factory', () => {
     it('should throw error when OpenAI credentials are missing', () => {
       const credentials: ProviderCredentials = {}
 
-      expect(() => createAIProvider('openai', credentials)).toThrow(
-        'OpenAI API key is required'
-      )
+      expect(() => createAIProvider('openai', credentials)).toThrow('OpenAI API key is required')
     })
 
     it('should throw error when Anthropic credentials are missing', () => {

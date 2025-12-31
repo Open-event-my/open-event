@@ -9,7 +9,11 @@
  */
 
 import type { MutationCtx, QueryCtx, ActionCtx } from '../_generated/server'
-import { initSentry, captureError as sentryCaptureError, captureMessage as sentryCaptureMessage } from './sentry'
+import {
+  initSentry,
+  captureError as sentryCaptureError,
+  captureMessage as sentryCaptureMessage,
+} from './sentry'
 
 // Initialize Sentry on module load
 initSentry()

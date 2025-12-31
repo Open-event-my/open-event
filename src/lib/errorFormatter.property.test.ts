@@ -8,11 +8,7 @@
 
 import { describe, it, expect } from 'vitest'
 import fc from 'fast-check'
-import {
-  formatErrorMessage,
-  hasTechnicalDetails,
-  formatMultipleErrors,
-} from './errorFormatter'
+import { formatErrorMessage, hasTechnicalDetails, formatMultipleErrors } from './errorFormatter'
 
 describe('Error Message Formatter - Property Tests', () => {
   /**
@@ -144,19 +140,17 @@ describe('Error Message Formatter - Property Tests', () => {
 
             // Should always have a valid category
             expect(formatted.category).toBeTruthy()
-            expect(
-              [
-                'auth',
-                'network',
-                'validation',
-                'permission',
-                'notFound',
-                'rateLimit',
-                'payment',
-                'server',
-                'unknown',
-              ]
-            ).toContain(formatted.category)
+            expect([
+              'auth',
+              'network',
+              'validation',
+              'permission',
+              'notFound',
+              'rateLimit',
+              'payment',
+              'server',
+              'unknown',
+            ]).toContain(formatted.category)
           }
         ),
         { numRuns: 100 }
@@ -375,9 +369,19 @@ describe('Error Message Formatter - Property Tests', () => {
    */
   describe('Edge Cases and Robustness', () => {
     // Filter out reserved JavaScript property names that conflict with Object prototype
-    const reservedNames = ['valueOf', 'toString', 'hasOwnProperty', 'constructor', 'prototype', '__proto__', 'isPrototypeOf', 'propertyIsEnumerable', 'toLocaleString']
-    const safeString = fc.string().filter(s => !reservedNames.includes(s))
-    const safeCode = fc.string().filter(s => !reservedNames.includes(s))
+    const reservedNames = [
+      'valueOf',
+      'toString',
+      'hasOwnProperty',
+      'constructor',
+      'prototype',
+      '__proto__',
+      'isPrototypeOf',
+      'propertyIsEnumerable',
+      'toLocaleString',
+    ]
+    const safeString = fc.string().filter((s) => !reservedNames.includes(s))
+    const safeCode = fc.string().filter((s) => !reservedNames.includes(s))
 
     it('should handle multiple errors gracefully', () => {
       fc.assert(

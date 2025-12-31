@@ -9,10 +9,10 @@
  * Property 47: Payment Event Audit Logging
  */
 
-import { v } from 'convex/values';
-import { internalMutation, internalQuery } from '../../_generated/server';
-import type { Id } from '../../_generated/dataModel';
-import { logger } from '../monitoring/logger';
+import { v } from 'convex/values'
+import { internalMutation, internalQuery } from '../../_generated/server'
+import type { Id } from '../../_generated/dataModel'
+import { logger } from '../monitoring/logger'
 
 // ============================================================================
 // Types
@@ -42,70 +42,73 @@ export type PaymentEventType =
   | 'subscription_created'
   | 'subscription_cancelled'
   | 'invoice_paid'
-  | 'invoice_failed';
+  | 'invoice_failed'
 
 /**
  * Payment audit log entry
  */
 export interface PaymentAuditEntry {
   /** Type of payment event */
-  eventType: PaymentEventType;
+  eventType: PaymentEventType
   /** Order ID (internal) */
-  orderId: string;
+  orderId: string
   /** Human-readable order number */
-  orderNumber: string;
+  orderNumber: string
   /** Payment amount in smallest currency unit (cents) */
-  amount: number;
+  amount: number
   /** Currency code (e.g., 'usd') */
-  currency: string;
+  currency: string
   /** User ID who initiated the action (if applicable) */
-  userId?: string;
+  userId?: string
   /** Buyer email address */
-  buyerEmail?: string;
+  buyerEmail?: string
   /** Event ID associated with the order */
-  eventId?: string;
+  eventId?: string
   /** Stripe event ID (from webhook) */
-  stripeEventId?: string;
+  stripeEventId?: string
   /** Stripe payment intent ID */
-  stripePaymentIntentId?: string;
+  stripePaymentIntentId?: string
   /** Stripe charge ID */
-  stripeChargeId?: string;
+  stripeChargeId?: string
   /** Stripe refund ID */
-  stripeRefundId?: string;
+  stripeRefundId?: string
   /** Stripe dispute ID */
-  stripeDisputeId?: string;
+  stripeDisputeId?: string
   /** Stripe session ID */
-  stripeSessionId?: string;
+  stripeSessionId?: string
   /** Payment method type (e.g., 'card') */
-  paymentMethod?: string;
+  paymentMethod?: string
   /** Card brand (e.g., 'visa', 'mastercard') */
-  cardBrand?: string;
+  cardBrand?: string
   /** Last 4 digits of card */
-  cardLast4?: string;
+  cardLast4?: string
   /** Refund reason (for refund events) */
-  refundReason?: string;
+  refundReason?: string
   /** Dispute reason (for dispute events) */
-  disputeReason?: string;
+  disputeReason?: string
   /** Error message (for failed events) */
-  errorMessage?: string;
+  errorMessage?: string
   /** Error code (for failed events) */
-  errorCode?: string;
+  errorCode?: string
   /** IP address of the request */
-  ipAddress?: string;
+  ipAddress?: string
   /** User agent of the request */
-  userAgent?: string;
+  userAgent?: string
   /** Additional metadata */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, unknown>
 }
 
 /**
  * Sanitized payment audit entry (no sensitive data)
  */
-export interface SanitizedPaymentAuditEntry extends Omit<PaymentAuditEntry, 'buyerEmail' | 'cardLast4'> {
+export interface SanitizedPaymentAuditEntry extends Omit<
+  PaymentAuditEntry,
+  'buyerEmail' | 'cardLast4'
+> {
   /** Masked buyer email */
-  buyerEmailMasked?: string;
+  buyerEmailMasked?: string
   /** Whether card info was present */
-  hasCardInfo?: boolean;
+  hasCardInfo?: boolean
 }
 
 // ============================================================================
@@ -135,7 +138,7 @@ const SENSITIVE_FIELDS = [
   'token',
   'apiKey',
   'api_key',
-];
+]
 
 // ============================================================================
 // Helper Functions
@@ -147,46 +150,46 @@ const SENSITIVE_FIELDS = [
  */
 export function maskEmail(email: string): string {
   if (!email || typeof email !== 'string') {
-    return '***@***';
+    return '***@***'
   }
 
-  const [local, domain] = email.split('@');
+  const [local, domain] = email.split('@')
   if (!local || !domain) {
-    return '***@***';
+    return '***@***'
   }
 
-  const maskedLocal = local.length > 2
-    ? local.substring(0, 2) + '***'
-    : '***';
+  const maskedLocal = local.length > 2 ? local.substring(0, 2) + '***' : '***'
 
-  return `${maskedLocal}@${domain}`;
+  return `${maskedLocal}@${domain}`
 }
 
 /**
  * Sanitize metadata to remove sensitive fields
  */
-export function sanitizeMetadata(metadata: Record<string, unknown> | undefined): Record<string, unknown> | undefined {
+export function sanitizeMetadata(
+  metadata: Record<string, unknown> | undefined
+): Record<string, unknown> | undefined {
   if (!metadata || typeof metadata !== 'object') {
-    return undefined;
+    return undefined
   }
 
-  const sanitized: Record<string, unknown> = {};
+  const sanitized: Record<string, unknown> = {}
 
   for (const [key, value] of Object.entries(metadata)) {
     // Skip sensitive fields
-    if (SENSITIVE_FIELDS.some(field => key.toLowerCase().includes(field.toLowerCase()))) {
-      continue;
+    if (SENSITIVE_FIELDS.some((field) => key.toLowerCase().includes(field.toLowerCase()))) {
+      continue
     }
 
     // Recursively sanitize nested objects
     if (value && typeof value === 'object' && !Array.isArray(value)) {
-      sanitized[key] = sanitizeMetadata(value as Record<string, unknown>);
+      sanitized[key] = sanitizeMetadata(value as Record<string, unknown>)
     } else {
-      sanitized[key] = value;
+      sanitized[key] = value
     }
   }
 
-  return Object.keys(sanitized).length > 0 ? sanitized : undefined;
+  return Object.keys(sanitized).length > 0 ? sanitized : undefined
 }
 
 /**
@@ -216,56 +219,56 @@ export function sanitizePaymentAuditEntry(entry: PaymentAuditEntry): SanitizedPa
     ipAddress: entry.ipAddress,
     userAgent: entry.userAgent,
     metadata: sanitizeMetadata(entry.metadata),
-  };
+  }
 
   // Mask email
   if (entry.buyerEmail) {
-    sanitized.buyerEmailMasked = maskEmail(entry.buyerEmail);
+    sanitized.buyerEmailMasked = maskEmail(entry.buyerEmail)
   }
 
   // Indicate card info presence without exposing details
   if (entry.cardLast4 || entry.cardBrand) {
-    sanitized.hasCardInfo = true;
+    sanitized.hasCardInfo = true
   }
 
-  return sanitized;
+  return sanitized
 }
 
 /**
  * Validate that a payment audit entry has required fields
  */
 export function validatePaymentAuditEntry(entry: Partial<PaymentAuditEntry>): {
-  isValid: boolean;
-  errors: string[];
+  isValid: boolean
+  errors: string[]
 } {
-  const errors: string[] = [];
+  const errors: string[] = []
 
   if (!entry.eventType) {
-    errors.push('eventType is required');
+    errors.push('eventType is required')
   }
 
   if (!entry.orderId) {
-    errors.push('orderId is required');
+    errors.push('orderId is required')
   }
 
   if (!entry.orderNumber) {
-    errors.push('orderNumber is required');
+    errors.push('orderNumber is required')
   }
 
   if (entry.amount === undefined || entry.amount === null) {
-    errors.push('amount is required');
+    errors.push('amount is required')
   } else if (typeof entry.amount !== 'number' || entry.amount < 0) {
-    errors.push('amount must be a non-negative number');
+    errors.push('amount must be a non-negative number')
   }
 
   if (!entry.currency) {
-    errors.push('currency is required');
+    errors.push('currency is required')
   }
 
   return {
     isValid: errors.length === 0,
     errors,
-  };
+  }
 }
 
 /**
@@ -294,22 +297,24 @@ export function isPaymentEventType(eventType: string): eventType is PaymentEvent
     'subscription_cancelled',
     'invoice_paid',
     'invoice_failed',
-  ];
+  ]
 
-  return validEventTypes.includes(eventType as PaymentEventType);
+  return validEventTypes.includes(eventType as PaymentEventType)
 }
 
 /**
  * Get event category from event type
  */
-export function getEventCategory(eventType: PaymentEventType): 'checkout' | 'payment' | 'refund' | 'dispute' | 'subscription' | 'invoice' {
-  if (eventType.startsWith('checkout_')) return 'checkout';
-  if (eventType.startsWith('payment_')) return 'payment';
-  if (eventType.startsWith('refund_') || eventType === 'partial_refund_completed') return 'refund';
-  if (eventType.startsWith('dispute_') || eventType === 'chargeback_created') return 'dispute';
-  if (eventType.startsWith('subscription_')) return 'subscription';
-  if (eventType.startsWith('invoice_')) return 'invoice';
-  return 'payment';
+export function getEventCategory(
+  eventType: PaymentEventType
+): 'checkout' | 'payment' | 'refund' | 'dispute' | 'subscription' | 'invoice' {
+  if (eventType.startsWith('checkout_')) return 'checkout'
+  if (eventType.startsWith('payment_')) return 'payment'
+  if (eventType.startsWith('refund_') || eventType === 'partial_refund_completed') return 'refund'
+  if (eventType.startsWith('dispute_') || eventType === 'chargeback_created') return 'dispute'
+  if (eventType.startsWith('subscription_')) return 'subscription'
+  if (eventType.startsWith('invoice_')) return 'invoice'
+  return 'payment'
 }
 
 /**
@@ -323,7 +328,7 @@ export function isFailureEvent(eventType: PaymentEventType): boolean {
     'invoice_failed',
     'checkout_expired',
     'checkout_cancelled',
-  ].includes(eventType);
+  ].includes(eventType)
 }
 
 /**
@@ -337,7 +342,7 @@ export function isSuccessEvent(eventType: PaymentEventType): boolean {
     'partial_refund_completed',
     'dispute_won',
     'invoice_paid',
-  ].includes(eventType);
+  ].includes(eventType)
 }
 
 // ============================================================================
@@ -357,29 +362,26 @@ export class PaymentAuditLogger {
   /**
    * Log a payment event
    */
-  static async log(
-    ctx: AuditLogContext,
-    entry: PaymentAuditEntry
-  ): Promise<void> {
+  static async log(ctx: AuditLogContext, entry: PaymentAuditEntry): Promise<void> {
     // Validate entry
-    const validation = validatePaymentAuditEntry(entry);
+    const validation = validatePaymentAuditEntry(entry)
     if (!validation.isValid) {
       logger.warn('Invalid payment audit entry', {
         errors: validation.errors,
         eventType: entry.eventType,
         orderId: entry.orderId,
-      });
+      })
       // Still log but with warning
     }
 
     // Sanitize and log
-    const sanitized = sanitizePaymentAuditEntry(entry);
+    const sanitized = sanitizePaymentAuditEntry(entry)
 
     // Log to structured logger
     logger.info(`Payment event: ${entry.eventType}`, {
       ...sanitized,
       timestamp: Date.now(),
-    });
+    })
 
     // Store in audit log database
     await ctx.runMutation(logPaymentEventInternal, {
@@ -407,7 +409,7 @@ export class PaymentAuditLogger {
       ipAddress: entry.ipAddress,
       userAgent: entry.userAgent,
       metadata: entry.metadata,
-    });
+    })
   }
 
   /**
@@ -415,10 +417,14 @@ export class PaymentAuditLogger {
    */
   static async logCheckout(
     ctx: AuditLogContext,
-    eventType: 'checkout_initiated' | 'checkout_completed' | 'checkout_expired' | 'checkout_cancelled',
+    eventType:
+      | 'checkout_initiated'
+      | 'checkout_completed'
+      | 'checkout_expired'
+      | 'checkout_cancelled',
     details: Omit<PaymentAuditEntry, 'eventType'>
   ): Promise<void> {
-    await PaymentAuditLogger.log(ctx, { ...details, eventType });
+    await PaymentAuditLogger.log(ctx, { ...details, eventType })
   }
 
   /**
@@ -429,7 +435,7 @@ export class PaymentAuditLogger {
     eventType: 'payment_succeeded' | 'payment_failed' | 'payment_processing',
     details: Omit<PaymentAuditEntry, 'eventType'>
   ): Promise<void> {
-    await PaymentAuditLogger.log(ctx, { ...details, eventType });
+    await PaymentAuditLogger.log(ctx, { ...details, eventType })
   }
 
   /**
@@ -437,10 +443,14 @@ export class PaymentAuditLogger {
    */
   static async logRefund(
     ctx: AuditLogContext,
-    eventType: 'refund_initiated' | 'refund_completed' | 'refund_failed' | 'partial_refund_completed',
+    eventType:
+      | 'refund_initiated'
+      | 'refund_completed'
+      | 'refund_failed'
+      | 'partial_refund_completed',
     details: Omit<PaymentAuditEntry, 'eventType'>
   ): Promise<void> {
-    await PaymentAuditLogger.log(ctx, { ...details, eventType });
+    await PaymentAuditLogger.log(ctx, { ...details, eventType })
   }
 
   /**
@@ -448,10 +458,16 @@ export class PaymentAuditLogger {
    */
   static async logDispute(
     ctx: AuditLogContext,
-    eventType: 'dispute_created' | 'dispute_updated' | 'dispute_won' | 'dispute_lost' | 'dispute_closed' | 'chargeback_created',
+    eventType:
+      | 'dispute_created'
+      | 'dispute_updated'
+      | 'dispute_won'
+      | 'dispute_lost'
+      | 'dispute_closed'
+      | 'chargeback_created',
     details: Omit<PaymentAuditEntry, 'eventType'>
   ): Promise<void> {
-    await PaymentAuditLogger.log(ctx, { ...details, eventType });
+    await PaymentAuditLogger.log(ctx, { ...details, eventType })
   }
 }
 
@@ -491,19 +507,17 @@ export const logPaymentEventInternal = internalMutation({
   },
   handler: async (ctx, args) => {
     // Convert userId string to Id<'users'> if valid
-    let userIdTyped: Id<'users'> | undefined;
+    let userIdTyped: Id<'users'> | undefined
     if (args.userId) {
       try {
-        userIdTyped = args.userId as Id<'users'>;
+        userIdTyped = args.userId as Id<'users'>
       } catch {
-        userIdTyped = undefined;
+        userIdTyped = undefined
       }
     }
 
     // Determine status based on event type
-    const status = isFailureEvent(args.eventType as PaymentEventType)
-      ? 'failure'
-      : 'success';
+    const status = isFailureEvent(args.eventType as PaymentEventType) ? 'failure' : 'success'
 
     // Insert into audit log
     await ctx.db.insert('auditLogs', {
@@ -538,9 +552,9 @@ export const logPaymentEventInternal = internalMutation({
       status,
       errorMessage: args.errorMessage,
       createdAt: Date.now(),
-    });
+    })
   },
-});
+})
 
 /**
  * Query payment audit logs by order
@@ -551,19 +565,17 @@ export const getPaymentAuditLogsByOrder = internalQuery({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const limit = args.limit || 100;
+    const limit = args.limit || 100
 
     const logs = await ctx.db
       .query('auditLogs')
-      .withIndex('by_resource', (q) =>
-        q.eq('resource', 'payment').eq('resourceId', args.orderId)
-      )
+      .withIndex('by_resource', (q) => q.eq('resource', 'payment').eq('resourceId', args.orderId))
       .order('desc')
-      .take(limit);
+      .take(limit)
 
-    return logs;
+    return logs
   },
-});
+})
 
 /**
  * Query payment audit logs by date range
@@ -575,7 +587,7 @@ export const getPaymentAuditLogsByDateRange = internalQuery({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const limit = args.limit || 1000;
+    const limit = args.limit || 1000
 
     const logs = await ctx.db
       .query('auditLogs')
@@ -588,11 +600,11 @@ export const getPaymentAuditLogsByDateRange = internalQuery({
         )
       )
       .order('desc')
-      .take(limit);
+      .take(limit)
 
-    return logs;
+    return logs
   },
-});
+})
 
 /**
  * Query failed payment events
@@ -602,15 +614,15 @@ export const getFailedPaymentEvents = internalQuery({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const limit = args.limit || 100;
+    const limit = args.limit || 100
 
     const logs = await ctx.db
       .query('auditLogs')
       .withIndex('by_status', (q) => q.eq('status', 'failure'))
       .filter((q) => q.eq(q.field('resource'), 'payment'))
       .order('desc')
-      .take(limit);
+      .take(limit)
 
-    return logs;
+    return logs
   },
-});
+})

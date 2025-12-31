@@ -11,9 +11,7 @@ export default defineConfig({
   /* Enable parallel workers on CI with sharding */
   workers: process.env.CI ? '50%' : undefined,
   /* Use blob reporter for sharding on CI, HTML for local */
-  reporter: process.env.CI
-    ? [['blob'], ['junit', { outputFile: 'e2e-results.xml' }]]
-    : 'html',
+  reporter: process.env.CI ? [['blob'], ['junit', { outputFile: 'e2e-results.xml' }]] : 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */

@@ -1,41 +1,41 @@
 /**
  * Metrics Middleware for Convex Functions
- * 
+ *
  * Provides middleware wrappers to automatically collect metrics for:
  * - API request performance (response times, status codes)
  * - API usage tracking (user/organization)
  * - Database query performance
- * 
+ *
  * Note: This module uses generic types since it's in a subdirectory
  * and cannot directly import from _generated/server.
  */
 
-import { metricsCollector } from './metrics';
+import { metricsCollector } from './metrics'
 
 /**
  * Generic context type for Convex functions
  */
 interface GenericCtx {
   auth?: {
-    userId?: string;
-  };
-  db?: unknown;
+    userId?: string
+  }
+  db?: unknown
 }
 
 /**
  * Extract user and organization IDs from context
  */
 function extractIdentity(ctx: GenericCtx): {
-  userId?: string;
-  organizationId?: string;
+  userId?: string
+  organizationId?: string
 } {
-  const userId = ctx.auth?.userId;
+  const userId = ctx.auth?.userId
   // Note: organizationId would need to be extracted from user data if available
   // For now, we'll leave it undefined and can enhance later
   return {
     userId: userId?.toString(),
     organizationId: undefined,
-  };
+  }
 }
 
 /**
@@ -46,13 +46,13 @@ export function withQueryMetrics<TCtx extends GenericCtx, TArgs, TOutput>(
   handler: (ctx: TCtx, args: TArgs) => Promise<TOutput>
 ): (ctx: TCtx, args: TArgs) => Promise<TOutput> {
   return async (ctx: TCtx, args: TArgs): Promise<TOutput> => {
-    const startTime = Date.now();
-    const { userId, organizationId } = extractIdentity(ctx);
-    
+    const startTime = Date.now()
+    const { userId, organizationId } = extractIdentity(ctx)
+
     try {
-      const result = await handler(ctx, args);
-      const responseTime = Date.now() - startTime;
-      
+      const result = await handler(ctx, args)
+      const responseTime = Date.now() - startTime
+
       // Record API request metrics
       metricsCollector.recordAPIRequest({
         endpoint: functionName,
@@ -61,8 +61,8 @@ export function withQueryMetrics<TCtx extends GenericCtx, TArgs, TOutput>(
         responseTime,
         userId,
         organizationId,
-      });
-      
+      })
+
       // Record API usage
       if (userId) {
         metricsCollector.recordAPIUsage({
@@ -70,13 +70,13 @@ export function withQueryMetrics<TCtx extends GenericCtx, TArgs, TOutput>(
           organizationId,
           endpoint: functionName,
           action: 'query',
-        });
+        })
       }
-      
-      return result;
+
+      return result
     } catch (error) {
-      const responseTime = Date.now() - startTime;
-      
+      const responseTime = Date.now() - startTime
+
       // Record failed request
       metricsCollector.recordAPIRequest({
         endpoint: functionName,
@@ -85,11 +85,11 @@ export function withQueryMetrics<TCtx extends GenericCtx, TArgs, TOutput>(
         responseTime,
         userId,
         organizationId,
-      });
-      
-      throw error;
+      })
+
+      throw error
     }
-  };
+  }
 }
 
 /**
@@ -100,13 +100,13 @@ export function withMutationMetrics<TCtx extends GenericCtx, TArgs, TOutput>(
   handler: (ctx: TCtx, args: TArgs) => Promise<TOutput>
 ): (ctx: TCtx, args: TArgs) => Promise<TOutput> {
   return async (ctx: TCtx, args: TArgs): Promise<TOutput> => {
-    const startTime = Date.now();
-    const { userId, organizationId } = extractIdentity(ctx);
-    
+    const startTime = Date.now()
+    const { userId, organizationId } = extractIdentity(ctx)
+
     try {
-      const result = await handler(ctx, args);
-      const responseTime = Date.now() - startTime;
-      
+      const result = await handler(ctx, args)
+      const responseTime = Date.now() - startTime
+
       // Record API request metrics
       metricsCollector.recordAPIRequest({
         endpoint: functionName,
@@ -115,8 +115,8 @@ export function withMutationMetrics<TCtx extends GenericCtx, TArgs, TOutput>(
         responseTime,
         userId,
         organizationId,
-      });
-      
+      })
+
       // Record API usage
       if (userId) {
         metricsCollector.recordAPIUsage({
@@ -124,13 +124,13 @@ export function withMutationMetrics<TCtx extends GenericCtx, TArgs, TOutput>(
           organizationId,
           endpoint: functionName,
           action: 'mutation',
-        });
+        })
       }
-      
-      return result;
+
+      return result
     } catch (error) {
-      const responseTime = Date.now() - startTime;
-      
+      const responseTime = Date.now() - startTime
+
       // Record failed request
       metricsCollector.recordAPIRequest({
         endpoint: functionName,
@@ -139,11 +139,11 @@ export function withMutationMetrics<TCtx extends GenericCtx, TArgs, TOutput>(
         responseTime,
         userId,
         organizationId,
-      });
-      
-      throw error;
+      })
+
+      throw error
     }
-  };
+  }
 }
 
 /**
@@ -154,13 +154,13 @@ export function withActionMetrics<TCtx extends GenericCtx, TArgs, TOutput>(
   handler: (ctx: TCtx, args: TArgs) => Promise<TOutput>
 ): (ctx: TCtx, args: TArgs) => Promise<TOutput> {
   return async (ctx: TCtx, args: TArgs): Promise<TOutput> => {
-    const startTime = Date.now();
-    const { userId, organizationId } = extractIdentity(ctx);
-    
+    const startTime = Date.now()
+    const { userId, organizationId } = extractIdentity(ctx)
+
     try {
-      const result = await handler(ctx, args);
-      const responseTime = Date.now() - startTime;
-      
+      const result = await handler(ctx, args)
+      const responseTime = Date.now() - startTime
+
       // Record API request metrics
       metricsCollector.recordAPIRequest({
         endpoint: functionName,
@@ -169,8 +169,8 @@ export function withActionMetrics<TCtx extends GenericCtx, TArgs, TOutput>(
         responseTime,
         userId,
         organizationId,
-      });
-      
+      })
+
       // Record API usage
       if (userId) {
         metricsCollector.recordAPIUsage({
@@ -178,13 +178,13 @@ export function withActionMetrics<TCtx extends GenericCtx, TArgs, TOutput>(
           organizationId,
           endpoint: functionName,
           action: 'action',
-        });
+        })
       }
-      
-      return result;
+
+      return result
     } catch (error) {
-      const responseTime = Date.now() - startTime;
-      
+      const responseTime = Date.now() - startTime
+
       // Record failed request
       metricsCollector.recordAPIRequest({
         endpoint: functionName,
@@ -193,11 +193,11 @@ export function withActionMetrics<TCtx extends GenericCtx, TArgs, TOutput>(
         responseTime,
         userId,
         organizationId,
-      });
-      
-      throw error;
+      })
+
+      throw error
     }
-  };
+  }
 }
 
 /**
@@ -206,41 +206,41 @@ export function withActionMetrics<TCtx extends GenericCtx, TArgs, TOutput>(
 export async function withDatabaseMetrics<T>(
   operation: () => Promise<T>,
   params: {
-    queryType: 'read' | 'write' | 'delete';
-    table: string;
+    queryType: 'read' | 'write' | 'delete'
+    table: string
   }
 ): Promise<T> {
-  const startTime = Date.now();
-  
+  const startTime = Date.now()
+
   try {
-    const result = await operation();
-    const duration = Date.now() - startTime;
-    
+    const result = await operation()
+    const duration = Date.now() - startTime
+
     // Record database query metrics
     metricsCollector.recordDatabaseQuery({
       queryType: params.queryType,
       table: params.table,
       duration,
-    });
-    
-    return result;
+    })
+
+    return result
   } catch (error) {
-    const duration = Date.now() - startTime;
-    
+    const duration = Date.now() - startTime
+
     // Still record the metric even on failure
     metricsCollector.recordDatabaseQuery({
       queryType: params.queryType,
       table: params.table,
       duration,
-    });
-    
-    throw error;
+    })
+
+    throw error
   }
 }
 
 /**
  * Helper to create a metrics-enabled query
- * 
+ *
  * Usage:
  * export const myQuery = createMetricsQuery({
  *   args: { id: v.id('table') },
@@ -250,24 +250,24 @@ export async function withDatabaseMetrics<T>(
  * });
  */
 export function createMetricsQuery<TCtx extends GenericCtx, TArgs, TOutput>(config: {
-  args: unknown;
-  handler: (ctx: TCtx, args: TArgs) => Promise<TOutput>;
+  args: unknown
+  handler: (ctx: TCtx, args: TArgs) => Promise<TOutput>
 }): {
-  args: unknown;
-  handler: (ctx: TCtx, args: TArgs) => Promise<TOutput>;
+  args: unknown
+  handler: (ctx: TCtx, args: TArgs) => Promise<TOutput>
 } {
   // Get the function name from the call stack (best effort)
-  const functionName = new Error().stack?.split('\n')[2]?.trim() || 'unknown_query';
-  
+  const functionName = new Error().stack?.split('\n')[2]?.trim() || 'unknown_query'
+
   return {
     args: config.args,
     handler: withQueryMetrics(functionName, config.handler),
-  };
+  }
 }
 
 /**
  * Helper to create a metrics-enabled mutation
- * 
+ *
  * Usage:
  * export const myMutation = createMetricsMutation({
  *   args: { id: v.id('table') },
@@ -277,17 +277,17 @@ export function createMetricsQuery<TCtx extends GenericCtx, TArgs, TOutput>(conf
  * });
  */
 export function createMetricsMutation<TCtx extends GenericCtx, TArgs, TOutput>(config: {
-  args: unknown;
-  handler: (ctx: TCtx, args: TArgs) => Promise<TOutput>;
+  args: unknown
+  handler: (ctx: TCtx, args: TArgs) => Promise<TOutput>
 }): {
-  args: unknown;
-  handler: (ctx: TCtx, args: TArgs) => Promise<TOutput>;
+  args: unknown
+  handler: (ctx: TCtx, args: TArgs) => Promise<TOutput>
 } {
   // Get the function name from the call stack (best effort)
-  const functionName = new Error().stack?.split('\n')[2]?.trim() || 'unknown_mutation';
-  
+  const functionName = new Error().stack?.split('\n')[2]?.trim() || 'unknown_mutation'
+
   return {
     args: config.args,
     handler: withMutationMetrics(functionName, config.handler),
-  };
+  }
 }

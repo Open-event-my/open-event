@@ -87,7 +87,13 @@ export default defineConfig({
               return 'vendor-convex'
             }
             // Markdown rendering
-            if (id.includes('react-markdown') || id.includes('remark') || id.includes('unified') || id.includes('mdast') || id.includes('micromark')) {
+            if (
+              id.includes('react-markdown') ||
+              id.includes('remark') ||
+              id.includes('unified') ||
+              id.includes('mdast') ||
+              id.includes('micromark')
+            ) {
               return 'vendor-markdown'
             }
             // PDF generation

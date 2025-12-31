@@ -249,9 +249,7 @@ export function TwoFactorStatus({ onEnableClick }: TwoFactorStatusProps) {
               autoFocus
             />
 
-            {error && (
-              <p className="text-sm text-destructive mt-2">{error}</p>
-            )}
+            {error && <p className="text-sm text-destructive mt-2">{error}</p>}
 
             <div className="flex items-center justify-end gap-3 mt-6">
               <button
@@ -322,9 +320,7 @@ export function TwoFactorStatus({ onEnableClick }: TwoFactorStatusProps) {
                   autoFocus
                 />
 
-                {error && (
-                  <p className="text-sm text-destructive mt-2">{error}</p>
-                )}
+                {error && <p className="text-sm text-destructive mt-2">{error}</p>}
 
                 <div className="flex items-center justify-end gap-3 mt-6">
                   <button

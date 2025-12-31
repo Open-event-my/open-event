@@ -5,11 +5,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import {
-  getEnvironmentConfig,
-  isFeatureEnabled,
-  getConfigSection,
-} from './environmentConfig'
+import { getEnvironmentConfig, isFeatureEnabled, getConfigSection } from './environmentConfig'
 
 describe('environmentConfig', () => {
   let originalMode: string | undefined

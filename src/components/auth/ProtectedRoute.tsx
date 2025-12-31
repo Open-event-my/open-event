@@ -12,7 +12,7 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children, redirectTo = '/sign-in' }: ProtectedRouteProps) {
   const { isLoading, isAuthenticated } = useConvexAuth()
   const authToken = useAuthToken()
-  
+
   // Consider authenticated if either isAuthenticated is true OR we have an auth token
   // This handles cases where useConvexAuth() is slow to update but token exists
   const isActuallyAuthenticated = isAuthenticated || !!authToken

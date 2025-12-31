@@ -57,8 +57,7 @@ export function OrganizationSettings({ organizationId, isOwner }: OrganizationSe
         description: organization.description || '',
         website: organization.website || '',
         settings: {
-          defaultEventVisibility:
-            organization.settings?.defaultEventVisibility || 'private',
+          defaultEventVisibility: organization.settings?.defaultEventVisibility || 'private',
           requireEventApproval: organization.settings?.requireEventApproval || false,
           allowMemberInvites: organization.settings?.allowMemberInvites ?? true,
           notifyOnNewMember: organization.settings?.notifyOnNewMember ?? true,

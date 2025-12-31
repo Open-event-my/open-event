@@ -238,7 +238,6 @@ We use [Phosphor Icons](https://phosphoricons.com/) with the **duotone** weight 
 
 ```tsx
 import { Calendar, Storefront, Handshake } from '@phosphor-icons/react'
-
 ;<Calendar size={24} weight="duotone" className="text-amber-500" />
 ```
 

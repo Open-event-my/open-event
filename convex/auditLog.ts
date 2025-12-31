@@ -255,7 +255,11 @@ export const listLogs = query({
     }
 
     const limit = args.limit || 100
-    let logs = await ctx.db.query('auditLogs').withIndex('by_date').order('desc').take(limit * 2)
+    let logs = await ctx.db
+      .query('auditLogs')
+      .withIndex('by_date')
+      .order('desc')
+      .take(limit * 2)
 
     // Apply filters
     if (args.action) {

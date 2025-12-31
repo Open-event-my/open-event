@@ -448,7 +448,8 @@ jobs:
   ci-status:
     name: CI Status
     runs-on: ubuntu-latest
-    needs: [changes, lint, typecheck, test, build, e2e, merge-e2e-reports, lighthouse, dependency-review]
+    needs:
+      [changes, lint, typecheck, test, build, e2e, merge-e2e-reports, lighthouse, dependency-review]
     if: always()
     steps:
       - name: Check CI Status

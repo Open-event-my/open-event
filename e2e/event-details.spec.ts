@@ -24,7 +24,10 @@ test.describe('Event Details Page', () => {
       await page.waitForTimeout(2000)
 
       // Click first event card
-      const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+      const eventCard = page
+        .locator('.rounded-lg.border')
+        .filter({ has: page.locator('h3') })
+        .first()
 
       if (await eventCard.isVisible()) {
         await eventCard.click()
@@ -38,9 +41,12 @@ test.describe('Event Details Page', () => {
         await expect(title).toBeVisible({ timeout: 10000 })
 
         // Should show status badge
-        const statusBadge = page.locator('span').filter({
-          hasText: /(draft|planning|active|completed|cancelled)/i
-        }).first()
+        const statusBadge = page
+          .locator('span')
+          .filter({
+            hasText: /(draft|planning|active|completed|cancelled)/i,
+          })
+          .first()
         await expect(statusBadge).toBeVisible({ timeout: 5000 })
       }
     })
@@ -49,7 +55,10 @@ test.describe('Event Details Page', () => {
       await page.goto('/dashboard/events')
       await page.waitForTimeout(2000)
 
-      const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+      const eventCard = page
+        .locator('.rounded-lg.border')
+        .filter({ has: page.locator('h3') })
+        .first()
 
       if (await eventCard.isVisible()) {
         await eventCard.click()
@@ -65,7 +74,10 @@ test.describe('Event Details Page', () => {
       await page.goto('/dashboard/events')
       await page.waitForTimeout(2000)
 
-      const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+      const eventCard = page
+        .locator('.rounded-lg.border')
+        .filter({ has: page.locator('h3') })
+        .first()
 
       if (await eventCard.isVisible()) {
         await eventCard.click()
@@ -83,7 +95,7 @@ test.describe('Event Details Page', () => {
 
       // Should show error page (either "Event not found" or "Something went wrong")
       const errorHeading = page.locator('h1').filter({
-        hasText: /(event not found|something went wrong)/i
+        hasText: /(event not found|something went wrong)/i,
       })
       await expect(errorHeading).toBeVisible({ timeout: 10000 })
     })
@@ -94,7 +106,10 @@ test.describe('Event Details Page', () => {
       await page.goto('/dashboard/events')
       await page.waitForTimeout(2000)
 
-      const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+      const eventCard = page
+        .locator('.rounded-lg.border')
+        .filter({ has: page.locator('h3') })
+        .first()
 
       if (await eventCard.isVisible()) {
         await eventCard.click()
@@ -117,7 +132,10 @@ test.describe('Event Details Page', () => {
       await page.goto('/dashboard/events')
       await page.waitForTimeout(2000)
 
-      const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+      const eventCard = page
+        .locator('.rounded-lg.border')
+        .filter({ has: page.locator('h3') })
+        .first()
 
       if (await eventCard.isVisible()) {
         await eventCard.click()
@@ -133,7 +151,10 @@ test.describe('Event Details Page', () => {
       await page.goto('/dashboard/events')
       await page.waitForTimeout(2000)
 
-      const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+      const eventCard = page
+        .locator('.rounded-lg.border')
+        .filter({ has: page.locator('h3') })
+        .first()
 
       if (await eventCard.isVisible()) {
         await eventCard.click()
@@ -149,7 +170,10 @@ test.describe('Event Details Page', () => {
       await page.goto('/dashboard/events')
       await page.waitForTimeout(2000)
 
-      const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+      const eventCard = page
+        .locator('.rounded-lg.border')
+        .filter({ has: page.locator('h3') })
+        .first()
 
       if (await eventCard.isVisible()) {
         await eventCard.click()
@@ -166,7 +190,10 @@ test.describe('Event Details Page', () => {
       await page.goto('/dashboard/events')
       await page.waitForTimeout(2000)
 
-      const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+      const eventCard = page
+        .locator('.rounded-lg.border')
+        .filter({ has: page.locator('h3') })
+        .first()
 
       if (await eventCard.isVisible()) {
         await eventCard.click()
@@ -189,7 +216,10 @@ test.describe('Event Details Page', () => {
       await page.goto('/dashboard/events/new')
       await page.waitForTimeout(1000)
 
-      const manualButton = page.locator('button').filter({ hasText: /manual form/i }).first()
+      const manualButton = page
+        .locator('button')
+        .filter({ hasText: /manual form/i })
+        .first()
       await expect(manualButton).toBeVisible({ timeout: 10000 })
       await manualButton.click()
       await page.waitForTimeout(500)
@@ -203,7 +233,10 @@ test.describe('Event Details Page', () => {
       tomorrow.setDate(tomorrow.getDate() + 1)
       await page.getByLabel(/start date/i).fill(tomorrow.toISOString().split('T')[0])
 
-      const createButton = page.locator('button').filter({ hasText: /create event/i }).first()
+      const createButton = page
+        .locator('button')
+        .filter({ hasText: /create event/i })
+        .first()
       await createButton.click()
       await page.waitForURL(/\/dashboard\/events\/[a-z0-9]+$/, { timeout: 15000 })
 
@@ -227,7 +260,10 @@ test.describe('Event Details Page', () => {
       await page.goto('/dashboard/events/new')
       await page.waitForTimeout(1000)
 
-      const manualButton = page.locator('button').filter({ hasText: /manual form/i }).first()
+      const manualButton = page
+        .locator('button')
+        .filter({ hasText: /manual form/i })
+        .first()
       await expect(manualButton).toBeVisible({ timeout: 10000 })
       await manualButton.click()
       await page.waitForTimeout(500)
@@ -239,7 +275,10 @@ test.describe('Event Details Page', () => {
       tomorrow.setDate(tomorrow.getDate() + 1)
       await page.getByLabel(/start date/i).fill(tomorrow.toISOString().split('T')[0])
 
-      const createButton = page.locator('button').filter({ hasText: /create event/i }).first()
+      const createButton = page
+        .locator('button')
+        .filter({ hasText: /create event/i })
+        .first()
       await createButton.click()
       await page.waitForURL(/\/dashboard\/events\/[a-z0-9]+$/, { timeout: 15000 })
 
@@ -254,7 +293,10 @@ test.describe('Event Details Page', () => {
       })
 
       // Click delete button
-      const deleteButton = page.locator('button').filter({ hasText: /delete/i }).first()
+      const deleteButton = page
+        .locator('button')
+        .filter({ hasText: /delete/i })
+        .first()
       await expect(deleteButton).toBeVisible({ timeout: 10000 })
       await deleteButton.click()
 
@@ -266,7 +308,10 @@ test.describe('Event Details Page', () => {
       await page.goto('/dashboard/events')
       await page.waitForTimeout(2000)
 
-      const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+      const eventCard = page
+        .locator('.rounded-lg.border')
+        .filter({ has: page.locator('h3') })
+        .first()
 
       if (await eventCard.isVisible()) {
         await eventCard.click()
@@ -283,7 +328,10 @@ test.describe('Event Details Page', () => {
         })
 
         // Click delete button
-        const deleteButton = page.locator('button').filter({ hasText: /delete/i }).first()
+        const deleteButton = page
+          .locator('button')
+          .filter({ hasText: /delete/i })
+          .first()
         await expect(deleteButton).toBeVisible({ timeout: 10000 })
         await deleteButton.click()
 

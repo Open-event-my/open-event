@@ -1,6 +1,7 @@
 # Project Structure & Organization
 
 ## Root Structure
+
 ```
 open-event/
 ├── convex/              # Backend (Convex serverless functions)
@@ -13,6 +14,7 @@ open-event/
 ```
 
 ## Backend Structure (`convex/`)
+
 ```
 convex/
 ├── schema.ts            # Database schema definitions
@@ -33,6 +35,7 @@ convex/
 ```
 
 ## Frontend Structure (`src/`)
+
 ```
 src/
 ├── components/
@@ -59,24 +62,28 @@ src/
 ## Key Architectural Patterns
 
 ### Component Organization
+
 - **UI Components**: Reusable ShadCN components in `src/components/ui/`
 - **Feature Components**: Grouped by domain (events, vendors, sponsors)
 - **Page Components**: Route-level components with lazy loading
 - **Layout Components**: App shell, admin layout, navigation
 
 ### Backend Organization
+
 - **Schema-First**: All data models defined in `convex/schema.ts`
 - **Function-Based**: Convex functions for queries, mutations, actions
 - **Agent System**: AI tools and handlers in dedicated `lib/agent/` folder
 - **Multi-Tenancy**: Organization support with role-based access
 
 ### Styling Conventions
+
 - **Utility-First**: TailwindCSS with custom design tokens
 - **Component Variants**: class-variance-authority for consistent variants
 - **Design System**: ShadCN UI with New York style preset
 - **Dark Mode**: next-themes with CSS variables
 
 ### File Naming
+
 - **Components**: PascalCase (e.g., `EventCard.tsx`)
 - **Hooks**: camelCase with `use` prefix (e.g., `useEventData.ts`)
 - **Utilities**: camelCase (e.g., `formatDate.ts`)
@@ -84,12 +91,14 @@ src/
 - **Types**: camelCase interfaces/types (e.g., `eventTypes.ts`)
 
 ### Import Conventions
+
 - **Absolute Imports**: Use `@/` alias for src imports
 - **Barrel Exports**: Index files for clean imports
 - **Lazy Loading**: Dynamic imports for code splitting
 - **External First**: External imports before internal imports
 
 ### Testing Structure
+
 - **Unit Tests**: Co-located with components (`.test.tsx`)
 - **E2E Tests**: Playwright tests in `e2e/` folder
 - **Test Utils**: Shared utilities in `src/test/`

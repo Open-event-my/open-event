@@ -17,13 +17,13 @@ export const getCurrentUser = query({
   handler: async (ctx) => {
     // Removed debug logging that exposed sensitive data (Requirements 1.1, 2.2)
     const result = await getCurrentUserFromLib(ctx)
-    
+
     // Log with structured logger (no sensitive data)
     logger.debug('getCurrentUser query executed', {
       hasUser: !!result,
       userRole: result?.role ?? 'null',
     })
-    
+
     return result
   },
 })

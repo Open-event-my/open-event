@@ -237,7 +237,6 @@ import { Logo, LogoIcon, LogoAnimated, LogoMini } from '@/components/ui/logo'
 ```tsx
 // Use cn() for conditional classes
 import { cn } from '@/lib/utils'
-
 ;<div
   className={cn(
     'base-classes',

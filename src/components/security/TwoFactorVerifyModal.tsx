@@ -163,7 +163,9 @@ export function TwoFactorVerifyModal({
           </button>
           <button
             onClick={handleVerify}
-            disabled={isLoading || (!useBackupCode && code.length !== 6) || (useBackupCode && !code)}
+            disabled={
+              isLoading || (!useBackupCode && code.length !== 6) || (useBackupCode && !code)
+            }
             className={cn(
               'inline-flex items-center gap-2 px-6 py-2 rounded-lg',
               'bg-primary text-primary-foreground text-sm font-medium',

@@ -79,7 +79,7 @@ export const signup = action({
   },
   handler: async (ctx, args): Promise<AuthResult> => {
     const email = args.email.toLowerCase()
-    
+
     try {
       // Validate email format
       if (!isValidEmail(email)) {
@@ -171,7 +171,12 @@ export const signup = action({
       return result
     } catch (error) {
       // If we haven't already logged this error, log it now
-      if (error instanceof Error && !error.message.includes('already exists') && !error.message.includes('Invalid email') && !error.message.includes('Password requirements')) {
+      if (
+        error instanceof Error &&
+        !error.message.includes('already exists') &&
+        !error.message.includes('Invalid email') &&
+        !error.message.includes('Password requirements')
+      ) {
         await ctx.runMutation(internal.auditLog.log, {
           userEmail: email,
           action: 'signup',
@@ -197,7 +202,7 @@ export const signin = action({
   },
   handler: async (ctx, args): Promise<SignInResult> => {
     const email = args.email.toLowerCase()
-    
+
     try {
       // Find user by email
       const user = await ctx.runQuery(internal.customAuth.getUserByEmail, {
@@ -300,7 +305,12 @@ export const signin = action({
       }
     } catch (error) {
       // If we haven't already logged this error, log it now
-      if (error instanceof Error && !error.message.includes('Invalid email') && !error.message.includes('Please sign in') && !error.message.includes('suspended')) {
+      if (
+        error instanceof Error &&
+        !error.message.includes('Invalid email') &&
+        !error.message.includes('Please sign in') &&
+        !error.message.includes('suspended')
+      ) {
         await ctx.runMutation(internal.auditLog.log, {
           userEmail: email,
           action: 'login_failed',

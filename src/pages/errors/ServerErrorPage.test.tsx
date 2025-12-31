@@ -60,9 +60,7 @@ describe('ServerErrorPage', () => {
 
     it('should render the default error message', () => {
       renderWithRouter(<ServerErrorPage />)
-      expect(
-        screen.getByText(/We're experiencing technical difficulties/i)
-      ).toBeInTheDocument()
+      expect(screen.getByText(/We're experiencing technical difficulties/i)).toBeInTheDocument()
     })
 
     it('should render custom message when provided', () => {

@@ -15,32 +15,32 @@ This document outlines the disaster recovery (DR) procedures for the Open Event 
 
 ### Recovery Time Objective (RTO)
 
-| Component | RTO | Priority |
-|-----------|-----|----------|
-| Authentication | 1 hour | Critical |
-| Core Platform (Events, Dashboard) | 2 hours | Critical |
-| Payment Processing | 4 hours | High |
-| AI Features | 8 hours | Medium |
-| Analytics & Reporting | 24 hours | Low |
+| Component                         | RTO      | Priority |
+| --------------------------------- | -------- | -------- |
+| Authentication                    | 1 hour   | Critical |
+| Core Platform (Events, Dashboard) | 2 hours  | Critical |
+| Payment Processing                | 4 hours  | High     |
+| AI Features                       | 8 hours  | Medium   |
+| Analytics & Reporting             | 24 hours | Low      |
 
 ### Recovery Point Objective (RPO)
 
-| Data Type | RPO | Backup Frequency |
-|-----------|-----|------------------|
-| User Data | 1 hour | Hourly snapshots |
-| Event Data | 1 hour | Hourly snapshots |
+| Data Type        | RPO        | Backup Frequency      |
+| ---------------- | ---------- | --------------------- |
+| User Data        | 1 hour     | Hourly snapshots      |
+| Event Data       | 1 hour     | Hourly snapshots      |
 | Transaction Data | 15 minutes | Real-time replication |
-| Audit Logs | 24 hours | Daily backups |
-| Analytics Data | 24 hours | Daily backups |
+| Audit Logs       | 24 hours   | Daily backups         |
+| Analytics Data   | 24 hours   | Daily backups         |
 
 ### Service Level Targets
 
-| Metric | Target |
-|--------|--------|
+| Metric                      | Target                           |
+| --------------------------- | -------------------------------- |
 | Overall System Availability | 99.9% (8.76 hours downtime/year) |
-| Data Durability | 99.999999999% (11 nines) |
-| Maximum Data Loss | 1 hour |
-| Maximum Recovery Time | 4 hours |
+| Data Durability             | 99.999999999% (11 nines)         |
+| Maximum Data Loss           | 1 hour                           |
+| Maximum Recovery Time       | 4 hours                          |
 
 ## Backup Strategy
 
@@ -49,26 +49,27 @@ This document outlines the disaster recovery (DR) procedures for the Open Event 
 #### 1. Convex Database Backups
 
 Convex provides automatic backups with the following characteristics:
+
 - **Frequency**: Continuous (point-in-time recovery)
 - **Retention**: 30 days
 - **Location**: Convex cloud infrastructure (multi-region)
 
 #### 2. Application Backups
 
-| Component | Method | Frequency | Retention |
-|-----------|--------|-----------|-----------|
-| Source Code | Git (GitHub) | Every commit | Indefinite |
-| Configuration | Git + Secrets Manager | On change | 90 days |
-| Environment Variables | Convex Dashboard export | Weekly | 30 days |
-| Static Assets | CDN + Git | On deploy | 30 days |
+| Component             | Method                  | Frequency    | Retention  |
+| --------------------- | ----------------------- | ------------ | ---------- |
+| Source Code           | Git (GitHub)            | Every commit | Indefinite |
+| Configuration         | Git + Secrets Manager   | On change    | 90 days    |
+| Environment Variables | Convex Dashboard export | Weekly       | 30 days    |
+| Static Assets         | CDN + Git               | On deploy    | 30 days    |
 
 #### 3. External Service Data
 
-| Service | Backup Method | Frequency |
-|---------|---------------|-----------|
-| Stripe | Stripe Dashboard export | Monthly |
-| Sentry | Sentry data export | Monthly |
-| OpenAI | N/A (stateless) | N/A |
+| Service | Backup Method           | Frequency |
+| ------- | ----------------------- | --------- |
+| Stripe  | Stripe Dashboard export | Monthly   |
+| Sentry  | Sentry data export      | Monthly   |
+| OpenAI  | N/A (stateless)         | N/A       |
 
 ### Backup Verification
 
@@ -96,6 +97,7 @@ git log --oneline -5
 ### Scenario 1: Database Corruption
 
 **Symptoms:**
+
 - Data inconsistencies
 - Query errors
 - Missing records
@@ -107,6 +109,7 @@ git log --oneline -5
 ### Scenario 2: Complete Service Outage
 
 **Symptoms:**
+
 - Frontend unreachable
 - Backend unreachable
 - All users affected
@@ -118,6 +121,7 @@ git log --oneline -5
 ### Scenario 3: Security Breach
 
 **Symptoms:**
+
 - Unauthorized access detected
 - Data exfiltration suspected
 - Compromised credentials
@@ -129,6 +133,7 @@ git log --oneline -5
 ### Scenario 4: Region Outage
 
 **Symptoms:**
+
 - Convex region unavailable
 - Hosting provider region down
 
@@ -139,6 +144,7 @@ git log --oneline -5
 ### Scenario 5: Accidental Data Deletion
 
 **Symptoms:**
+
 - User reports missing data
 - Bulk deletion detected
 
@@ -155,12 +161,14 @@ git log --oneline -5
 Use this procedure to restore data to a specific point in time.
 
 **Prerequisites:**
+
 - Convex admin access
 - Knowledge of target recovery time
 
 **Steps:**
 
 1. **Identify recovery point:**
+
    ```bash
    # Check Convex logs for last known good state
    npx convex logs --prod --since "24 hours ago" | grep -i "error\|corruption"
@@ -175,6 +183,7 @@ Use this procedure to restore data to a specific point in time.
    - Verify data integrity in new deployment
 
 4. **Switch to recovered deployment:**
+
    ```bash
    # Update frontend to point to recovered deployment
    # Update VITE_CONVEX_URL in environment
@@ -192,6 +201,7 @@ Use this procedure for complete database restoration.
 **Steps:**
 
 1. **Create new Convex deployment:**
+
    ```bash
    npx convex deploy --prod --project new-deployment
    ```
@@ -201,6 +211,7 @@ Use this procedure for complete database restoration.
    - Provide backup date/time
 
 3. **Run data migrations:**
+
    ```bash
    npx convex run migrations/postRestore --prod
    ```
@@ -220,10 +231,11 @@ Use this procedure when both frontend and backend are down.
 **Phase 1: Assessment (0-15 minutes)**
 
 1. **Check service status:**
+
    ```bash
    # Check Convex status
    curl https://status.convex.dev/api/v2/status.json
-   
+
    # Check hosting provider status
    # Vercel: https://www.vercel-status.com/
    # Netlify: https://www.netlifystatus.com/
@@ -241,19 +253,21 @@ Use this procedure when both frontend and backend are down.
    - Prepare failover if extended
 
 4. **If configuration issue:**
+
    ```bash
    # Verify environment variables
    npx convex env list --prod
-   
+
    # Restore from backup if needed
    npx convex env set KEY=value --prod
    ```
 
 5. **If deployment issue:**
+
    ```bash
    # Rollback frontend
    vercel rollback
-   
+
    # Rollback backend
    # Use Convex Dashboard → Deployments → Redeploy previous
    ```
@@ -261,6 +275,7 @@ Use this procedure when both frontend and backend are down.
 **Phase 3: Verification (60-120 minutes)**
 
 6. **Run smoke tests:**
+
    ```bash
    npm run test:e2e -- --grep "@smoke"
    ```
@@ -277,19 +292,21 @@ Use this procedure when a security breach is detected.
 **Phase 1: Containment (Immediate)**
 
 1. **Isolate affected systems:**
+
    ```bash
    # Disable compromised API keys
    npx convex run admin/revokeApiKey --prod --args '{"keyId": "xxx"}'
-   
+
    # Force logout all sessions
    npx convex run admin/invalidateAllSessions --prod
    ```
 
 2. **Preserve evidence:**
+
    ```bash
    # Export logs
    npx convex logs --prod --since "7 days ago" > security_incident_logs.txt
-   
+
    # Export audit trail
    npx convex run queries/exportAuditLog --prod > audit_log.json
    ```
@@ -300,10 +317,11 @@ Use this procedure when a security breach is detected.
 **Phase 2: Eradication (1-4 hours)**
 
 4. **Rotate all credentials:**
+
    ```bash
    # Generate new JWT keys
    # Update in Convex Dashboard
-   
+
    # Rotate API keys
    # Update in external services
    ```
@@ -342,6 +360,7 @@ Use this procedure when a cloud region is unavailable.
    - Check status.convex.dev
 
 2. **Failover frontend (if needed):**
+
    ```bash
    # Deploy to backup region
    vercel --prod --region [backup-region]
@@ -400,12 +419,12 @@ Use this procedure when a cloud region is unavailable.
 
 ### Communication Plan
 
-| Audience | Channel | Responsibility | Timing |
-|----------|---------|----------------|--------|
-| Internal Team | Slack #incidents | On-call Engineer | Immediate |
-| Leadership | Email + Slack | Engineering Manager | 30 minutes |
-| Customers | Status Page | Communications | 1 hour |
-| Partners | Email | Account Manager | 2 hours |
+| Audience      | Channel          | Responsibility      | Timing     |
+| ------------- | ---------------- | ------------------- | ---------- |
+| Internal Team | Slack #incidents | On-call Engineer    | Immediate  |
+| Leadership    | Email + Slack    | Engineering Manager | 30 minutes |
+| Customers     | Status Page      | Communications      | 1 hour     |
+| Partners      | Email            | Account Manager     | 2 hours    |
 
 ### Degraded Operations
 
@@ -428,26 +447,26 @@ If full recovery is not possible, prioritize:
 
 ### Recovery Priorities
 
-| Priority | Function | Justification |
-|----------|----------|---------------|
-| 1 | Authentication | Users must be able to log in |
-| 2 | Event Viewing | Core value proposition |
-| 3 | Payment Processing | Revenue critical |
-| 4 | Event Management | Core functionality |
-| 5 | Vendor/Sponsor Features | Secondary features |
-| 6 | AI Assistant | Enhancement feature |
-| 7 | Analytics | Non-critical |
+| Priority | Function                | Justification                |
+| -------- | ----------------------- | ---------------------------- |
+| 1        | Authentication          | Users must be able to log in |
+| 2        | Event Viewing           | Core value proposition       |
+| 3        | Payment Processing      | Revenue critical             |
+| 4        | Event Management        | Core functionality           |
+| 5        | Vendor/Sponsor Features | Secondary features           |
+| 6        | AI Assistant            | Enhancement feature          |
+| 7        | Analytics               | Non-critical                 |
 
 ---
 
 ## Appendix: Emergency Contacts
 
-| Role | Contact | Availability |
-|------|---------|--------------|
-| On-Call Engineer | [PagerDuty] | 24/7 |
-| Convex Support | support@convex.dev | Business hours |
-| Hosting Support | [Provider support] | 24/7 |
-| Security Team | [Security contact] | 24/7 |
+| Role             | Contact            | Availability   |
+| ---------------- | ------------------ | -------------- |
+| On-Call Engineer | [PagerDuty]        | 24/7           |
+| Convex Support   | support@convex.dev | Business hours |
+| Hosting Support  | [Provider support] | 24/7           |
+| Security Team    | [Security contact] | 24/7           |
 
 ## Appendix: Recovery Checklist
 
@@ -455,18 +474,21 @@ If full recovery is not possible, prioritize:
 ## Disaster Recovery Checklist
 
 ### Pre-Recovery
+
 - [ ] Incident declared and classified
 - [ ] Recovery team assembled
 - [ ] Communication plan activated
 - [ ] Backup availability confirmed
 
 ### During Recovery
+
 - [ ] Root cause identified
 - [ ] Recovery procedure selected
 - [ ] Recovery initiated
 - [ ] Progress updates provided (every 30 min)
 
 ### Post-Recovery
+
 - [ ] Services restored
 - [ ] Data integrity verified
 - [ ] Smoke tests passed
@@ -477,6 +499,6 @@ If full recovery is not possible, prioritize:
 
 ---
 
-*Last Updated: December 2024*
-*Document Owner: Platform Team*
-*Review Frequency: Quarterly*
+_Last Updated: December 2024_
+_Document Owner: Platform Team_
+_Review Frequency: Quarterly_

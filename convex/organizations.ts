@@ -26,12 +26,13 @@ const ROLE_HIERARCHY: Record<OrganizationRole, number> = {
   viewer: 1,
 }
 
-const PLAN_LIMITS: Record<OrganizationPlan, { maxMembers: number; maxEvents: number | undefined }> = {
-  free: { maxMembers: 5, maxEvents: 3 },
-  pro: { maxMembers: 20, maxEvents: 20 },
-  business: { maxMembers: 100, maxEvents: undefined },
-  enterprise: { maxMembers: 1000, maxEvents: undefined },
-}
+const PLAN_LIMITS: Record<OrganizationPlan, { maxMembers: number; maxEvents: number | undefined }> =
+  {
+    free: { maxMembers: 5, maxEvents: 3 },
+    pro: { maxMembers: 20, maxEvents: 20 },
+    business: { maxMembers: 100, maxEvents: undefined },
+    enterprise: { maxMembers: 1000, maxEvents: undefined },
+  }
 
 /**
  * Require the current user or throw an error

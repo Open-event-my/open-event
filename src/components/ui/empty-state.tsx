@@ -92,7 +92,8 @@ const variantConfigs: Record<EmptyVariant, VariantConfig> = {
   events: {
     icon: CalendarBlank,
     title: 'No events yet',
-    message: 'Create your first event to start managing your venue bookings, vendors, and sponsors.',
+    message:
+      'Create your first event to start managing your venue bookings, vendors, and sponsors.',
     actionLabel: 'Create Event',
   },
   vendors: {
@@ -126,7 +127,7 @@ const variantConfigs: Record<EmptyVariant, VariantConfig> = {
   search: {
     icon: MagnifyingGlass,
     title: 'No results found',
-    message: 'Try adjusting your search or filters to find what you\'re looking for.',
+    message: "Try adjusting your search or filters to find what you're looking for.",
   },
   files: {
     icon: FolderOpen,
@@ -279,7 +280,10 @@ export function EmptyTableRow({
 }) {
   return (
     <tr>
-      <td colSpan={colSpan} className={cn('px-4 py-8 text-center text-muted-foreground', className)}>
+      <td
+        colSpan={colSpan}
+        className={cn('px-4 py-8 text-center text-muted-foreground', className)}
+      >
         {message}
       </td>
     </tr>

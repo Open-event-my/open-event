@@ -150,7 +150,9 @@ http.route({
     checks.push({
       name: 'OPENAI_API_KEY',
       status: openaiKey ? 'pass' : 'warn',
-      message: openaiKey ? 'OpenAI API key configured' : 'OpenAI API key not configured - AI features disabled',
+      message: openaiKey
+        ? 'OpenAI API key configured'
+        : 'OpenAI API key not configured - AI features disabled',
       required: false,
     })
 
@@ -158,7 +160,9 @@ http.route({
     checks.push({
       name: 'SITE_URL',
       status: siteUrl ? 'pass' : 'warn',
-      message: siteUrl ? 'Site URL configured' : 'Site URL not configured - OAuth redirects may fail',
+      message: siteUrl
+        ? 'Site URL configured'
+        : 'Site URL not configured - OAuth redirects may fail',
       required: false,
     })
 
@@ -166,7 +170,9 @@ http.route({
     checks.push({
       name: 'STRIPE_SECRET_KEY',
       status: stripeKey ? 'pass' : 'warn',
-      message: stripeKey ? 'Stripe secret key configured' : 'Stripe not configured - payments disabled',
+      message: stripeKey
+        ? 'Stripe secret key configured'
+        : 'Stripe not configured - payments disabled',
       required: false,
     })
 
@@ -174,7 +180,9 @@ http.route({
     checks.push({
       name: 'AUTH_RESEND_KEY',
       status: resendKey ? 'pass' : 'warn',
-      message: resendKey ? 'Resend API key configured' : 'Resend not configured - email features disabled',
+      message: resendKey
+        ? 'Resend API key configured'
+        : 'Resend not configured - email features disabled',
       required: false,
     })
 
@@ -380,9 +388,12 @@ http.route({
 
       if (!result.success) {
         // Record failed attempt for lockout tracking
-        const newLockoutStatus = await ctx.runMutation(internal.accountLockout.recordFailedAttempt, {
-          identifier: email,
-        })
+        const newLockoutStatus = await ctx.runMutation(
+          internal.accountLockout.recordFailedAttempt,
+          {
+            identifier: email,
+          }
+        )
 
         // Log failed login attempt
         await ctx.runMutation(internal.auditLog.log, {
@@ -474,7 +485,7 @@ http.route({
     const origin = request.headers.get('Origin')
     const clientIP = getClientIP(request)
     const userAgent = request.headers.get('User-Agent') || undefined
-    
+
     try {
       // Validate request size (1MB limit for JSON)
       const sizeError = validateRequestSize(request, 1 * 1024 * 1024)
@@ -538,7 +549,7 @@ http.route({
     const origin = request.headers.get('Origin')
     const clientIP = getClientIP(request)
     const userAgent = request.headers.get('User-Agent') || undefined
-    
+
     try {
       const cookies = parseCookies(request.headers.get('Cookie'))
       const refreshToken = cookies.refresh_token
@@ -548,12 +559,12 @@ http.route({
         const session = await ctx.runQuery(internal.customAuth.getSessionByRefreshToken, {
           refreshToken,
         })
-        
+
         // Delete session from database
         await ctx.runMutation(internal.customAuth.deleteSessionByRefreshToken, {
           refreshToken,
         })
-        
+
         // Log logout
         if (session) {
           await ctx.runMutation(internal.auditLog.log, {

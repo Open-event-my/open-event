@@ -1,10 +1,10 @@
 /**
  * Hook to check if user needs to accept terms
- * 
+ *
  * NOTE: Backend compliance module not yet integrated. Returns stub values.
  */
 
-const CURRENT_TERMS_VERSION = '1.0';
+const CURRENT_TERMS_VERSION = '1.0'
 
 export function useTermsAcceptance() {
   // TODO: Implement when backend compliance module is integrated
@@ -17,5 +17,5 @@ export function useTermsAcceptance() {
     needsAcceptance: false, // Stub: assume terms are accepted
     currentVersion: CURRENT_TERMS_VERSION,
     isLoading: false,
-  };
+  }
 }

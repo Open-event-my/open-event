@@ -86,15 +86,51 @@ export function SignUp() {
     setLoading(true)
     try {
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'src/pages/auth/SignUp.tsx:87',message:'Before signIn call',data:{email,hasPassword:!!password,hasName:!!name},timestamp:Date.now(),sessionId:'debug-session',runId:'signup-attempt',hypothesisId:'S1'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'src/pages/auth/SignUp.tsx:87',
+          message: 'Before signIn call',
+          data: { email, hasPassword: !!password, hasName: !!name },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'signup-attempt',
+          hypothesisId: 'S1',
+        }),
+      }).catch(() => {})
       // #endregion
       await signIn('password', { email, password, flow: 'signUp', name: name || '' })
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'src/pages/auth/SignUp.tsx:90',message:'signIn success - before navigate',data:{email},timestamp:Date.now(),sessionId:'debug-session',runId:'signup-attempt',hypothesisId:'S2'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'src/pages/auth/SignUp.tsx:90',
+          message: 'signIn success - before navigate',
+          data: { email },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'signup-attempt',
+          hypothesisId: 'S2',
+        }),
+      }).catch(() => {})
       // #endregion
       toast.success('Welcome to Open Event!')
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'src/pages/auth/SignUp.tsx:93',message:'Before navigate to onboarding',data:{email},timestamp:Date.now(),sessionId:'debug-session',runId:'signup-attempt',hypothesisId:'S3'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'src/pages/auth/SignUp.tsx:93',
+          message: 'Before navigate to onboarding',
+          data: { email },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'signup-attempt',
+          hypothesisId: 'S3',
+        }),
+      }).catch(() => {})
       // #endregion
       navigate('/onboarding')
     } catch (error: unknown) {

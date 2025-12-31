@@ -194,9 +194,7 @@ describe('Optimistic State Management - Property Tests', () => {
             fc.pre(initialValue !== newValue)
 
             const onRollback = vi.fn()
-            const { result } = renderHook(() =>
-              useOptimisticState(initialValue, { onRollback })
-            )
+            const { result } = renderHook(() => useOptimisticState(initialValue, { onRollback }))
 
             act(() => {
               result.current.optimisticUpdate(newValue)
@@ -223,9 +221,7 @@ describe('Optimistic State Management - Property Tests', () => {
             fc.pre(initialValue !== newValue)
 
             const onSuccess = vi.fn()
-            const { result } = renderHook(() =>
-              useOptimisticState(initialValue, { onSuccess })
-            )
+            const { result } = renderHook(() => useOptimisticState(initialValue, { onSuccess }))
 
             act(() => {
               result.current.optimisticUpdate(newValue)
@@ -277,22 +273,19 @@ describe('Optimistic State Management - Property Tests', () => {
 
     it('should toggle value and confirm on success', async () => {
       await fc.assert(
-        fc.asyncProperty(
-          fc.boolean(),
-          async (initialValue) => {
-            const { result } = renderHook(() => useOptimisticToggle(initialValue))
+        fc.asyncProperty(fc.boolean(), async (initialValue) => {
+          const { result } = renderHook(() => useOptimisticToggle(initialValue))
 
-            await act(async () => {
-              await result.current.toggle(async () => {
-                return 'success'
-              })
+          await act(async () => {
+            await result.current.toggle(async () => {
+              return 'success'
             })
+          })
 
-            // Should have toggled
-            expect(result.current.value).toBe(!initialValue)
-            expect(result.current.wasRolledBack).toBe(false)
-          }
-        ),
+          // Should have toggled
+          expect(result.current.value).toBe(!initialValue)
+          expect(result.current.wasRolledBack).toBe(false)
+        }),
         { numRuns: 100 }
       )
     })
@@ -381,7 +374,10 @@ describe('Optimistic State Management - Property Tests', () => {
     it('should add item and rollback on failure', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.array(fc.record({ id: fc.string(), name: fc.string() }), { minLength: 0, maxLength: 5 }),
+          fc.array(fc.record({ id: fc.string(), name: fc.string() }), {
+            minLength: 0,
+            maxLength: 5,
+          }),
           fc.record({ id: fc.string(), name: fc.string() }),
           async (initialItems, newItem) => {
             const { result } = renderHook(() => useOptimisticList(initialItems))
@@ -410,7 +406,10 @@ describe('Optimistic State Management - Property Tests', () => {
     it('should add item and confirm on success', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.array(fc.record({ id: fc.string(), name: fc.string() }), { minLength: 0, maxLength: 5 }),
+          fc.array(fc.record({ id: fc.string(), name: fc.string() }), {
+            minLength: 0,
+            maxLength: 5,
+          }),
           fc.record({ id: fc.string(), name: fc.string() }),
           async (initialItems, newItem) => {
             const { result } = renderHook(() => useOptimisticList(initialItems))
@@ -435,7 +434,10 @@ describe('Optimistic State Management - Property Tests', () => {
     it('should remove item and rollback on failure', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.array(fc.record({ id: fc.string(), name: fc.string() }), { minLength: 1, maxLength: 5 }),
+          fc.array(fc.record({ id: fc.string(), name: fc.string() }), {
+            minLength: 1,
+            maxLength: 5,
+          }),
           async (initialItems) => {
             const { result } = renderHook(() => useOptimisticList(initialItems))
 

@@ -195,9 +195,7 @@ const ApplicationSuccess = lazy(() =>
 // ============================================================================
 // LAZY-LOADED: ERROR PAGES
 // ============================================================================
-const NotFoundPage = lazy(() =>
-  import('@/pages/errors').then((m) => ({ default: m.NotFoundPage }))
-)
+const NotFoundPage = lazy(() => import('@/pages/errors').then((m) => ({ default: m.NotFoundPage })))
 const ServerErrorPage = lazy(() =>
   import('@/pages/errors').then((m) => ({ default: m.ServerErrorPage }))
 )

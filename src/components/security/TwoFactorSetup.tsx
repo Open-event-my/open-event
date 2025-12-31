@@ -125,12 +125,17 @@ Generated: ${new Date().toISOString()}
                 step === s
                   ? 'bg-primary text-primary-foreground'
                   : step === 'complete' ||
-                      (['intro', 'scan', 'verify', 'backup'] as const).indexOf(step as 'intro' | 'scan' | 'verify' | 'backup') > i
+                      (['intro', 'scan', 'verify', 'backup'] as const).indexOf(
+                        step as 'intro' | 'scan' | 'verify' | 'backup'
+                      ) > i
                     ? 'bg-emerald-500 text-white'
                     : 'bg-muted text-muted-foreground'
               )}
             >
-              {step === 'complete' || (['intro', 'scan', 'verify', 'backup'] as const).indexOf(step as 'intro' | 'scan' | 'verify' | 'backup') > i ? (
+              {step === 'complete' ||
+              (['intro', 'scan', 'verify', 'backup'] as const).indexOf(
+                step as 'intro' | 'scan' | 'verify' | 'backup'
+              ) > i ? (
                 <Check size={14} weight="bold" />
               ) : (
                 i + 1
@@ -225,7 +230,9 @@ Generated: ${new Date().toISOString()}
               <p className="text-xs text-muted-foreground">
                 Use a QR code generator with:
                 <br />
-                <code className="text-[10px] break-all">{setupData.otpauthUrl.slice(0, 50)}...</code>
+                <code className="text-[10px] break-all">
+                  {setupData.otpauthUrl.slice(0, 50)}...
+                </code>
               </p>
             </div>
           </div>

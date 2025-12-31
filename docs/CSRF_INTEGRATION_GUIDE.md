@@ -44,7 +44,7 @@ Wrap your application with the CSRF provider:
 
 ```tsx
 // src/App.tsx or src/main.tsx
-import { CSRFProvider } from './contexts/CSRFContext';
+import { CSRFProvider } from './contexts/CSRFContext'
 
 function App() {
   return (
@@ -53,7 +53,7 @@ function App() {
         <YourApp />
       </CSRFProvider>
     </ConvexProvider>
-  );
+  )
 }
 ```
 
@@ -63,9 +63,9 @@ Add CSRF protection to all state-changing mutations:
 
 ```typescript
 // convex/events.ts
-import { v } from 'convex/values';
-import { mutation } from './_generated/server';
-import { requireValidCSRFToken } from './lib/security/csrf';
+import { v } from 'convex/values'
+import { mutation } from './_generated/server'
+import { requireValidCSRFToken } from './lib/security/csrf'
 
 export const createEvent = mutation({
   args: {
@@ -76,18 +76,18 @@ export const createEvent = mutation({
   },
   handler: async (ctx, args) => {
     // Validate CSRF token FIRST
-    await requireValidCSRFToken(ctx, args.csrfToken);
-    
+    await requireValidCSRFToken(ctx, args.csrfToken)
+
     // Continue with mutation logic
     const eventId = await ctx.db.insert('events', {
       title: args.title,
       description: args.description,
       // ...
-    });
-    
-    return eventId;
+    })
+
+    return eventId
   },
-});
+})
 ```
 
 ### Step 3: Update Frontend Components
@@ -96,42 +96,38 @@ Use the CSRF token in your mutation calls:
 
 ```tsx
 // src/components/events/CreateEventForm.tsx
-import { useMutation } from 'convex/react';
-import { api } from '../../../convex/_generated/api';
-import { useCSRFToken } from '../../hooks/useCSRF';
+import { useMutation } from 'convex/react'
+import { api } from '../../../convex/_generated/api'
+import { useCSRFToken } from '../../hooks/useCSRF'
 
 function CreateEventForm() {
-  const createEvent = useMutation(api.events.createEvent);
-  const csrfToken = useCSRFToken();
-  
+  const createEvent = useMutation(api.events.createEvent)
+  const csrfToken = useCSRFToken()
+
   const handleSubmit = async (data: FormData) => {
     if (!csrfToken) {
-      toast.error('Security token not available. Please refresh the page.');
-      return;
+      toast.error('Security token not available. Please refresh the page.')
+      return
     }
-    
+
     try {
       await createEvent({
         csrfToken, // Include CSRF token
         title: data.title,
         description: data.description,
         // ...
-      });
-      toast.success('Event created successfully');
+      })
+      toast.success('Event created successfully')
     } catch (error) {
       if (error.code === 'CSRF_TOKEN_EXPIRED') {
-        toast.error('Your session has expired. Please refresh and try again.');
+        toast.error('Your session has expired. Please refresh and try again.')
       } else {
-        toast.error('Failed to create event');
+        toast.error('Failed to create event')
       }
     }
-  };
-  
-  return (
-    <form onSubmit={handleSubmit}>
-      {/* Form fields */}
-    </form>
-  );
+  }
+
+  return <form onSubmit={handleSubmit}>{/* Form fields */}</form>
 }
 ```
 
@@ -140,33 +136,33 @@ function CreateEventForm() {
 Implement proper error handling for CSRF-related errors:
 
 ```tsx
-import { useCSRFContext } from '../../contexts/CSRFContext';
+import { useCSRFContext } from '../../contexts/CSRFContext'
 
 function MyComponent() {
-  const { csrfToken, refreshToken } = useCSRFContext();
-  const myMutation = useMutation(api.myModule.myMutation);
-  
+  const { csrfToken, refreshToken } = useCSRFContext()
+  const myMutation = useMutation(api.myModule.myMutation)
+
   const handleAction = async () => {
     try {
-      await myMutation({ csrfToken, /* other args */ });
+      await myMutation({ csrfToken /* other args */ })
     } catch (error) {
       switch (error.code) {
         case 'CSRF_TOKEN_MISSING':
-          toast.error('Security token missing. Please refresh the page.');
-          break;
+          toast.error('Security token missing. Please refresh the page.')
+          break
         case 'CSRF_TOKEN_INVALID':
-          toast.error('Invalid security token. Please refresh the page.');
-          await refreshToken();
-          break;
+          toast.error('Invalid security token. Please refresh the page.')
+          await refreshToken()
+          break
         case 'CSRF_TOKEN_EXPIRED':
-          toast.error('Your session has expired. Please try again.');
-          await refreshToken();
-          break;
+          toast.error('Your session has expired. Please try again.')
+          await refreshToken()
+          break
         default:
-          toast.error('An error occurred. Please try again.');
+          toast.error('An error occurred. Please try again.')
       }
     }
-  };
+  }
 }
 ```
 
@@ -175,6 +171,7 @@ function MyComponent() {
 ### ✅ Require CSRF Protection
 
 All mutations that:
+
 - Create, update, or delete data
 - Change user state or permissions
 - Perform financial transactions
@@ -183,6 +180,7 @@ All mutations that:
 - Add/remove relationships between entities
 
 Examples:
+
 - `createEvent`, `updateEvent`, `deleteEvent`
 - `createVendor`, `updateVendor`, `deleteVendor`
 - `createOrder`, `processPayment`, `refundOrder`
@@ -249,6 +247,7 @@ Use this checklist when adding CSRF protection to existing mutations:
 **Cause**: CSRF provider not initialized or token generation failed
 
 **Solution**:
+
 1. Ensure `CSRFProvider` wraps your app
 2. Check browser console for errors
 3. Verify user is authenticated
@@ -259,6 +258,7 @@ Use this checklist when adding CSRF protection to existing mutations:
 **Cause**: Token expired (> 24 hours old) or system time mismatch
 
 **Solution**:
+
 1. Call `refreshToken()` to get a new token
 2. Implement auto-refresh before expiration
 3. Check system time is correct
@@ -268,6 +268,7 @@ Use this checklist when adding CSRF protection to existing mutations:
 **Cause**: Token doesn't match user or was tampered with
 
 **Solution**:
+
 1. Clear session storage and refresh
 2. Verify token is being sent correctly
 3. Check for token modification in transit

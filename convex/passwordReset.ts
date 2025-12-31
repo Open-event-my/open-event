@@ -289,7 +289,8 @@ export const verifyResetToken = mutation({
       return {
         valid: false,
         errorType: 'used',
-        error: 'This reset link has already been used. If you need to reset your password again, please request a new link.',
+        error:
+          'This reset link has already been used. If you need to reset your password again, please request a new link.',
       }
     }
 

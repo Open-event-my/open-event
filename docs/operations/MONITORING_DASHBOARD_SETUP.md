@@ -16,23 +16,23 @@ This guide provides instructions for setting up and configuring monitoring dashb
 
 ### Monitoring Stack
 
-| Component | Tool | Purpose |
-|-----------|------|---------|
-| Error Tracking | Sentry | Frontend & backend errors |
-| Backend Monitoring | Convex Dashboard | Function performance, database |
-| Uptime Monitoring | UptimeRobot/Pingdom | Service availability |
-| Log Aggregation | Convex Logs | Centralized logging |
-| Custom Metrics | Internal Metrics Service | Business metrics |
+| Component          | Tool                     | Purpose                        |
+| ------------------ | ------------------------ | ------------------------------ |
+| Error Tracking     | Sentry                   | Frontend & backend errors      |
+| Backend Monitoring | Convex Dashboard         | Function performance, database |
+| Uptime Monitoring  | UptimeRobot/Pingdom      | Service availability           |
+| Log Aggregation    | Convex Logs              | Centralized logging            |
+| Custom Metrics     | Internal Metrics Service | Business metrics               |
 
 ### Key Metrics to Monitor
 
-| Category | Metrics |
-|----------|---------|
-| **Availability** | Uptime %, response time, error rate |
-| **Performance** | Page load time, API latency, database query time |
-| **Security** | Failed logins, rate limit hits, suspicious activity |
-| **Business** | Active users, events created, transactions |
-| **AI** | AI response time, token usage, error rate |
+| Category         | Metrics                                             |
+| ---------------- | --------------------------------------------------- |
+| **Availability** | Uptime %, response time, error rate                 |
+| **Performance**  | Page load time, API latency, database query time    |
+| **Security**     | Failed logins, rate limit hits, suspicious activity |
+| **Business**     | Active users, events created, transactions          |
+| **AI**           | AI response time, token usage, error rate           |
 
 ## Sentry Setup
 
@@ -49,28 +49,28 @@ This guide provides instructions for setting up and configuring monitoring dashb
 ### Step 2: Configure Frontend
 
 1. **Install Sentry SDK:**
+
    ```bash
    npm install @sentry/react @sentry/vite-plugin
    ```
 
 2. **Configure in `src/main.tsx`:**
+
    ```typescript
-   import * as Sentry from '@sentry/react';
+   import * as Sentry from '@sentry/react'
 
    Sentry.init({
      dsn: import.meta.env.VITE_SENTRY_DSN,
      environment: import.meta.env.MODE,
-     integrations: [
-       Sentry.browserTracingIntegration(),
-       Sentry.replayIntegration(),
-     ],
+     integrations: [Sentry.browserTracingIntegration(), Sentry.replayIntegration()],
      tracesSampleRate: 0.1, // 10% of transactions
      replaysSessionSampleRate: 0.1,
      replaysOnErrorSampleRate: 1.0,
-   });
+   })
    ```
 
 3. **Add Error Boundary:**
+
    ```typescript
    import { ErrorBoundary } from '@sentry/react';
 
@@ -80,9 +80,10 @@ This guide provides instructions for setting up and configuring monitoring dashb
    ```
 
 4. **Configure Vite plugin for source maps:**
+
    ```typescript
    // vite.config.ts
-   import { sentryVitePlugin } from '@sentry/vite-plugin';
+   import { sentryVitePlugin } from '@sentry/vite-plugin'
 
    export default defineConfig({
      plugins: [
@@ -92,31 +93,33 @@ This guide provides instructions for setting up and configuring monitoring dashb
          authToken: process.env.SENTRY_AUTH_TOKEN,
        }),
      ],
-   });
+   })
    ```
 
 ### Step 3: Configure Backend
 
 1. **Install Sentry SDK:**
+
    ```bash
    npm install @sentry/node
    ```
 
 2. **Configure in Convex functions:**
+
    ```typescript
    // convex/lib/sentry.ts
-   import * as Sentry from '@sentry/node';
+   import * as Sentry from '@sentry/node'
 
    export function initSentry() {
      Sentry.init({
        dsn: process.env.SENTRY_DSN,
        environment: process.env.NODE_ENV,
        tracesSampleRate: 0.1,
-     });
+     })
    }
 
    export function captureError(error: Error, context?: Record<string, unknown>) {
-     Sentry.captureException(error, { extra: context });
+     Sentry.captureException(error, { extra: context })
    }
    ```
 
@@ -170,14 +173,15 @@ Or visit: https://dashboard.convex.dev
 
 Monitor function performance:
 
-| Metric | Target | Alert Threshold |
-|--------|--------|-----------------|
-| Avg Duration | < 100ms | > 500ms |
-| P99 Duration | < 500ms | > 2s |
-| Error Rate | < 0.1% | > 1% |
-| Invocations | Varies | Unusual spikes |
+| Metric       | Target  | Alert Threshold |
+| ------------ | ------- | --------------- |
+| Avg Duration | < 100ms | > 500ms         |
+| P99 Duration | < 500ms | > 2s            |
+| Error Rate   | < 0.1%  | > 1%            |
+| Invocations  | Varies  | Unusual spikes  |
 
 **Setup:**
+
 1. Go to Functions tab
 2. Sort by "Avg Duration" to find slow functions
 3. Click on function for detailed metrics
@@ -186,11 +190,11 @@ Monitor function performance:
 
 Monitor database:
 
-| Metric | Target | Alert Threshold |
-|--------|--------|-----------------|
-| Document Count | Varies | Unusual growth |
-| Storage Used | < 80% quota | > 90% quota |
-| Index Usage | High | Low (missing indexes) |
+| Metric         | Target      | Alert Threshold       |
+| -------------- | ----------- | --------------------- |
+| Document Count | Varies      | Unusual growth        |
+| Storage Used   | < 80% quota | > 90% quota           |
+| Index Usage    | High        | Low (missing indexes) |
 
 #### 3. Logs Tab
 
@@ -212,11 +216,12 @@ npx convex logs --prod --since "1 hour ago" > logs.txt
 Convex doesn't have built-in alerting, so use external monitoring:
 
 1. **Create health check endpoint:**
+
    ```typescript
    // convex/http.ts
-   import { httpRouter } from 'convex/server';
+   import { httpRouter } from 'convex/server'
 
-   const http = httpRouter();
+   const http = httpRouter()
 
    http.route({
      path: '/health',
@@ -224,11 +229,11 @@ Convex doesn't have built-in alerting, so use external monitoring:
      handler: async () => {
        return new Response(JSON.stringify({ status: 'ok', timestamp: Date.now() }), {
          headers: { 'Content-Type': 'application/json' },
-       });
+       })
      },
-   });
+   })
 
-   export default http;
+   export default http
    ```
 
 2. **Monitor with external service** (see Uptime Monitoring section)
@@ -241,11 +246,11 @@ Convex doesn't have built-in alerting, so use external monitoring:
 
 2. **Add monitors:**
 
-   | Monitor | URL | Interval | Alert |
-   |---------|-----|----------|-------|
-   | Frontend | https://your-domain.com | 5 min | Email, Slack |
-   | API Health | https://your-project.convex.cloud/health | 5 min | Email, Slack |
-   | Auth Endpoint | https://your-domain.com/api/auth/health | 5 min | Email, Slack |
+   | Monitor       | URL                                      | Interval | Alert        |
+   | ------------- | ---------------------------------------- | -------- | ------------ |
+   | Frontend      | https://your-domain.com                  | 5 min    | Email, Slack |
+   | API Health    | https://your-project.convex.cloud/health | 5 min    | Email, Slack |
+   | Auth Endpoint | https://your-domain.com/api/auth/health  | 5 min    | Email, Slack |
 
 3. **Configure alerts:**
    - Email: team@your-domain.com
@@ -290,32 +295,32 @@ Create a custom dashboard for business metrics:
 
 ```typescript
 // convex/metrics.ts
-import { query } from './_generated/server';
+import { query } from './_generated/server'
 
 export const getDashboardMetrics = query({
   args: {},
   handler: async (ctx) => {
-    const now = Date.now();
-    const dayAgo = now - 24 * 60 * 60 * 1000;
-    const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+    const now = Date.now()
+    const dayAgo = now - 24 * 60 * 60 * 1000
+    const weekAgo = now - 7 * 24 * 60 * 60 * 1000
 
     // Active users (last 24h)
     const activeUsers = await ctx.db
       .query('sessions')
       .filter((q) => q.gt(q.field('lastActiveAt'), dayAgo))
-      .collect();
+      .collect()
 
     // Events created (last 7 days)
     const newEvents = await ctx.db
       .query('events')
       .filter((q) => q.gt(q.field('createdAt'), weekAgo))
-      .collect();
+      .collect()
 
     // Orders (last 7 days)
     const orders = await ctx.db
       .query('orders')
       .filter((q) => q.gt(q.field('createdAt'), weekAgo))
-      .collect();
+      .collect()
 
     return {
       activeUsers24h: activeUsers.length,
@@ -323,9 +328,9 @@ export const getDashboardMetrics = query({
       ordersWeek: orders.length,
       revenueWeek: orders.reduce((sum, o) => sum + (o.amount || 0), 0),
       timestamp: now,
-    };
+    }
   },
-});
+})
 ```
 
 ### Dashboard UI Component
@@ -371,12 +376,12 @@ export function MetricsDashboard() {
 
 ### Alert Channels
 
-| Channel | Use Case | Setup |
-|---------|----------|-------|
-| Email | All alerts | Configure in each tool |
-| Slack | Team notifications | Webhook integration |
-| PagerDuty | Critical alerts | API integration |
-| SMS | Emergency only | Via PagerDuty or Twilio |
+| Channel   | Use Case           | Setup                   |
+| --------- | ------------------ | ----------------------- |
+| Email     | All alerts         | Configure in each tool  |
+| Slack     | Team notifications | Webhook integration     |
+| PagerDuty | Critical alerts    | API integration         |
+| SMS       | Emergency only     | Via PagerDuty or Twilio |
 
 ### Slack Integration
 
@@ -403,12 +408,12 @@ export function MetricsDashboard() {
 
 ### Alert Routing Rules
 
-| Alert Type | Severity | Channel | Escalation |
-|------------|----------|---------|------------|
-| Site Down | Critical | PagerDuty + Slack | Immediate |
-| Error Spike | High | Slack + Email | 15 min |
-| Slow Performance | Medium | Slack | 1 hour |
-| New Error | Low | Email | Daily digest |
+| Alert Type       | Severity | Channel           | Escalation   |
+| ---------------- | -------- | ----------------- | ------------ |
+| Site Down        | Critical | PagerDuty + Slack | Immediate    |
+| Error Spike      | High     | Slack + Email     | 15 min       |
+| Slow Performance | Medium   | Slack             | 1 hour       |
+| New Error        | Low      | Email             | Daily digest |
 
 ## Dashboard Templates
 
@@ -418,23 +423,23 @@ export function MetricsDashboard() {
 ## Operations Dashboard Layout
 
 ┌─────────────────────────────────────────────────────────────┐
-│                     System Health                            │
+│ System Health │
 ├─────────────────┬─────────────────┬─────────────────────────┤
-│   Uptime: 99.9% │  Error Rate: 0.1%│  Avg Response: 120ms   │
+│ Uptime: 99.9% │ Error Rate: 0.1%│ Avg Response: 120ms │
 ├─────────────────┴─────────────────┴─────────────────────────┤
-│                                                              │
-│  [Error Rate Chart - Last 24 Hours]                         │
-│                                                              │
+│ │
+│ [Error Rate Chart - Last 24 Hours] │
+│ │
 ├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  [Response Time Chart - Last 24 Hours]                      │
-│                                                              │
+│ │
+│ [Response Time Chart - Last 24 Hours] │
+│ │
 ├─────────────────────────────────────────────────────────────┤
-│                     Recent Errors                            │
+│ Recent Errors │
 ├─────────────────────────────────────────────────────────────┤
-│  • TypeError: Cannot read property... (15 occurrences)      │
-│  • NetworkError: Failed to fetch... (8 occurrences)         │
-│  • ValidationError: Invalid input... (3 occurrences)        │
+│ • TypeError: Cannot read property... (15 occurrences) │
+│ • NetworkError: Failed to fetch... (8 occurrences) │
+│ • ValidationError: Invalid input... (3 occurrences) │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -444,25 +449,25 @@ export function MetricsDashboard() {
 ## Business Metrics Dashboard Layout
 
 ┌─────────────────────────────────────────────────────────────┐
-│                     Key Metrics                              │
+│ Key Metrics │
 ├───────────────┬───────────────┬───────────────┬─────────────┤
-│ Active Users  │ New Events    │ Orders        │ Revenue     │
-│    1,234      │     56        │     89        │  $12,345    │
-│   ↑ 12%       │   ↑ 8%        │   ↑ 15%       │  ↑ 22%      │
+│ Active Users │ New Events │ Orders │ Revenue │
+│ 1,234 │ 56 │ 89 │ $12,345 │
+│ ↑ 12% │ ↑ 8% │ ↑ 15% │ ↑ 22% │
 ├───────────────┴───────────────┴───────────────┴─────────────┤
-│                                                              │
-│  [User Growth Chart - Last 30 Days]                         │
-│                                                              │
+│ │
+│ [User Growth Chart - Last 30 Days] │
+│ │
 ├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  [Revenue Chart - Last 30 Days]                             │
-│                                                              │
+│ │
+│ [Revenue Chart - Last 30 Days] │
+│ │
 ├─────────────────────────────────────────────────────────────┤
-│                     Top Events                               │
+│ Top Events │
 ├─────────────────────────────────────────────────────────────┤
-│  1. Tech Conference 2024 - 500 attendees                    │
-│  2. Music Festival - 350 attendees                          │
-│  3. Startup Meetup - 200 attendees                          │
+│ 1. Tech Conference 2024 - 500 attendees │
+│ 2. Music Festival - 350 attendees │
+│ 3. Startup Meetup - 200 attendees │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -472,24 +477,24 @@ export function MetricsDashboard() {
 ## Security Dashboard Layout
 
 ┌─────────────────────────────────────────────────────────────┐
-│                     Security Overview                        │
+│ Security Overview │
 ├───────────────┬───────────────┬───────────────┬─────────────┤
-│ Failed Logins │ Rate Limits   │ Blocked IPs   │ Alerts      │
-│     23        │     156       │      5        │     2       │
+│ Failed Logins │ Rate Limits │ Blocked IPs │ Alerts │
+│ 23 │ 156 │ 5 │ 2 │
 ├───────────────┴───────────────┴───────────────┴─────────────┤
-│                                                              │
-│  [Authentication Events - Last 24 Hours]                    │
-│                                                              │
+│ │
+│ [Authentication Events - Last 24 Hours] │
+│ │
 ├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  [Rate Limit Hits - Last 24 Hours]                          │
-│                                                              │
+│ │
+│ [Rate Limit Hits - Last 24 Hours] │
+│ │
 ├─────────────────────────────────────────────────────────────┤
-│                     Recent Security Events                   │
+│ Recent Security Events │
 ├─────────────────────────────────────────────────────────────┤
-│  • Multiple failed logins from IP 192.168.1.1               │
-│  • Rate limit exceeded for user xyz                         │
-│  • Suspicious API pattern detected                          │
+│ • Multiple failed logins from IP 192.168.1.1 │
+│ • Rate limit exceeded for user xyz │
+│ • Suspicious API pattern detected │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -523,5 +528,5 @@ export function MetricsDashboard() {
 
 ---
 
-*Last Updated: December 2024*
-*Document Owner: Platform Team*
+_Last Updated: December 2024_
+_Document Owner: Platform Team_

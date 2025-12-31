@@ -1,9 +1,9 @@
 /**
  * Data Deletion Service - Types and Utilities
- * 
+ *
  * Implements GDPR Article 17 (Right to Erasure / Right to be Forgotten) by providing
  * comprehensive user data deletion functionality.
- * 
+ *
  * NOTE: The actual Convex mutation implementations should be in
  * the root convex/ directory (e.g., convex/compliance.ts).
  * This file contains only types and utility functions.
@@ -12,26 +12,26 @@
 /**
  * Deletion request status
  */
-export type DeletionStatus = 'pending' | 'processing' | 'completed' | 'failed';
+export type DeletionStatus = 'pending' | 'processing' | 'completed' | 'failed'
 
 /**
  * Deletion request record
  */
 export interface DeletionRequest {
-  userId: string;
-  requestedAt: number;
-  reason?: string;
-  status: DeletionStatus;
+  userId: string
+  requestedAt: number
+  reason?: string
+  status: DeletionStatus
 }
 
 /**
  * Result of deletion operation
  */
 export interface DeletionResult {
-  success: boolean;
-  deletedRecords: Record<string, number>;
-  errors: string[];
-  completedAt: number;
+  success: boolean
+  deletedRecords: Record<string, number>
+  errors: string[]
+  completedAt: number
 }
 
 /**
@@ -58,7 +58,7 @@ export const USER_DATA_TABLES = [
   'sessions',
   'verificationTokens',
   'auditLogs',
-] as const;
+] as const
 
 /**
  * Create an empty deletion result
@@ -69,7 +69,7 @@ export function createEmptyDeletionResult(): DeletionResult {
     deletedRecords: {},
     errors: [],
     completedAt: 0,
-  };
+  }
 }
 
 /**
@@ -87,5 +87,5 @@ export function getAnonymizedUserData(userId: string): Record<string, unknown> {
     twoFactorSecret: undefined,
     twoFactorBackupCodes: undefined,
     updatedAt: Date.now(),
-  };
+  }
 }

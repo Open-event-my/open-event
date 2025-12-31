@@ -293,9 +293,7 @@ export default defineSchema({
     flagged: v.optional(v.boolean()),
     flaggedAt: v.optional(v.number()),
     flaggedReason: v.optional(v.string()),
-    flaggedSeverity: v.optional(
-      v.union(v.literal('low'), v.literal('medium'), v.literal('high'))
-    ),
+    flaggedSeverity: v.optional(v.union(v.literal('low'), v.literal('medium'), v.literal('high'))),
     flaggedBy: v.optional(v.id('users')),
 
     createdAt: v.number(),
@@ -758,11 +756,11 @@ export default defineSchema({
   adminNotifications: defineTable({
     // Notification type
     type: v.union(
-      v.literal('security_alert'),     // Failed logins, rate limits hit, suspicious activity
-      v.literal('new_application'),    // New vendor/sponsor application
-      v.literal('flagged_content'),    // Event flagged for review
-      v.literal('user_report'),        // User-submitted report
-      v.literal('system_alert')        // System errors, performance issues
+      v.literal('security_alert'), // Failed logins, rate limits hit, suspicious activity
+      v.literal('new_application'), // New vendor/sponsor application
+      v.literal('flagged_content'), // Event flagged for review
+      v.literal('user_report'), // User-submitted report
+      v.literal('system_alert') // System errors, performance issues
     ),
 
     // Content
@@ -771,7 +769,7 @@ export default defineSchema({
     severity: v.union(v.literal('low'), v.literal('medium'), v.literal('high')),
 
     // Related entity (optional)
-    targetType: v.optional(v.string()),  // 'user' | 'event' | 'vendor' | 'sponsor' | 'application'
+    targetType: v.optional(v.string()), // 'user' | 'event' | 'vendor' | 'sponsor' | 'application'
     targetId: v.optional(v.string()),
 
     // Status
@@ -882,7 +880,7 @@ export default defineSchema({
     encryptionIV: v.optional(v.string()), // Initialization vector (base64)
     encryptionTag: v.optional(v.string()), // Authentication tag (base64)
     encryptionSalt: v.optional(v.string()), // Salt for key derivation (base64)
-    
+
     // Legacy security - Hash-based storage (deprecated, for backward compatibility)
     keyHash: v.optional(v.string()), // SHA-256 hash of the full key (legacy)
     keyPrefix: v.string(), // First 8 chars for identification (e.g., "oe_live_")
@@ -1254,16 +1252,8 @@ export default defineSchema({
   paymentIdempotency: defineTable({
     idempotencyKey: v.string(), // Unique key for the operation
     orderId: v.string(), // Order ID (stored as string for flexibility)
-    operation: v.union(
-      v.literal('checkout'),
-      v.literal('refund'),
-      v.literal('capture')
-    ),
-    status: v.union(
-      v.literal('pending'),
-      v.literal('completed'),
-      v.literal('failed')
-    ),
+    operation: v.union(v.literal('checkout'), v.literal('refund'), v.literal('capture')),
+    status: v.union(v.literal('pending'), v.literal('completed'), v.literal('failed')),
     stripeIdempotencyKey: v.optional(v.string()), // Key sent to Stripe
     result: v.optional(v.string()), // JSON-serialized result for returning on duplicate requests
     errorMessage: v.optional(v.string()), // Error message if failed
@@ -1474,11 +1464,7 @@ export default defineSchema({
     location: v.string(), // Storage location path
     checksum: v.string(), // SHA-256 checksum for integrity verification
     encrypted: v.boolean(), // Whether backup data is encrypted
-    status: v.union(
-      v.literal('pending'),
-      v.literal('completed'),
-      v.literal('failed')
-    ),
+    status: v.union(v.literal('pending'), v.literal('completed'), v.literal('failed')),
     expiresAt: v.number(), // Unix timestamp when backup should be deleted
     errorMessage: v.optional(v.string()), // Error message if backup failed
   })

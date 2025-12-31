@@ -1,28 +1,28 @@
 /**
  * Data Export Section Component
- * 
+ *
  * Provides UI for users to request and download their personal data
  * in compliance with GDPR Article 20 (Right to Data Portability).
- * 
+ *
  * NOTE: Backend compliance module not yet integrated. This is a placeholder UI.
  */
 
-import { useState } from 'react';
-import { Download, FileText, CircleNotch, CheckCircle, Warning } from '@phosphor-icons/react';
-import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import { useState } from 'react'
+import { Download, FileText, CircleNotch, CheckCircle, Warning } from '@phosphor-icons/react'
+import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 export function DataExportSection() {
-  const [isExporting, setIsExporting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false)
 
   const handleExportRequest = async () => {
-    setIsExporting(true);
+    setIsExporting(true)
     // TODO: Implement when backend compliance module is integrated
     setTimeout(() => {
-      setIsExporting(false);
-      toast.info('Data export is not yet available. Please contact support.');
-    }, 1000);
-  };
+      setIsExporting(false)
+      toast.info('Data export is not yet available. Please contact support.')
+    }, 1000)
+  }
 
   return (
     <div className="rounded-xl border border-border bg-card p-6">
@@ -122,5 +122,5 @@ export function DataExportSection() {
         </div>
       </div>
     </div>
-  );
+  )
 }

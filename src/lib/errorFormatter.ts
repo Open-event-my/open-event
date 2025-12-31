@@ -79,11 +79,14 @@ const TECHNICAL_PATTERNS_FOR_TEST = [
 /**
  * Error code to user-friendly message mapping
  */
-const ERROR_MESSAGES: Record<string, { message: string; suggestions?: string[]; category: ErrorCategory }> = {
+const ERROR_MESSAGES: Record<
+  string,
+  { message: string; suggestions?: string[]; category: ErrorCategory }
+> = {
   // Authentication errors
   UNAUTHORIZED: {
     message: 'You need to sign in to access this feature.',
-    suggestions: ['Sign in to your account', 'Create a new account if you don\'t have one'],
+    suggestions: ['Sign in to your account', "Create a new account if you don't have one"],
     category: 'auth',
   },
   INVALID_CREDENTIALS: {
@@ -98,7 +101,10 @@ const ERROR_MESSAGES: Record<string, { message: string; suggestions?: string[]; 
   },
   EMAIL_NOT_VERIFIED: {
     message: 'Please verify your email address to continue.',
-    suggestions: ['Check your inbox for the verification email', 'Request a new verification email'],
+    suggestions: [
+      'Check your inbox for the verification email',
+      'Request a new verification email',
+    ],
     category: 'auth',
   },
   ACCOUNT_SUSPENDED: {
@@ -109,19 +115,25 @@ const ERROR_MESSAGES: Record<string, { message: string; suggestions?: string[]; 
 
   // Permission errors
   FORBIDDEN: {
-    message: 'You don\'t have permission to perform this action.',
-    suggestions: ['Contact your organization admin for access', 'Check if you\'re signed in to the correct account'],
+    message: "You don't have permission to perform this action.",
+    suggestions: [
+      'Contact your organization admin for access',
+      "Check if you're signed in to the correct account",
+    ],
     category: 'permission',
   },
   ACCESS_DENIED: {
     message: 'Access to this resource is restricted.',
-    suggestions: ['Verify you have the necessary permissions', 'Contact support if you believe this is an error'],
+    suggestions: [
+      'Verify you have the necessary permissions',
+      'Contact support if you believe this is an error',
+    ],
     category: 'permission',
   },
 
   // Resource errors
   NOT_FOUND: {
-    message: 'The item you\'re looking for couldn\'t be found.',
+    message: "The item you're looking for couldn't be found.",
     suggestions: ['Check if the link is correct', 'The item may have been deleted'],
     category: 'notFound',
   },
@@ -167,7 +179,7 @@ const ERROR_MESSAGES: Record<string, { message: string; suggestions?: string[]; 
 
   // Rate limiting
   RATE_LIMITED: {
-    message: 'You\'re making requests too quickly.',
+    message: "You're making requests too quickly.",
     suggestions: ['Wait a moment before trying again', 'Slow down your actions'],
     category: 'rateLimit',
   },
@@ -179,8 +191,12 @@ const ERROR_MESSAGES: Record<string, { message: string; suggestions?: string[]; 
 
   // Payment errors
   PAYMENT_FAILED: {
-    message: 'Your payment couldn\'t be processed.',
-    suggestions: ['Check your payment details', 'Try a different payment method', 'Contact your bank if the issue persists'],
+    message: "Your payment couldn't be processed.",
+    suggestions: [
+      'Check your payment details',
+      'Try a different payment method',
+      'Contact your bank if the issue persists',
+    ],
     category: 'payment',
   },
   CARD_DECLINED: {
@@ -205,11 +221,14 @@ const ERROR_MESSAGES: Record<string, { message: string; suggestions?: string[]; 
   },
   PAYMENT_AUTHENTICATION_REQUIRED: {
     message: 'Additional authentication is required.',
-    suggestions: ['Complete the authentication step from your bank', 'Try a different payment method'],
+    suggestions: [
+      'Complete the authentication step from your bank',
+      'Try a different payment method',
+    ],
     category: 'payment',
   },
   PAYMENT_PROCESSING_ERROR: {
-    message: 'We couldn\'t process your payment.',
+    message: "We couldn't process your payment.",
     suggestions: ['Please try again in a moment', 'Try a different payment method'],
     category: 'payment',
   },

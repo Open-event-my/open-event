@@ -170,7 +170,6 @@ The notification bell is automatically displayed in the TopBar for all authentic
 ```tsx
 // Already integrated in src/components/app/TopBar.tsx
 import { NotificationBell } from '@/components/notifications'
-
 ;<NotificationBell />
 ```
 

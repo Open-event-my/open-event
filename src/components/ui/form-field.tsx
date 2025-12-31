@@ -74,12 +74,9 @@ export function FormField({
     if (React.isValidElement(child)) {
       const additionalProps: Record<string, unknown> = {
         'aria-invalid': hasError || undefined,
-        'aria-describedby': [
-          hasError ? errorId : null,
-          helpText ? helpTextId : null,
-        ]
-          .filter(Boolean)
-          .join(' ') || undefined,
+        'aria-describedby':
+          [hasError ? errorId : null, helpText ? helpTextId : null].filter(Boolean).join(' ') ||
+          undefined,
       }
 
       // Add error styling class if the child accepts className
@@ -151,22 +148,13 @@ export interface FormFieldGroupProps {
   className?: string
 }
 
-export function FormFieldGroup({
-  title,
-  description,
-  children,
-  className,
-}: FormFieldGroupProps) {
+export function FormFieldGroup({ title, description, children, className }: FormFieldGroupProps) {
   return (
     <fieldset className={cn('space-y-4', className)}>
       {(title || description) && (
         <div className="space-y-1">
-          {title && (
-            <legend className="text-sm font-medium leading-none">{title}</legend>
-          )}
-          {description && (
-            <p className="text-xs text-muted-foreground">{description}</p>
-          )}
+          {title && <legend className="text-sm font-medium leading-none">{title}</legend>}
+          {description && <p className="text-xs text-muted-foreground">{description}</p>}
         </div>
       )}
       {children}

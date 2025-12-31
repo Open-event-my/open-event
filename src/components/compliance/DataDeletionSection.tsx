@@ -1,16 +1,16 @@
 /**
  * Data Deletion Section Component
- * 
+ *
  * Provides UI for users to request account deletion and data purge
  * in compliance with GDPR Article 17 (Right to Erasure / Right to be Forgotten).
- * 
+ *
  * NOTE: Backend compliance module not yet integrated. This is a placeholder UI.
  */
 
-import { useState } from 'react';
-import { Trash, Warning, ShieldWarning, CheckCircle } from '@phosphor-icons/react';
-import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import { useState } from 'react'
+import { Trash, Warning, ShieldWarning, CheckCircle } from '@phosphor-icons/react'
+import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,21 +20,21 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from '@/components/ui/alert-dialog'
 
 export function DataDeletionSection() {
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [deletionReason, setDeletionReason] = useState('');
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const [deletionReason, setDeletionReason] = useState('')
 
   const handleRequestDeletion = () => {
-    setShowConfirmDialog(true);
-  };
+    setShowConfirmDialog(true)
+  }
 
   const handleFirstConfirm = () => {
-    setShowConfirmDialog(false);
+    setShowConfirmDialog(false)
     // TODO: Implement when backend compliance module is integrated
-    toast.info('Account deletion is not yet available. Please contact support.');
-  };
+    toast.info('Account deletion is not yet available. Please contact support.')
+  }
 
   return (
     <>
@@ -70,11 +70,19 @@ export function DataDeletionSection() {
                 </p>
                 <ul className="space-y-1 text-xs text-amber-700 dark:text-amber-300">
                   <li className="flex items-start gap-2">
-                    <CheckCircle size={12} weight="fill" className="text-amber-600 mt-0.5 flex-shrink-0" />
+                    <CheckCircle
+                      size={12}
+                      weight="fill"
+                      className="text-amber-600 mt-0.5 flex-shrink-0"
+                    />
                     <span>Export your data first if you want to keep a copy</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <CheckCircle size={12} weight="fill" className="text-amber-600 mt-0.5 flex-shrink-0" />
+                    <CheckCircle
+                      size={12}
+                      weight="fill"
+                      className="text-amber-600 mt-0.5 flex-shrink-0"
+                    />
                     <span>Contact support if you're having issues</span>
                   </li>
                 </ul>
@@ -138,5 +146,5 @@ export function DataDeletionSection() {
         </AlertDialogContent>
       </AlertDialog>
     </>
-  );
+  )
 }

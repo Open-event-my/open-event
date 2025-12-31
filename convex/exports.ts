@@ -22,8 +22,12 @@ export const exportUsers = query({
     format: v.union(v.literal('json'), v.literal('csv')),
     filters: v.optional(
       v.object({
-        role: v.optional(v.union(v.literal('admin'), v.literal('organizer'), v.literal('superadmin'))),
-        status: v.optional(v.union(v.literal('active'), v.literal('suspended'), v.literal('pending'))),
+        role: v.optional(
+          v.union(v.literal('admin'), v.literal('organizer'), v.literal('superadmin'))
+        ),
+        status: v.optional(
+          v.union(v.literal('active'), v.literal('suspended'), v.literal('pending'))
+        ),
         createdAfter: v.optional(v.number()),
         createdBefore: v.optional(v.number()),
       })
@@ -66,7 +70,9 @@ export const exportUsers = query({
       const csvRows = [
         headers.join(','),
         ...exportData.map((row) =>
-          headers.map((h) => `"${String(row[h as keyof typeof row] || '').replace(/"/g, '""')}"`).join(',')
+          headers
+            .map((h) => `"${String(row[h as keyof typeof row] || '').replace(/"/g, '""')}"`)
+            .join(',')
         ),
       ]
       return { data: csvRows.join('\n'), count: exportData.length }
@@ -131,13 +137,25 @@ export const exportVendors = query({
 
     if (args.format === 'csv') {
       const headers = [
-        'id', 'name', 'category', 'description', 'location', 'priceRange',
-        'contactEmail', 'contactPhone', 'contactName', 'status', 'rating', 'createdAt'
+        'id',
+        'name',
+        'category',
+        'description',
+        'location',
+        'priceRange',
+        'contactEmail',
+        'contactPhone',
+        'contactName',
+        'status',
+        'rating',
+        'createdAt',
       ]
       const csvRows = [
         headers.join(','),
         ...exportData.map((row) =>
-          headers.map((h) => `"${String(row[h as keyof typeof row] || '').replace(/"/g, '""')}"`).join(',')
+          headers
+            .map((h) => `"${String(row[h as keyof typeof row] || '').replace(/"/g, '""')}"`)
+            .join(',')
         ),
       ]
       return { data: csvRows.join('\n'), count: exportData.length }
@@ -200,13 +218,23 @@ export const exportSponsors = query({
 
     if (args.format === 'csv') {
       const headers = [
-        'id', 'name', 'industry', 'description', 'website',
-        'contactEmail', 'contactName', 'status', 'budgetRange', 'createdAt'
+        'id',
+        'name',
+        'industry',
+        'description',
+        'website',
+        'contactEmail',
+        'contactName',
+        'status',
+        'budgetRange',
+        'createdAt',
       ]
       const csvRows = [
         headers.join(','),
         ...exportData.map((row) =>
-          headers.map((h) => `"${String(row[h as keyof typeof row] || '').replace(/"/g, '""')}"`).join(',')
+          headers
+            .map((h) => `"${String(row[h as keyof typeof row] || '').replace(/"/g, '""')}"`)
+            .join(',')
         ),
       ]
       return { data: csvRows.join('\n'), count: exportData.length }
@@ -287,14 +315,28 @@ export const exportEvents = query({
 
     if (args.format === 'csv') {
       const headers = [
-        'id', 'title', 'description', 'eventType', 'status', 'startDate', 'endDate',
-        'locationType', 'venueName', 'venueAddress', 'expectedAttendees', 'budget',
-        'organizerName', 'organizerEmail', 'createdAt'
+        'id',
+        'title',
+        'description',
+        'eventType',
+        'status',
+        'startDate',
+        'endDate',
+        'locationType',
+        'venueName',
+        'venueAddress',
+        'expectedAttendees',
+        'budget',
+        'organizerName',
+        'organizerEmail',
+        'createdAt',
       ]
       const csvRows = [
         headers.join(','),
         ...enrichedEvents.map((row) =>
-          headers.map((h) => `"${String(row[h as keyof typeof row] || '').replace(/"/g, '""')}"`).join(',')
+          headers
+            .map((h) => `"${String(row[h as keyof typeof row] || '').replace(/"/g, '""')}"`)
+            .join(',')
         ),
       ]
       return { data: csvRows.join('\n'), count: enrichedEvents.length }
@@ -359,11 +401,22 @@ export const exportModerationLogs = query({
     )
 
     if (args.format === 'csv') {
-      const headers = ['id', 'action', 'targetType', 'targetId', 'reason', 'adminName', 'adminEmail', 'createdAt']
+      const headers = [
+        'id',
+        'action',
+        'targetType',
+        'targetId',
+        'reason',
+        'adminName',
+        'adminEmail',
+        'createdAt',
+      ]
       const csvRows = [
         headers.join(','),
         ...enrichedLogs.map((row) =>
-          headers.map((h) => `"${String(row[h as keyof typeof row] || '').replace(/"/g, '""')}"`).join(',')
+          headers
+            .map((h) => `"${String(row[h as keyof typeof row] || '').replace(/"/g, '""')}"`)
+            .join(',')
         ),
       ]
       return { data: csvRows.join('\n'), count: enrichedLogs.length }

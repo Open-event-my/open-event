@@ -1,6 +1,6 @@
 /**
  * Monitoring & Observability Module
- * 
+ *
  * Centralized exports for all monitoring utilities including:
  * - Structured logging
  * - Metrics collection
@@ -16,7 +16,7 @@ export {
   type LogEntry,
   type LogContext,
   StructuredLogger,
-} from './logger';
+} from './logger'
 
 // Metrics exports
 export {
@@ -28,7 +28,7 @@ export {
   type DatabaseMetric,
   type UsageMetric,
   MetricsCollector,
-} from './metrics';
+} from './metrics'
 
 // Alert exports
 export {
@@ -43,7 +43,7 @@ export {
   type AlertDeliveryResult,
   type AlertRecord,
   AlertManager,
-} from './alerts';
+} from './alerts'
 
 // Error handling exports
 export {
@@ -58,4 +58,4 @@ export {
   type ErrorContext,
   type AlertRoutingRule,
   DEFAULT_ALERT_ROUTING,
-} from './errorHandling';
+} from './errorHandling'

@@ -337,6 +337,7 @@ docs/
    - Improve mock timing synchronization
 
 3. **Configure Resend API Key**
+
    ```bash
    npx convex env set AUTH_RESEND_KEY re_your_key_here
    ```

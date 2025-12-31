@@ -1,6 +1,7 @@
 # Fix PKCS#8 Error - Step by Step Guide
 
 ## Problem
+
 You're seeing: `"pkcs8" must be PKCS#8 formatted string`
 
 **Root Cause:** The `JWT_PRIVATE_KEY` environment variable in Convex Dashboard is missing the PKCS#8 headers (`-----BEGIN PRIVATE KEY-----` and `-----END PRIVATE KEY-----`).
@@ -8,6 +9,7 @@ You're seeing: `"pkcs8" must be PKCS#8 formatted string`
 ## Solution
 
 ### Step 1: Generate New Keys (if needed)
+
 ```bash
 node scripts/formatKeyForConvex.mjs
 ```
@@ -28,6 +30,7 @@ This will output properly formatted keys and save them to `KEYS_FOR_CONVEX.md`.
    - Preserve all line breaks
 
 **Example of CORRECT format:**
+
 ```
 -----BEGIN PRIVATE KEY-----
 MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCyG3uBHWyCwoM7
@@ -39,15 +42,18 @@ Y7AcgkhW4SUX2viPQKjy4vDRk1AsYsnsd1kY0RFq1mLeUu+qiqLK3vekpth9vAvD
 ```
 
 **Example of INCORRECT format (what you probably have now):**
+
 ```
 MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCyG3uBHWyCwoM7
 ... (missing BEGIN/END markers) ...
 ```
 
 ### Step 3: Verify JWKS
+
 Make sure `JWKS` is set correctly (copy from `KEYS_FOR_CONVEX.md`).
 
 ### Step 4: Verify SITE_URL
+
 Make sure `SITE_URL` is set to `http://localhost:5173` (for development).
 
 ### Step 5: Restart Convex Dev Server
@@ -98,4 +104,3 @@ If any of these are `false`, the key format is incorrect.
 ❌ **Not restarting** the Convex dev server after updating the variable
 
 ✅ **Correct:** Copy the ENTIRE block from BEGIN to END, including all line breaks
-

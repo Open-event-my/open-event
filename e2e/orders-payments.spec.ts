@@ -24,7 +24,10 @@ test.describe('Orders & Payments', () => {
     await page.waitForTimeout(2000)
 
     // Click first event card
-    const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+    const eventCard = page
+      .locator('.rounded-lg.border')
+      .filter({ has: page.locator('h3') })
+      .first()
 
     if (await eventCard.isVisible()) {
       await eventCard.click()
@@ -38,7 +41,9 @@ test.describe('Orders & Payments', () => {
       await page.waitForTimeout(2000)
 
       // Verify we're on the sales page
-      await expect(page.getByRole('heading', { name: /sales/i }).first()).toBeVisible({ timeout: 10000 })
+      await expect(page.getByRole('heading', { name: /sales/i }).first()).toBeVisible({
+        timeout: 10000,
+      })
       return true
     }
     return false
@@ -73,7 +78,10 @@ test.describe('Orders & Payments', () => {
         await expect(page.getByPlaceholder(/search orders/i)).toBeVisible({ timeout: 10000 })
 
         // Should show status filter
-        const filterTrigger = page.locator('[data-slot="select-trigger"]').filter({ hasText: /all status|status/i }).first()
+        const filterTrigger = page
+          .locator('[data-slot="select-trigger"]')
+          .filter({ hasText: /all status|status/i })
+          .first()
         await expect(filterTrigger).toBeVisible()
       }
     })
@@ -83,8 +91,14 @@ test.describe('Orders & Payments', () => {
 
       if (hasSalesPage) {
         // Check for either orders table or empty state
-        const hasOrders = await page.locator('table').isVisible().catch(() => false)
-        const hasEmptyState = await page.getByText(/no orders found|orders will appear/i).isVisible().catch(() => false)
+        const hasOrders = await page
+          .locator('table')
+          .isVisible()
+          .catch(() => false)
+        const hasEmptyState = await page
+          .getByText(/no orders found|orders will appear/i)
+          .isVisible()
+          .catch(() => false)
 
         // One of them should be visible
         expect(hasOrders || hasEmptyState).toBe(true)
@@ -107,7 +121,10 @@ test.describe('Orders & Payments', () => {
         await page.waitForTimeout(1000)
 
         // Check if orders are filtered or empty state shows
-        const hasTable = await page.locator('table').isVisible().catch(() => false)
+        const hasTable = await page
+          .locator('table')
+          .isVisible()
+          .catch(() => false)
         if (hasTable) {
           // All visible status badges should be "Completed" or no rows visible
           const statusBadges = page.locator('table tbody tr .rounded-full')
@@ -227,8 +244,14 @@ test.describe('Orders & Payments', () => {
         await page.waitForTimeout(1000)
 
         // Should show results or empty state
-        const hasTable = await page.locator('table').isVisible().catch(() => false)
-        const hasEmptyState = await page.getByText(/no orders found/i).isVisible().catch(() => false)
+        const hasTable = await page
+          .locator('table')
+          .isVisible()
+          .catch(() => false)
+        const hasEmptyState = await page
+          .getByText(/no orders found/i)
+          .isVisible()
+          .catch(() => false)
 
         expect(hasTable || hasEmptyState).toBe(true)
       }
@@ -268,8 +291,9 @@ test.describe('Orders & Payments', () => {
         const noOrders = page.getByText(/0 of \d+ orders/i)
         const noOrdersFound = page.getByText(/no orders found/i)
 
-        const hasNoMatch = await noOrders.isVisible().catch(() => false) ||
-                           await noOrdersFound.isVisible().catch(() => false)
+        const hasNoMatch =
+          (await noOrders.isVisible().catch(() => false)) ||
+          (await noOrdersFound.isVisible().catch(() => false))
         expect(hasNoMatch).toBe(true)
       }
     })
@@ -281,7 +305,11 @@ test.describe('Orders & Payments', () => {
 
       if (hasSalesPage) {
         // Check if there are orders in the table
-        const hasOrders = await page.locator('table tbody tr').first().isVisible().catch(() => false)
+        const hasOrders = await page
+          .locator('table tbody tr')
+          .first()
+          .isVisible()
+          .catch(() => false)
 
         if (hasOrders) {
           // Should have View button
@@ -296,7 +324,11 @@ test.describe('Orders & Payments', () => {
 
       if (hasSalesPage) {
         // Check if there are orders in the table
-        const hasOrders = await page.locator('table tbody tr').first().isVisible().catch(() => false)
+        const hasOrders = await page
+          .locator('table tbody tr')
+          .first()
+          .isVisible()
+          .catch(() => false)
 
         if (hasOrders) {
           // Click View button
@@ -315,7 +347,11 @@ test.describe('Orders & Payments', () => {
       const hasSalesPage = await navigateToSalesPage(page)
 
       if (hasSalesPage) {
-        const hasOrders = await page.locator('table tbody tr').first().isVisible().catch(() => false)
+        const hasOrders = await page
+          .locator('table tbody tr')
+          .first()
+          .isVisible()
+          .catch(() => false)
 
         if (hasOrders) {
           // Click View button
@@ -333,7 +369,11 @@ test.describe('Orders & Payments', () => {
       const hasSalesPage = await navigateToSalesPage(page)
 
       if (hasSalesPage) {
-        const hasOrders = await page.locator('table tbody tr').first().isVisible().catch(() => false)
+        const hasOrders = await page
+          .locator('table tbody tr')
+          .first()
+          .isVisible()
+          .catch(() => false)
 
         if (hasOrders) {
           // Click View button
@@ -351,7 +391,11 @@ test.describe('Orders & Payments', () => {
       const hasSalesPage = await navigateToSalesPage(page)
 
       if (hasSalesPage) {
-        const hasOrders = await page.locator('table tbody tr').first().isVisible().catch(() => false)
+        const hasOrders = await page
+          .locator('table tbody tr')
+          .first()
+          .isVisible()
+          .catch(() => false)
 
         if (hasOrders) {
           // Click View button
@@ -371,7 +415,11 @@ test.describe('Orders & Payments', () => {
       const hasSalesPage = await navigateToSalesPage(page)
 
       if (hasSalesPage) {
-        const hasOrders = await page.locator('table tbody tr').first().isVisible().catch(() => false)
+        const hasOrders = await page
+          .locator('table tbody tr')
+          .first()
+          .isVisible()
+          .catch(() => false)
 
         if (hasOrders) {
           // Click View button
@@ -401,7 +449,11 @@ test.describe('Orders & Payments', () => {
         await page.waitForTimeout(1000)
 
         // Check if there are completed orders
-        const hasOrders = await page.locator('table tbody tr').first().isVisible().catch(() => false)
+        const hasOrders = await page
+          .locator('table tbody tr')
+          .first()
+          .isVisible()
+          .catch(() => false)
 
         if (hasOrders) {
           // Click View on first order
@@ -431,7 +483,11 @@ test.describe('Orders & Payments', () => {
         await page.getByRole('option', { name: /completed/i }).click()
         await page.waitForTimeout(1000)
 
-        const hasOrders = await page.locator('table tbody tr').first().isVisible().catch(() => false)
+        const hasOrders = await page
+          .locator('table tbody tr')
+          .first()
+          .isVisible()
+          .catch(() => false)
 
         if (hasOrders) {
           // Click View on first order
@@ -447,7 +503,9 @@ test.describe('Orders & Payments', () => {
             await page.waitForTimeout(500)
 
             // Refund dialog should open with confirmation text
-            await expect(page.getByText(/are you sure you want to refund/i)).toBeVisible({ timeout: 5000 })
+            await expect(page.getByText(/are you sure you want to refund/i)).toBeVisible({
+              timeout: 5000,
+            })
           }
         }
       }
@@ -463,7 +521,11 @@ test.describe('Orders & Payments', () => {
         await page.getByRole('option', { name: /completed/i }).click()
         await page.waitForTimeout(1000)
 
-        const hasOrders = await page.locator('table tbody tr').first().isVisible().catch(() => false)
+        const hasOrders = await page
+          .locator('table tbody tr')
+          .first()
+          .isVisible()
+          .catch(() => false)
 
         if (hasOrders) {
           await page.getByRole('button', { name: /view/i }).first().click()
@@ -477,7 +539,9 @@ test.describe('Orders & Payments', () => {
             await page.waitForTimeout(500)
 
             // Should show reason input
-            await expect(page.getByPlaceholder(/enter refund reason/i)).toBeVisible({ timeout: 5000 })
+            await expect(page.getByPlaceholder(/enter refund reason/i)).toBeVisible({
+              timeout: 5000,
+            })
           }
         }
       }
@@ -493,7 +557,11 @@ test.describe('Orders & Payments', () => {
         await page.getByRole('option', { name: /completed/i }).click()
         await page.waitForTimeout(1000)
 
-        const hasOrders = await page.locator('table tbody tr').first().isVisible().catch(() => false)
+        const hasOrders = await page
+          .locator('table tbody tr')
+          .first()
+          .isVisible()
+          .catch(() => false)
 
         if (hasOrders) {
           await page.getByRole('button', { name: /view/i }).first().click()
@@ -507,7 +575,9 @@ test.describe('Orders & Payments', () => {
             await page.waitForTimeout(500)
 
             // Should show Confirm Refund and Cancel buttons
-            await expect(page.getByRole('button', { name: /confirm refund/i })).toBeVisible({ timeout: 5000 })
+            await expect(page.getByRole('button', { name: /confirm refund/i })).toBeVisible({
+              timeout: 5000,
+            })
             await expect(page.getByRole('button', { name: /cancel/i })).toBeVisible()
           }
         }
@@ -524,7 +594,11 @@ test.describe('Orders & Payments', () => {
         await page.getByRole('option', { name: /completed/i }).click()
         await page.waitForTimeout(1000)
 
-        const hasOrders = await page.locator('table tbody tr').first().isVisible().catch(() => false)
+        const hasOrders = await page
+          .locator('table tbody tr')
+          .first()
+          .isVisible()
+          .catch(() => false)
 
         if (hasOrders) {
           await page.getByRole('button', { name: /view/i }).first().click()
@@ -554,7 +628,10 @@ test.describe('Orders & Payments', () => {
       await page.goto('/dashboard/events')
       await page.waitForTimeout(2000)
 
-      const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+      const eventCard = page
+        .locator('.rounded-lg.border')
+        .filter({ has: page.locator('h3') })
+        .first()
 
       if (await eventCard.isVisible()) {
         await eventCard.click()

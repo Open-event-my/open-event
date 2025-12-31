@@ -1,10 +1,10 @@
 /**
  * Security Utilities
- * 
+ *
  * Common utility functions for security operations
  */
 
-import { VALIDATION_PATTERNS } from './config';
+import { VALIDATION_PATTERNS } from './config'
 
 /**
  * Generate a cryptographically secure random string
@@ -14,9 +14,9 @@ import { VALIDATION_PATTERNS } from './config';
 export function generateSecureToken(length: number = 32): string {
   // In Convex, we'll use crypto.randomBytes equivalent
   // For now, using a simple implementation that works in both environments
-  const array = new Uint8Array(length);
-  crypto.getRandomValues(array);
-  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+  const array = new Uint8Array(length)
+  crypto.getRandomValues(array)
+  return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
 /**
@@ -24,7 +24,7 @@ export function generateSecureToken(length: number = 32): string {
  * @returns Random ID string
  */
 export function generateSecureId(): string {
-  return generateSecureToken(16);
+  return generateSecureToken(16)
 }
 
 /**
@@ -33,11 +33,11 @@ export function generateSecureId(): string {
  * @returns Hex-encoded hash
  */
 export async function hashString(data: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const dataBuffer = encoder.encode(data);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
+  const encoder = new TextEncoder()
+  const dataBuffer = encoder.encode(data)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  return hashArray.map((byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
 /**
@@ -48,15 +48,15 @@ export async function hashString(data: string): Promise<string> {
  */
 export function constantTimeCompare(a: string, b: string): boolean {
   if (a.length !== b.length) {
-    return false;
+    return false
   }
-  
-  let result = 0;
+
+  let result = 0
   for (let i = 0; i < a.length; i++) {
-    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i)
   }
-  
-  return result === 0;
+
+  return result === 0
 }
 
 /**
@@ -65,7 +65,7 @@ export function constantTimeCompare(a: string, b: string): boolean {
  * @returns True if valid email format
  */
 export function isValidEmail(email: string): boolean {
-  return VALIDATION_PATTERNS.email.test(email);
+  return VALIDATION_PATTERNS.email.test(email)
 }
 
 /**
@@ -74,7 +74,7 @@ export function isValidEmail(email: string): boolean {
  * @returns True if valid URL format
  */
 export function isValidUrl(url: string): boolean {
-  return VALIDATION_PATTERNS.url.test(url);
+  return VALIDATION_PATTERNS.url.test(url)
 }
 
 /**
@@ -83,7 +83,7 @@ export function isValidUrl(url: string): boolean {
  * @returns True if valid phone format
  */
 export function isValidPhone(phone: string): boolean {
-  return VALIDATION_PATTERNS.phone.test(phone);
+  return VALIDATION_PATTERNS.phone.test(phone)
 }
 
 /**
@@ -99,9 +99,9 @@ export function escapeHtml(str: string): string {
     '"': '&quot;',
     "'": '&#x27;',
     '/': '&#x2F;',
-  };
-  
-  return str.replace(/[&<>"'/]/g, char => htmlEscapes[char] || char);
+  }
+
+  return str.replace(/[&<>"'/]/g, (char) => htmlEscapes[char] || char)
 }
 
 /**
@@ -119,9 +119,9 @@ export function containsDangerousPatterns(str: string): boolean {
     /<embed/i,
     /eval\(/i,
     /expression\(/i,
-  ];
-  
-  return dangerousPatterns.some(pattern => pattern.test(str));
+  ]
+
+  return dangerousPatterns.some((pattern) => pattern.test(str))
 }
 
 /**
@@ -133,10 +133,10 @@ export function containsDangerousPatterns(str: string): boolean {
  */
 export function truncateString(str: string, maxLength: number, suffix: string = '...'): string {
   if (str.length <= maxLength) {
-    return str;
+    return str
   }
-  
-  return str.substring(0, maxLength - suffix.length) + suffix;
+
+  return str.substring(0, maxLength - suffix.length) + suffix
 }
 
 /**
@@ -151,17 +151,17 @@ export function generateRateLimitKey(
   ipAddress: string | undefined,
   prefix: string = 'rate_limit'
 ): string {
-  const parts = [prefix];
-  
+  const parts = [prefix]
+
   if (userId) {
-    parts.push(`user:${userId}`);
+    parts.push(`user:${userId}`)
   }
-  
+
   if (ipAddress) {
-    parts.push(`ip:${ipAddress}`);
+    parts.push(`ip:${ipAddress}`)
   }
-  
-  return parts.join(':');
+
+  return parts.join(':')
 }
 
 /**
@@ -171,7 +171,7 @@ export function generateRateLimitKey(
  * @returns True if expired
  */
 export function isExpired(timestamp: number, expirationMs: number): boolean {
-  return Date.now() > timestamp + expirationMs;
+  return Date.now() > timestamp + expirationMs
 }
 
 /**
@@ -179,7 +179,7 @@ export function isExpired(timestamp: number, expirationMs: number): boolean {
  * @returns Current timestamp
  */
 export function getCurrentTimestamp(): number {
-  return Date.now();
+  return Date.now()
 }
 
 /**
@@ -187,7 +187,7 @@ export function getCurrentTimestamp(): number {
  * @param ms - Duration in milliseconds
  */
 export function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 /**
@@ -202,10 +202,10 @@ export function calculateBackoffDelay(
   baseDelay: number = 1000,
   maxDelay: number = 30000
 ): number {
-  const delay = Math.min(baseDelay * Math.pow(2, attempt), maxDelay);
+  const delay = Math.min(baseDelay * Math.pow(2, attempt), maxDelay)
   // Add jitter (±25%)
-  const jitter = delay * 0.25 * (Math.random() * 2 - 1);
-  return Math.floor(delay + jitter);
+  const jitter = delay * 0.25 * (Math.random() * 2 - 1)
+  return Math.floor(delay + jitter)
 }
 
 /**
@@ -223,13 +223,13 @@ export function redactSensitiveInfo(
     /\b[A-Za-z0-9]{20,}\b/g, // API keys/tokens
   ]
 ): string {
-  let redacted = str;
-  
-  patterns.forEach(pattern => {
-    redacted = redacted.replace(pattern, '[REDACTED]');
-  });
-  
-  return redacted;
+  let redacted = str
+
+  patterns.forEach((pattern) => {
+    redacted = redacted.replace(pattern, '[REDACTED]')
+  })
+
+  return redacted
 }
 
 /**
@@ -244,17 +244,17 @@ export function extractIpAddress(headers: Record<string, string | undefined>): s
     'x-real-ip',
     'cf-connecting-ip', // Cloudflare
     'x-client-ip',
-  ];
-  
+  ]
+
   for (const header of ipHeaders) {
-    const value = headers[header];
+    const value = headers[header]
     if (value) {
       // x-forwarded-for can contain multiple IPs, take the first one
-      return value.split(',')[0].trim();
+      return value.split(',')[0].trim()
     }
   }
-  
-  return undefined;
+
+  return undefined
 }
 
 /**
@@ -265,7 +265,7 @@ export function extractIpAddress(headers: Record<string, string | undefined>): s
  * @returns True if within range
  */
 export function isInRange(value: number, min: number, max: number): boolean {
-  return value >= min && value <= max;
+  return value >= min && value <= max
 }
 
 /**
@@ -274,5 +274,5 @@ export function isInRange(value: number, min: number, max: number): boolean {
  * @returns Normalized string
  */
 export function normalizeString(str: string): string {
-  return str.toLowerCase().trim().replace(/\s+/g, ' ');
+  return str.toLowerCase().trim().replace(/\s+/g, ' ')
 }

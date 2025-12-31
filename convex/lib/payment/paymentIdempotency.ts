@@ -11,10 +11,10 @@
  * **Validates: Requirements 12.5**
  */
 
-import { v } from 'convex/values';
-import { internalMutation, internalQuery } from '../../_generated/server';
-import { logger } from '../monitoring/logger';
-import { generateIdempotencyKey, generateStripeIdempotencyKey } from './paymentSecurity';
+import { v } from 'convex/values'
+import { internalMutation, internalQuery } from '../../_generated/server'
+import { logger } from '../monitoring/logger'
+import { generateIdempotencyKey, generateStripeIdempotencyKey } from './paymentSecurity'
 
 /**
  * Get an existing idempotency record by key
@@ -27,9 +27,9 @@ export const getByKey = internalQuery({
     return await ctx.db
       .query('paymentIdempotency')
       .withIndex('by_idempotency_key', (q) => q.eq('idempotencyKey', args.idempotencyKey))
-      .first();
+      .first()
   },
-});
+})
 
 /**
  * Get an existing idempotency record by order and operation
@@ -40,27 +40,26 @@ export const getByOrderOperation = internalQuery({
     operation: v.union(v.literal('checkout'), v.literal('refund'), v.literal('capture')),
   },
   handler: async (ctx, args) => {
-    const now = Date.now();
-    
+    const now = Date.now()
+
     // Find the most recent non-expired record for this order/operation
     const records = await ctx.db
       .query('paymentIdempotency')
       .withIndex('by_order_operation', (q) =>
         q.eq('orderId', args.orderId).eq('operation', args.operation)
       )
-      .collect();
-    
-    // Filter out expired records and get the most recent
-    const validRecords = records.filter((r) => r.expiresAt > now);
-    if (validRecords.length === 0) {
-      return null;
-    }
-    
-    // Return the most recent record
-    return validRecords.sort((a, b) => b.createdAt - a.createdAt)[0];
-  },
-});
+      .collect()
 
+    // Filter out expired records and get the most recent
+    const validRecords = records.filter((r) => r.expiresAt > now)
+    if (validRecords.length === 0) {
+      return null
+    }
+
+    // Return the most recent record
+    return validRecords.sort((a, b) => b.createdAt - a.createdAt)[0]
+  },
+})
 
 /**
  * Create a new idempotency record for a payment operation
@@ -72,26 +71,26 @@ export const create = internalMutation({
     timestamp: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const ts = args.timestamp || Date.now();
-    const idempotencyKey = generateIdempotencyKey(args.orderId, args.operation, ts);
-    const stripeIdempotencyKey = generateStripeIdempotencyKey(args.orderId, args.operation, ts);
-    
+    const ts = args.timestamp || Date.now()
+    const idempotencyKey = generateIdempotencyKey(args.orderId, args.operation, ts)
+    const stripeIdempotencyKey = generateStripeIdempotencyKey(args.orderId, args.operation, ts)
+
     // Check if record already exists
     const existing = await ctx.db
       .query('paymentIdempotency')
       .withIndex('by_idempotency_key', (q) => q.eq('idempotencyKey', idempotencyKey))
-      .first();
-    
+      .first()
+
     if (existing) {
       logger.info('Idempotency record already exists', {
         idempotencyKey,
         orderId: args.orderId,
         operation: args.operation,
         existingStatus: existing.status,
-      });
-      return existing;
+      })
+      return existing
     }
-    
+
     // Create new record
     const recordId = await ctx.db.insert('paymentIdempotency', {
       idempotencyKey,
@@ -101,17 +100,17 @@ export const create = internalMutation({
       stripeIdempotencyKey,
       createdAt: ts,
       expiresAt: ts + 24 * 60 * 60 * 1000, // 24 hours TTL
-    });
-    
+    })
+
     logger.info('Created idempotency record', {
       idempotencyKey,
       orderId: args.orderId,
       operation: args.operation,
-    });
-    
-    return await ctx.db.get(recordId);
+    })
+
+    return await ctx.db.get(recordId)
   },
-});
+})
 
 /**
  * Update an idempotency record with the operation result
@@ -127,66 +126,66 @@ export const complete = internalMutation({
     const record = await ctx.db
       .query('paymentIdempotency')
       .withIndex('by_idempotency_key', (q) => q.eq('idempotencyKey', args.idempotencyKey))
-      .first();
-    
+      .first()
+
     if (!record) {
       logger.warn('Idempotency record not found for completion', {
         idempotencyKey: args.idempotencyKey,
-      });
-      return null;
+      })
+      return null
     }
-    
+
     // Don't update if already completed
     if (record.status === 'completed') {
       logger.info('Idempotency record already completed, skipping update', {
         idempotencyKey: args.idempotencyKey,
-      });
-      return record;
+      })
+      return record
     }
-    
+
     await ctx.db.patch(record._id, {
       status: args.status,
       result: args.result,
       errorMessage: args.errorMessage,
       completedAt: Date.now(),
-    });
-    
+    })
+
     logger.info('Completed idempotency record', {
       idempotencyKey: args.idempotencyKey,
       status: args.status,
-    });
-    
-    return await ctx.db.get(record._id);
+    })
+
+    return await ctx.db.get(record._id)
   },
-});
+})
 
 /**
  * Clean up expired idempotency records
  */
 export const cleanupExpired = internalMutation({
   handler: async (ctx) => {
-    const now = Date.now();
-    
+    const now = Date.now()
+
     const expiredRecords = await ctx.db
       .query('paymentIdempotency')
       .filter((q) => q.lt(q.field('expiresAt'), now))
-      .collect();
-    
-    let deletedCount = 0;
+      .collect()
+
+    let deletedCount = 0
     for (const record of expiredRecords) {
-      await ctx.db.delete(record._id);
-      deletedCount++;
+      await ctx.db.delete(record._id)
+      deletedCount++
     }
-    
+
     if (deletedCount > 0) {
       logger.info('Cleaned up expired idempotency records', {
         deletedCount,
-      });
+      })
     }
-    
-    return { deletedCount };
+
+    return { deletedCount }
   },
-});
+})
 
 /**
  * Check if a payment operation can proceed (idempotency check)
@@ -199,16 +198,16 @@ export const checkAndCreate = internalMutation({
     timestamp: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const ts = args.timestamp || Date.now();
-    const idempotencyKey = generateIdempotencyKey(args.orderId, args.operation, ts);
-    const stripeIdempotencyKey = generateStripeIdempotencyKey(args.orderId, args.operation, ts);
-    
+    const ts = args.timestamp || Date.now()
+    const idempotencyKey = generateIdempotencyKey(args.orderId, args.operation, ts)
+    const stripeIdempotencyKey = generateStripeIdempotencyKey(args.orderId, args.operation, ts)
+
     // Check for existing record
     const existing = await ctx.db
       .query('paymentIdempotency')
       .withIndex('by_idempotency_key', (q) => q.eq('idempotencyKey', idempotencyKey))
-      .first();
-    
+      .first()
+
     if (existing && existing.expiresAt > ts) {
       // Duplicate request found
       logger.info('Duplicate payment operation detected', {
@@ -216,15 +215,15 @@ export const checkAndCreate = internalMutation({
         orderId: args.orderId,
         operation: args.operation,
         existingStatus: existing.status,
-      });
-      
+      })
+
       return {
         isDuplicate: true,
         record: existing,
         stripeIdempotencyKey: existing.stripeIdempotencyKey,
-      };
+      }
     }
-    
+
     // Create new record
     const recordId = await ctx.db.insert('paymentIdempotency', {
       idempotencyKey,
@@ -234,20 +233,20 @@ export const checkAndCreate = internalMutation({
       stripeIdempotencyKey,
       createdAt: ts,
       expiresAt: ts + 24 * 60 * 60 * 1000, // 24 hours TTL
-    });
-    
-    const newRecord = await ctx.db.get(recordId);
-    
+    })
+
+    const newRecord = await ctx.db.get(recordId)
+
     logger.info('Created new idempotency record for payment operation', {
       idempotencyKey,
       orderId: args.orderId,
       operation: args.operation,
-    });
-    
+    })
+
     return {
       isDuplicate: false,
       record: newRecord,
       stripeIdempotencyKey,
-    };
+    }
   },
-});
+})

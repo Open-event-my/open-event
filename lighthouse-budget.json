@@ -5,8 +5,6 @@
       { "resourceType": "script", "budget": 500 },
       { "resourceType": "total", "budget": 1500 }
     ],
-    "resourceCounts": [
-      { "resourceType": "third-party", "budget": 10 }
-    ]
+    "resourceCounts": [{ "resourceType": "third-party", "budget": 10 }]
   }
 ]

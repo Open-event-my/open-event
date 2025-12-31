@@ -17,10 +17,29 @@ export function AdminProtectedRoute({
 }: AdminProtectedRouteProps) {
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth()
   const user = useQuery(api.queries.auth.getCurrentUser)
-  
+
   // #region agent log
   React.useEffect(() => {
-    fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'src/components/admin/AdminProtectedRoute.tsx:19',message:'AdminProtectedRoute user query state',data:{isAuthenticated,isLoading:authLoading,hasUser:!!user,userId:user?._id,userRole:user?.role,userStatus:user?.status},timestamp:Date.now(),sessionId:'debug-session',runId:'client-query',hypothesisId:'C1'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'src/components/admin/AdminProtectedRoute.tsx:19',
+        message: 'AdminProtectedRoute user query state',
+        data: {
+          isAuthenticated,
+          isLoading: authLoading,
+          hasUser: !!user,
+          userId: user?._id,
+          userRole: user?.role,
+          userStatus: user?.status,
+        },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'client-query',
+        hypothesisId: 'C1',
+      }),
+    }).catch(() => {})
   }, [isAuthenticated, authLoading, user])
   // #endregion
 

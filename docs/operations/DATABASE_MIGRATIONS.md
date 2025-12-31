@@ -42,11 +42,13 @@ convex/
 Schema changes in `convex/schema.ts` are applied automatically on deployment.
 
 **Safe Changes (No Migration Needed):**
+
 - Adding new tables
 - Adding new optional fields
 - Adding new indexes
 
 **Requires Data Migration:**
+
 - Renaming fields
 - Changing field types
 - Adding required fields
@@ -57,6 +59,7 @@ Schema changes in `convex/schema.ts` are applied automatically on deployment.
 Data migrations transform existing data to match new requirements.
 
 **Examples:**
+
 - Encrypting existing API keys
 - Merging duplicate records
 - Populating new required fields
@@ -67,6 +70,7 @@ Data migrations transform existing data to match new requirements.
 Backfill migrations populate new fields with computed values.
 
 **Examples:**
+
 - Adding timestamps to existing records
 - Computing derived fields
 - Setting default values
@@ -91,27 +95,27 @@ Create a new file in `convex/migrations/`:
 
 /**
  * Migration: Add User Preferences
- * 
+ *
  * Purpose: Populate the new userPreferences field for existing users
- * 
+ *
  * Requirements: [Requirement ID]
- * 
+ *
  * Affected Tables: users
  * Estimated Records: ~10,000
  * Estimated Duration: ~5 minutes
- * 
+ *
  * Rollback: Run rollback_20241231_add_user_preferences
  */
 
-import { internalMutation } from '../_generated/server';
-import { v } from 'convex/values';
+import { internalMutation } from '../_generated/server'
+import { v } from 'convex/values'
 
 // Default preferences for existing users
 const DEFAULT_PREFERENCES = {
   emailNotifications: true,
   darkMode: false,
   language: 'en',
-};
+}
 
 /**
  * Main migration function
@@ -122,47 +126,47 @@ export const run = internalMutation({
     cursor: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const batchSize = args.batchSize ?? 100;
-    
-    console.log(`[MIGRATION] Starting user preferences migration...`);
-    
+    const batchSize = args.batchSize ?? 100
+
+    console.log(`[MIGRATION] Starting user preferences migration...`)
+
     // Get users without preferences
     const users = await ctx.db
       .query('users')
       .filter((q) => q.eq(q.field('preferences'), undefined))
-      .take(batchSize);
-    
+      .take(batchSize)
+
     if (users.length === 0) {
-      console.log('[MIGRATION] No more users to migrate');
-      return { complete: true, processed: 0 };
+      console.log('[MIGRATION] No more users to migrate')
+      return { complete: true, processed: 0 }
     }
-    
-    let processed = 0;
-    let errors = 0;
-    
+
+    let processed = 0
+    let errors = 0
+
     for (const user of users) {
       try {
         await ctx.db.patch(user._id, {
           preferences: DEFAULT_PREFERENCES,
           preferencesUpdatedAt: Date.now(),
-        });
-        processed++;
+        })
+        processed++
       } catch (error) {
-        console.error(`[MIGRATION] Error updating user ${user._id}:`, error);
-        errors++;
+        console.error(`[MIGRATION] Error updating user ${user._id}:`, error)
+        errors++
       }
     }
-    
-    console.log(`[MIGRATION] Batch complete: ${processed} processed, ${errors} errors`);
-    
+
+    console.log(`[MIGRATION] Batch complete: ${processed} processed, ${errors} errors`)
+
     return {
       complete: false,
       processed,
       errors,
       hasMore: users.length === batchSize,
-    };
+    }
   },
-});
+})
 
 /**
  * Dry run - preview changes without applying
@@ -173,8 +177,8 @@ export const dryRun = internalMutation({
     const usersWithoutPrefs = await ctx.db
       .query('users')
       .filter((q) => q.eq(q.field('preferences'), undefined))
-      .collect();
-    
+      .collect()
+
     return {
       totalUsersToMigrate: usersWithoutPrefs.length,
       sampleUsers: usersWithoutPrefs.slice(0, 5).map((u) => ({
@@ -183,9 +187,9 @@ export const dryRun = internalMutation({
         createdAt: u.createdAt,
       })),
       defaultPreferences: DEFAULT_PREFERENCES,
-    };
+    }
   },
-});
+})
 
 /**
  * Rollback function
@@ -195,37 +199,37 @@ export const rollback = internalMutation({
     batchSize: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const batchSize = args.batchSize ?? 100;
-    
-    console.log('[ROLLBACK] Starting rollback...');
-    
+    const batchSize = args.batchSize ?? 100
+
+    console.log('[ROLLBACK] Starting rollback...')
+
     // Find users with preferences added by this migration
     const users = await ctx.db
       .query('users')
       .filter((q) => q.neq(q.field('preferences'), undefined))
-      .take(batchSize);
-    
-    let processed = 0;
-    
+      .take(batchSize)
+
+    let processed = 0
+
     for (const user of users) {
       // Only rollback if preferences match default (migration-added)
       if (JSON.stringify(user.preferences) === JSON.stringify(DEFAULT_PREFERENCES)) {
         await ctx.db.patch(user._id, {
           preferences: undefined,
           preferencesUpdatedAt: undefined,
-        });
-        processed++;
+        })
+        processed++
       }
     }
-    
-    console.log(`[ROLLBACK] Rolled back ${processed} users`);
-    
+
+    console.log(`[ROLLBACK] Rolled back ${processed} users`)
+
     return {
       processed,
       hasMore: users.length === batchSize,
-    };
+    }
   },
-});
+})
 
 /**
  * Get migration status
@@ -233,17 +237,17 @@ export const rollback = internalMutation({
 export const status = internalMutation({
   args: {},
   handler: async (ctx) => {
-    const allUsers = await ctx.db.query('users').collect();
-    const migratedUsers = allUsers.filter((u) => u.preferences !== undefined);
-    
+    const allUsers = await ctx.db.query('users').collect()
+    const migratedUsers = allUsers.filter((u) => u.preferences !== undefined)
+
     return {
       totalUsers: allUsers.length,
       migratedUsers: migratedUsers.length,
       pendingUsers: allUsers.length - migratedUsers.length,
       progress: Math.round((migratedUsers.length / allUsers.length) * 100),
-    };
+    }
   },
-});
+})
 ```
 
 ### Step 3: Add Schema Changes (if needed)
@@ -254,11 +258,13 @@ Update `convex/schema.ts`:
 // Add new field to schema
 users: defineTable({
   // ... existing fields
-  preferences: v.optional(v.object({
-    emailNotifications: v.boolean(),
-    darkMode: v.boolean(),
-    language: v.string(),
-  })),
+  preferences: v.optional(
+    v.object({
+      emailNotifications: v.boolean(),
+      darkMode: v.boolean(),
+      language: v.string(),
+    })
+  ),
   preferencesUpdatedAt: v.optional(v.number()),
 })
 ```
@@ -268,15 +274,17 @@ users: defineTable({
 ### Local Testing
 
 1. **Run dry run first:**
+
    ```bash
    npx convex run migrations/20241231_add_user_preferences:dryRun
    ```
 
 2. **Test on development:**
+
    ```bash
    # Run migration
    npx convex run migrations/20241231_add_user_preferences:run
-   
+
    # Check status
    npx convex run migrations/20241231_add_user_preferences:status
    ```
@@ -289,11 +297,13 @@ users: defineTable({
 ### Staging Testing
 
 1. **Deploy to staging:**
+
    ```bash
    npx convex deploy --preview staging
    ```
 
 2. **Run migration on staging:**
+
    ```bash
    npx convex run migrations/20241231_add_user_preferences:run --preview staging
    ```
@@ -473,31 +483,33 @@ If rollback function fails:
 ### Safety Guidelines
 
 1. **Never delete data without backup:**
+
    ```typescript
    // Bad: Direct delete
-   await ctx.db.delete(record._id);
-   
+   await ctx.db.delete(record._id)
+
    // Good: Soft delete first
-   await ctx.db.patch(record._id, { 
+   await ctx.db.patch(record._id, {
      deletedAt: Date.now(),
      deletedBy: 'migration_20241231',
-   });
+   })
    ```
 
 2. **Add migration markers:**
+
    ```typescript
    // Track which records were migrated
    await ctx.db.patch(record._id, {
      migratedAt: Date.now(),
      migratedBy: 'migration_20241231',
-   });
+   })
    ```
 
 3. **Log everything:**
    ```typescript
-   console.log(`[MIGRATION] Processing record ${record._id}`);
-   console.log(`[MIGRATION] Before: ${JSON.stringify(record)}`);
-   console.log(`[MIGRATION] After: ${JSON.stringify(updated)}`);
+   console.log(`[MIGRATION] Processing record ${record._id}`)
+   console.log(`[MIGRATION] Before: ${JSON.stringify(record)}`)
+   console.log(`[MIGRATION] After: ${JSON.stringify(updated)}`)
    ```
 
 ### Documentation
@@ -508,11 +520,12 @@ If rollback function fails:
    - Rollback procedure
 
 2. **Update migration log:**
+
    ```markdown
    ## Migration Log
-   
-   | Date | Migration | Status | Notes |
-   |------|-----------|--------|-------|
+
+   | Date       | Migration            | Status   | Notes          |
+   | ---------- | -------------------- | -------- | -------------- |
    | 2024-12-31 | add_user_preferences | Complete | 10,000 records |
    ```
 
@@ -529,20 +542,20 @@ If rollback function fails:
 
 /**
  * Migration: [Title]
- * 
+ *
  * Purpose: [What this migration does]
- * 
+ *
  * Requirements: [Requirement IDs]
- * 
+ *
  * Affected Tables: [table1, table2]
  * Estimated Records: [number]
  * Estimated Duration: [time]
- * 
+ *
  * Rollback: Run rollback function
  */
 
-import { internalMutation } from '../_generated/server';
-import { v } from 'convex/values';
+import { internalMutation } from '../_generated/server'
+import { v } from 'convex/values'
 
 export const run = internalMutation({
   args: {
@@ -551,14 +564,14 @@ export const run = internalMutation({
   handler: async (ctx, args) => {
     // Implementation
   },
-});
+})
 
 export const dryRun = internalMutation({
   args: {},
   handler: async (ctx) => {
     // Preview implementation
   },
-});
+})
 
 export const rollback = internalMutation({
   args: {
@@ -567,17 +580,17 @@ export const rollback = internalMutation({
   handler: async (ctx, args) => {
     // Rollback implementation
   },
-});
+})
 
 export const status = internalMutation({
   args: {},
   handler: async (ctx) => {
     // Status implementation
   },
-});
+})
 ```
 
 ---
 
-*Last Updated: December 2024*
-*Document Owner: Platform Team*
+_Last Updated: December 2024_
+_Document Owner: Platform Team_

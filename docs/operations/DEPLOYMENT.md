@@ -31,14 +31,14 @@ This document outlines the deployment procedures for Open Event, including step-
 
 See `.env.example` for the complete list. Critical variables for production:
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `VITE_CONVEX_URL` | Convex production deployment URL | Yes |
-| `SITE_URL` | Production site URL for OAuth redirects | Yes |
-| `CONVEX_AUTH_PRIVATE_KEY` | JWT signing key | Yes |
-| `JWKS` | JSON Web Key Set | Yes |
-| `OPENAI_API_KEY` | OpenAI API key for AI features | Optional |
-| `VITE_SENTRY_DSN` | Sentry DSN for error tracking | Recommended |
+| Variable                  | Description                             | Required    |
+| ------------------------- | --------------------------------------- | ----------- |
+| `VITE_CONVEX_URL`         | Convex production deployment URL        | Yes         |
+| `SITE_URL`                | Production site URL for OAuth redirects | Yes         |
+| `CONVEX_AUTH_PRIVATE_KEY` | JWT signing key                         | Yes         |
+| `JWKS`                    | JSON Web Key Set                        | Yes         |
+| `OPENAI_API_KEY`          | OpenAI API key for AI features          | Optional    |
+| `VITE_SENTRY_DSN`         | Sentry DSN for error tracking           | Recommended |
 
 ## Environment Setup
 
@@ -59,6 +59,7 @@ npx convex deploy --prod
 Navigate to [Convex Dashboard](https://dashboard.convex.dev) → Your Project → Settings → Environment Variables
 
 Set the following server-side variables:
+
 - `SITE_URL`
 - `CONVEX_AUTH_PRIVATE_KEY`
 - `JWKS`
@@ -199,6 +200,7 @@ If issues are detected immediately after deployment:
 #### 1. Rollback Frontend
 
 **Vercel:**
+
 ```bash
 # List recent deployments
 vercel ls
@@ -208,6 +210,7 @@ vercel rollback [deployment-url]
 ```
 
 **Netlify:**
+
 ```bash
 # List recent deployments
 netlify deploy:list
@@ -322,11 +325,11 @@ npx convex env list --prod
 
 ### Emergency Contacts
 
-| Role | Contact | Escalation Time |
-|------|---------|-----------------|
-| On-Call Engineer | [Slack: #on-call] | Immediate |
-| Tech Lead | [Email/Phone] | 15 minutes |
-| Platform Admin | [Email/Phone] | 30 minutes |
+| Role             | Contact           | Escalation Time |
+| ---------------- | ----------------- | --------------- |
+| On-Call Engineer | [Slack: #on-call] | Immediate       |
+| Tech Lead        | [Email/Phone]     | 15 minutes      |
+| Platform Admin   | [Email/Phone]     | 30 minutes      |
 
 ## Deployment Schedule
 
@@ -343,5 +346,5 @@ npx convex env list --prod
 
 ---
 
-*Last Updated: December 2024*
-*Document Owner: Platform Team*
+_Last Updated: December 2024_
+_Document Owner: Platform Team_

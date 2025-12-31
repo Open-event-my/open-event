@@ -57,57 +57,66 @@ export async function getUserIdFromSession(
  */
 export async function getCurrentUser(ctx: QueryCtx | MutationCtx, sessionToken?: string) {
   // #region agent log
-  console.log('[DEBUG-AUTH] getCurrentUser lib function called:', JSON.stringify({
-    location: 'convex/lib/auth.ts:58',
-    message: 'getCurrentUser lib entry',
-    data: {
-      hasSessionToken: !!sessionToken,
-    },
-    timestamp: Date.now(),
-    sessionId: 'debug-session',
-    runId: 'client-query',
-    hypothesisId: 'L1',
-  }))
-  // #endregion
-  
-  // First, try Convex Auth (Password/Google OAuth)
-  const convexAuthUserId = await getAuthUserId(ctx)
-  
-  // #region agent log
-  console.log('[DEBUG-AUTH] getCurrentUser after getAuthUserId:', JSON.stringify({
-    location: 'convex/lib/auth.ts:70',
-    message: 'getCurrentUser after getAuthUserId',
-    data: {
-      hasConvexAuthUserId: !!convexAuthUserId,
-      convexAuthUserId: convexAuthUserId?.toString() ?? 'null',
-    },
-    timestamp: Date.now(),
-    sessionId: 'debug-session',
-    runId: 'client-query',
-    hypothesisId: 'L2',
-  }))
-  // #endregion
-  
-  if (convexAuthUserId) {
-    const user = await ctx.db.get(convexAuthUserId)
-    
-    // #region agent log
-    console.log('[DEBUG-AUTH] getCurrentUser user lookup result:', JSON.stringify({
-      location: 'convex/lib/auth.ts:78',
-      message: 'getCurrentUser user lookup',
+  console.log(
+    '[DEBUG-AUTH] getCurrentUser lib function called:',
+    JSON.stringify({
+      location: 'convex/lib/auth.ts:58',
+      message: 'getCurrentUser lib entry',
       data: {
-        hasUser: !!user,
-        userId: user?._id?.toString() ?? 'null',
-        userRole: user?.role ?? 'null',
-        userStatus: user?.status ?? 'null',
+        hasSessionToken: !!sessionToken,
       },
       timestamp: Date.now(),
       sessionId: 'debug-session',
       runId: 'client-query',
-      hypothesisId: 'L3',
-    }))
+      hypothesisId: 'L1',
+    })
+  )
+  // #endregion
+
+  // First, try Convex Auth (Password/Google OAuth)
+  const convexAuthUserId = await getAuthUserId(ctx)
+
+  // #region agent log
+  console.log(
+    '[DEBUG-AUTH] getCurrentUser after getAuthUserId:',
+    JSON.stringify({
+      location: 'convex/lib/auth.ts:70',
+      message: 'getCurrentUser after getAuthUserId',
+      data: {
+        hasConvexAuthUserId: !!convexAuthUserId,
+        convexAuthUserId: convexAuthUserId?.toString() ?? 'null',
+      },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      runId: 'client-query',
+      hypothesisId: 'L2',
+    })
+  )
+  // #endregion
+
+  if (convexAuthUserId) {
+    const user = await ctx.db.get(convexAuthUserId)
+
+    // #region agent log
+    console.log(
+      '[DEBUG-AUTH] getCurrentUser user lookup result:',
+      JSON.stringify({
+        location: 'convex/lib/auth.ts:78',
+        message: 'getCurrentUser user lookup',
+        data: {
+          hasUser: !!user,
+          userId: user?._id?.toString() ?? 'null',
+          userRole: user?.role ?? 'null',
+          userStatus: user?.status ?? 'null',
+        },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'client-query',
+        hypothesisId: 'L3',
+      })
+    )
     // #endregion
-    
+
     if (user) return user
   }
 
@@ -115,15 +124,18 @@ export async function getCurrentUser(ctx: QueryCtx | MutationCtx, sessionToken?:
   const customUserId = await getUserIdFromSession(ctx, sessionToken)
   if (!customUserId) {
     // #region agent log
-    console.log('[DEBUG-AUTH] getCurrentUser no custom userId:', JSON.stringify({
-      location: 'convex/lib/auth.ts:95',
-      message: 'getCurrentUser no custom userId',
-      data: {},
-      timestamp: Date.now(),
-      sessionId: 'debug-session',
-      runId: 'client-query',
-      hypothesisId: 'L4',
-    }))
+    console.log(
+      '[DEBUG-AUTH] getCurrentUser no custom userId:',
+      JSON.stringify({
+        location: 'convex/lib/auth.ts:95',
+        message: 'getCurrentUser no custom userId',
+        data: {},
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'client-query',
+        hypothesisId: 'L4',
+      })
+    )
     // #endregion
     return null
   }
@@ -131,17 +143,20 @@ export async function getCurrentUser(ctx: QueryCtx | MutationCtx, sessionToken?:
   const user = await ctx.db.get(customUserId)
   if (!user) {
     // #region agent log
-    console.log('[DEBUG-AUTH] getCurrentUser custom user not found:', JSON.stringify({
-      location: 'convex/lib/auth.ts:103',
-      message: 'getCurrentUser custom user not found',
-      data: {
-        customUserId: customUserId.toString(),
-      },
-      timestamp: Date.now(),
-      sessionId: 'debug-session',
-      runId: 'client-query',
-      hypothesisId: 'L5',
-    }))
+    console.log(
+      '[DEBUG-AUTH] getCurrentUser custom user not found:',
+      JSON.stringify({
+        location: 'convex/lib/auth.ts:103',
+        message: 'getCurrentUser custom user not found',
+        data: {
+          customUserId: customUserId.toString(),
+        },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'client-query',
+        hypothesisId: 'L5',
+      })
+    )
     // #endregion
     return null
   }

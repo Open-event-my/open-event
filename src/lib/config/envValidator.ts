@@ -25,10 +25,7 @@ export const clientEnvSchema = z.object({
     .url('VITE_CONVEX_URL must be a valid URL (e.g., https://your-project.convex.cloud)'),
 
   // Optional: Sentry DSN for error tracking
-  VITE_SENTRY_DSN: z
-    .string()
-    .url('VITE_SENTRY_DSN must be a valid URL')
-    .optional(),
+  VITE_SENTRY_DSN: z.string().url('VITE_SENTRY_DSN must be a valid URL').optional(),
 
   // Optional: Stripe public key for payments
   VITE_STRIPE_PUBLIC_KEY: z
@@ -138,9 +135,10 @@ export class EnvironmentValidator {
     const errors: ValidationError[] = zodErrors.map((err) => ({
       field: err.path.join('.') || 'unknown',
       message: err.message,
-      received: typeof envVars[err.path[0] as keyof typeof envVars] === 'string'
-        ? '[REDACTED]'
-        : String(envVars[err.path[0] as keyof typeof envVars]),
+      received:
+        typeof envVars[err.path[0] as keyof typeof envVars] === 'string'
+          ? '[REDACTED]'
+          : String(envVars[err.path[0] as keyof typeof envVars]),
     }))
 
     this.validationErrors = errors
@@ -159,10 +157,9 @@ export class EnvironmentValidator {
   private formatValidationErrors(errors: ValidationError[]): string {
     const header = '❌ Environment Configuration Error\n'
     const separator = '─'.repeat(50) + '\n'
-    const errorLines = errors.map(
-      (err) => `  • ${err.field}: ${err.message}`
-    ).join('\n')
-    const footer = '\n' + separator + 'Please check your .env file and ensure all required variables are set.'
+    const errorLines = errors.map((err) => `  • ${err.field}: ${err.message}`).join('\n')
+    const footer =
+      '\n' + separator + 'Please check your .env file and ensure all required variables are set.'
 
     return header + separator + errorLines + footer
   }

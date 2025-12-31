@@ -169,9 +169,10 @@ export function EventSalesPage() {
     setProcessingRefund(true)
     try {
       // Calculate refund amount
-      const amountToRefund = refundType === 'full' 
-        ? undefined // Full refund - let Stripe handle the amount
-        : Math.round(parseFloat(refundAmount) * 100) // Convert dollars to cents
+      const amountToRefund =
+        refundType === 'full'
+          ? undefined // Full refund - let Stripe handle the amount
+          : Math.round(parseFloat(refundAmount) * 100) // Convert dollars to cents
 
       // Validate partial refund amount
       if (refundType === 'partial') {
@@ -204,12 +205,12 @@ export function EventSalesPage() {
           currency: selectedOrder.currency.toUpperCase(),
         })
         toast.success(
-          result.isPartial 
+          result.isPartial
             ? `Partial refund of ${formattedAmount} processed successfully`
             : `Full refund of ${formattedAmount} processed successfully`
         )
       }
-      
+
       setShowRefundDialog(false)
       setRefundReason('')
       setRefundAmount('')
@@ -633,14 +634,17 @@ export function EventSalesPage() {
       </Dialog>
 
       {/* Refund Dialog */}
-      <Dialog open={showRefundDialog} onOpenChange={(open) => {
-        setShowRefundDialog(open)
-        if (!open) {
-          setRefundReason('')
-          setRefundAmount('')
-          setRefundType('full')
-        }
-      }}>
+      <Dialog
+        open={showRefundDialog}
+        onOpenChange={(open) => {
+          setShowRefundDialog(open)
+          if (!open) {
+            setRefundReason('')
+            setRefundAmount('')
+            setRefundType('full')
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Refund Order</DialogTitle>
@@ -685,10 +689,7 @@ export function EventSalesPage() {
                 <span>Order Total</span>
                 <span className="font-medium">
                   {selectedOrder &&
-                    formatCurrency(
-                      selectedOrder.total / 100,
-                      selectedOrder.currency.toUpperCase()
-                    )}
+                    formatCurrency(selectedOrder.total / 100, selectedOrder.currency.toUpperCase())}
                 </span>
               </div>
               {selectedOrder?.refundAmount && (
@@ -707,7 +708,9 @@ export function EventSalesPage() {
             {/* Partial Refund Amount Input */}
             {refundType === 'partial' && (
               <div className="space-y-2">
-                <Label htmlFor="refundAmount">Refund Amount ({selectedOrder?.currency.toUpperCase()})</Label>
+                <Label htmlFor="refundAmount">
+                  Refund Amount ({selectedOrder?.currency.toUpperCase()})
+                </Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                     $
@@ -725,7 +728,8 @@ export function EventSalesPage() {
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Maximum refundable: {selectedOrder &&
+                  Maximum refundable:{' '}
+                  {selectedOrder &&
                     formatCurrency(
                       (selectedOrder.total - (selectedOrder.refundAmount || 0)) / 100,
                       selectedOrder.currency.toUpperCase()
@@ -782,9 +786,9 @@ export function EventSalesPage() {
             <Button variant="outline" onClick={() => setShowRefundDialog(false)}>
               Cancel
             </Button>
-            <Button 
-              variant="destructive" 
-              onClick={handleRefund} 
+            <Button
+              variant="destructive"
+              onClick={handleRefund}
               disabled={processingRefund || (refundType === 'partial' && !refundAmount)}
             >
               {processingRefund ? 'Processing...' : 'Confirm Refund'}

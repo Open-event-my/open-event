@@ -167,12 +167,17 @@ export function AdminSettings() {
     const isSaving = savingKeys.has(setting.key)
 
     return (
-      <div key={setting.key} className="flex items-center justify-between py-3 border-b border-border last:border-0">
+      <div
+        key={setting.key}
+        className="flex items-center justify-between py-3 border-b border-border last:border-0"
+      >
         <div className="flex-1 min-w-0 pr-4">
           <div className="flex items-center gap-2">
             <Label className="font-medium">{setting.label}</Label>
             {isModified && (
-              <span className="text-xs px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600">Modified</span>
+              <span className="text-xs px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600">
+                Modified
+              </span>
             )}
           </div>
           {setting.description && (

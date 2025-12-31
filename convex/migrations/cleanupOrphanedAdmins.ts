@@ -68,9 +68,7 @@ export const run = internalMutation({
 
       if (!activeUser) {
         // No active user found - pick the most recently created one
-        activeUser = users.reduce((a, b) =>
-          (a.createdAt || 0) > (b.createdAt || 0) ? a : b
-        )
+        activeUser = users.reduce((a, b) => ((a.createdAt || 0) > (b.createdAt || 0) ? a : b))
         console.log(`[CLEANUP] No auth-linked user for ${email}, using most recent`)
       }
 

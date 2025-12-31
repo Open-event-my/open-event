@@ -54,7 +54,6 @@ describe('Sentry Backend Initialization', () => {
     expect(Sentry.init).not.toHaveBeenCalled()
   })
 
-
   it('should set environment to production when CONVEX_CLOUD_URL is present', async () => {
     process.env.SENTRY_DSN = 'https://test@sentry.io/123'
     process.env.CONVEX_CLOUD_URL = 'https://my-app.convex.cloud'

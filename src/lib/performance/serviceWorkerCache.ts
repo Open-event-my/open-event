@@ -178,7 +178,11 @@ export async function getCacheStats(): Promise<{
 /**
  * Check if a URL would be cached based on our caching rules
  */
-export function wouldBeCached(url: string): { cached: boolean; cacheName?: CacheName; strategy?: string } {
+export function wouldBeCached(url: string): {
+  cached: boolean
+  cacheName?: CacheName
+  strategy?: string
+} {
   const urlObj = new URL(url, window.location.origin)
 
   // Google Fonts stylesheets
@@ -203,7 +207,11 @@ export function wouldBeCached(url: string): { cached: boolean; cacheName?: Cache
 
   // External images
   if (/^https:\/\/.*\.(png|jpg|jpeg|gif|webp|svg)$/i.test(url)) {
-    return { cached: true, cacheName: CACHE_NAMES.EXTERNAL_IMAGES, strategy: 'StaleWhileRevalidate' }
+    return {
+      cached: true,
+      cacheName: CACHE_NAMES.EXTERNAL_IMAGES,
+      strategy: 'StaleWhileRevalidate',
+    }
   }
 
   // Convex API

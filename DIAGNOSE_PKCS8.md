@@ -14,11 +14,13 @@ Run this mutation in Convex Dashboard to test your key format:
 ### Step 1: Check Convex Dashboard Logs
 
 After restarting your Convex dev server, look for this log entry:
+
 ```
 [DEBUG-AUTH] JWT key env check: {...}
 ```
 
 Check these values:
+
 - `firstLine` - Should be exactly: `-----BEGIN PRIVATE KEY-----`
 - `lastLine` - Should be exactly: `-----END PRIVATE KEY-----`
 - `isProperlyFormatted` - Should be `true`
@@ -27,47 +29,59 @@ Check these values:
 ### Step 2: Common Issues and Fixes
 
 #### Issue 1: Key is on a single line
+
 **Symptoms:**
+
 - `lineCount: 1` or `lineCount: 2`
 - `hasNewlines: false`
 - `firstLine` contains the entire key
 
 **Fix:**
 The key needs line breaks. When copying to Convex Dashboard:
+
 1. Make sure you're copying from `KEYS_FOR_CONVEX.md`
 2. Copy the ENTIRE block including all lines
 3. Paste it into Convex Dashboard - it should preserve line breaks
 4. If it doesn't, try copying line by line or use a different method
 
 #### Issue 2: Missing BEGIN/END markers
+
 **Symptoms:**
+
 - `hasBeginMarker: false` or `hasEndMarker: false`
 - `firstLine` doesn't start with `-----BEGIN PRIVATE KEY-----`
 - `lastLine` doesn't end with `-----END PRIVATE KEY-----`
 
 **Fix:**
+
 1. Open `KEYS_FOR_CONVEX.md`
 2. Copy from line 7 (`-----BEGIN PRIVATE KEY-----`) to line 34 (`-----END PRIVATE KEY-----`)
 3. Include BOTH the BEGIN and END lines
 4. Paste into Convex Dashboard
 
 #### Issue 3: Extra whitespace
+
 **Symptoms:**
+
 - `startsWithBegin: false` but `hasBeginMarker: true`
 - `endsWithEnd: false` but `hasEndMarker: true`
 
 **Fix:**
+
 1. Edit `JWT_PRIVATE_KEY` in Convex Dashboard
 2. Delete all content
 3. Paste the key again, making sure there's no leading/trailing whitespace
 4. The key should start immediately with `-----BEGIN PRIVATE KEY-----`
 
 #### Issue 4: Key was corrupted during copy
+
 **Symptoms:**
+
 - Key looks correct but still fails
 - `importError` shows a specific parsing error
 
 **Fix:**
+
 1. Regenerate keys: `node scripts/formatKeyForConvex.mjs`
 2. Use the NEW key from `KEYS_FOR_CONVEX.md`
 3. Make sure to copy the entire block exactly as shown
@@ -104,6 +118,7 @@ If the key format looks correct but you still get the error:
 ## Expected Log Output (Success)
 
 When the key is correct, you should see:
+
 ```json
 {
   "data": {
@@ -119,4 +134,3 @@ When the key is correct, you should see:
   }
 }
 ```
-

@@ -1,9 +1,5 @@
 {
   "node": {
-    "externalPackages": [
-      "openai",
-      "ai",
-      "@ai-sdk/openai"
-    ]
+    "externalPackages": ["openai", "ai", "@ai-sdk/openai"]
   }
 }

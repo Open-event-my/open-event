@@ -27,7 +27,10 @@ test.describe('Ticketing System', () => {
     await page.waitForTimeout(2000)
 
     // Click first event card
-    const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+    const eventCard = page
+      .locator('.rounded-lg.border')
+      .filter({ has: page.locator('h3') })
+      .first()
 
     if (await eventCard.isVisible()) {
       await eventCard.click()
@@ -51,7 +54,10 @@ test.describe('Ticketing System', () => {
     await page.goto('/dashboard/events/new')
     await page.waitForTimeout(2000)
 
-    const manualButton = page.locator('button').filter({ hasText: /manual form/i }).first()
+    const manualButton = page
+      .locator('button')
+      .filter({ hasText: /manual form/i })
+      .first()
     await expect(manualButton).toBeVisible({ timeout: 15000 })
     await manualButton.click()
     await page.waitForTimeout(1000)
@@ -63,7 +69,10 @@ test.describe('Ticketing System', () => {
     tomorrow.setDate(tomorrow.getDate() + 1)
     await page.getByLabel(/start date/i).fill(tomorrow.toISOString().split('T')[0])
 
-    const createButton = page.locator('button').filter({ hasText: /create event/i }).first()
+    const createButton = page
+      .locator('button')
+      .filter({ hasText: /create event/i })
+      .first()
     await createButton.click()
     await page.waitForURL(/\/dashboard\/events\/[a-z0-9]+$/, { timeout: 20000 })
 
@@ -85,7 +94,9 @@ test.describe('Ticketing System', () => {
     await page.waitForTimeout(3000)
 
     // Verify we're on the tickets page - look for the heading
-    await expect(page.getByRole('heading', { name: /tickets/i }).first()).toBeVisible({ timeout: 10000 })
+    await expect(page.getByRole('heading', { name: /tickets/i }).first()).toBeVisible({
+      timeout: 10000,
+    })
   }
 
   test.describe('Create Ticket Types', () => {
@@ -439,7 +450,9 @@ test.describe('Ticketing System', () => {
       await page.locator('#quantity').fill('50')
 
       // Add perks
-      await page.locator('#perks').fill('Access to all sessions\nFree lunch\nEvent swag bag\nPriority seating')
+      await page
+        .locator('#perks')
+        .fill('Access to all sessions\nFree lunch\nEvent swag bag\nPriority seating')
 
       const submitButton = page.locator('button').filter({ hasText: /create ticket/i })
       await submitButton.click()
@@ -495,7 +508,10 @@ test.describe('Ticketing System', () => {
 
       // Find the ticket row and click its menu
       const ticketRow = page.locator('.divide-y > div').filter({ hasText: 'Toggle Test' })
-      const menuButton = ticketRow.locator('button').filter({ has: page.locator('svg') }).last()
+      const menuButton = ticketRow
+        .locator('button')
+        .filter({ has: page.locator('svg') })
+        .last()
       await menuButton.click()
 
       // Click Deactivate
@@ -559,7 +575,10 @@ test.describe('Ticketing System', () => {
 
       // Find the ticket row and click its menu
       const ticketRow = page.locator('.divide-y > div').filter({ hasText: deleteTicketName })
-      const menuButton = ticketRow.locator('button').filter({ has: page.locator('svg') }).last()
+      const menuButton = ticketRow
+        .locator('button')
+        .filter({ has: page.locator('svg') })
+        .last()
       await menuButton.click()
 
       // Click Delete

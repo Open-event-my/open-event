@@ -209,7 +209,6 @@ useEffect(() => {
 ```tsx
 import { cn } from '@/lib/utils'
 import { Calendar } from '@phosphor-icons/react'
-
 ;<div className={cn('p-4 rounded-lg', isActive && 'bg-primary')}>
   <Calendar size={24} weight="duotone" />
 </div>

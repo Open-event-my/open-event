@@ -24,7 +24,10 @@ initSentry()
 if (envValidator.isDevelopment()) {
   const health = envValidator.healthCheck()
   if (!health.healthy) {
-    console.warn('[Config] Configuration health check warnings:', health.checks.filter(c => c.status !== 'pass'))
+    console.warn(
+      '[Config] Configuration health check warnings:',
+      health.checks.filter((c) => c.status !== 'pass')
+    )
   }
 }
 

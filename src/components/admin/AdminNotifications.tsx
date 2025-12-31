@@ -129,9 +129,7 @@ export function AdminNotifications() {
               'absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1',
               'flex items-center justify-center',
               'text-[10px] font-bold rounded-full',
-              hasHighSeverity
-                ? 'bg-red-500 text-white animate-pulse'
-                : 'bg-amber-500 text-white'
+              hasHighSeverity ? 'bg-red-500 text-white animate-pulse' : 'bg-amber-500 text-white'
             )}
           >
             {totalUnread > 99 ? '99+' : totalUnread}

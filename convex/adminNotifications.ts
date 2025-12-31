@@ -60,10 +60,7 @@ export const list = query({
         .order('desc')
         .collect()
     } else {
-      notifications = await ctx.db
-        .query('adminNotifications')
-        .order('desc')
-        .collect()
+      notifications = await ctx.db.query('adminNotifications').order('desc').collect()
     }
 
     // Filter by type if specified

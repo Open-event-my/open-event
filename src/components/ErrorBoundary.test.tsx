@@ -115,9 +115,7 @@ describe('ErrorBoundary', () => {
 
       // The error boundary displays the formatted error message
       expect(screen.getByText('Test error')).toBeInTheDocument()
-      expect(
-        screen.getByText(/Here's what you can try/i)
-      ).toBeInTheDocument()
+      expect(screen.getByText(/Here's what you can try/i)).toBeInTheDocument()
     })
 
     it('should display Try again button', () => {

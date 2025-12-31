@@ -4,7 +4,7 @@
 
 This implementation plan breaks down the real-time collaboration feature into discrete, manageable tasks. The plan follows a phased approach: core presence first, then collaboration engine, permissions, activity/notifications, and finally analytics. Each phase builds on the previous, with checkpoints to ensure stability.
 
-Testing tasks are marked as optional (*) to allow for faster MVP delivery if needed.
+Testing tasks are marked as optional (\*) to allow for faster MVP delivery if needed.
 
 ## Tasks
 
@@ -22,11 +22,9 @@ Testing tasks are marked as optional (*) to allow for faster MVP delivery if nee
     - Add join, leave, and heartbeat functions
     - Implement stale presence cleanup
     - _Requirements: 1.1, 1.2_
-  
   - [ ] 2.2 Write property test for presence join visibility
     - **Property 1: Presence Join Visibility**
     - **Validates: Requirements 1.1**
-  
   - [ ] 2.3 Write property test for presence leave cleanup
     - **Property 2: Presence Leave Cleanup**
     - **Validates: Requirements 1.2**
@@ -36,7 +34,6 @@ Testing tasks are marked as optional (*) to allow for faster MVP delivery if nee
     - Implement setActiveField and getActiveField functions
     - Add field lock indicators to presence state
     - _Requirements: 1.3_
-  
   - [ ] 3.2 Write property test for field-level presence
     - **Property 3: Field-Level Presence Indicator**
     - **Validates: Requirements 1.3**
@@ -47,7 +44,6 @@ Testing tasks are marked as optional (*) to allow for faster MVP delivery if nee
     - Add automatic heartbeat management
     - Handle connection/disconnection events
     - _Requirements: 1.1, 1.2, 1.3_
-  
   - [ ] 4.2 Create presence indicator components
     - Create `PresenceAvatars` component for showing online users
     - Create `FieldPresenceIndicator` component for field-level presence
@@ -71,11 +67,9 @@ Testing tasks are marked as optional (*) to allow for faster MVP delivery if nee
     - Add edit application with conflict detection
     - Implement last-write-wins resolution
     - _Requirements: 2.1, 2.2, 2.3_
-  
   - [ ] 7.2 Write property test for non-conflicting edit preservation
     - **Property 5: Non-Conflicting Edit Preservation**
     - **Validates: Requirements 2.1**
-  
   - [ ] 7.3 Write property test for conflict resolution
     - **Property 6: Conflict Resolution Consistency**
     - **Validates: Requirements 2.2**
@@ -85,7 +79,6 @@ Testing tasks are marked as optional (*) to allow for faster MVP delivery if nee
     - Implement change broadcasting via Convex subscriptions
     - Add latency tracking for sync operations
     - _Requirements: 2.3_
-  
   - [ ] 8.2 Write property test for real-time sync latency
     - **Property 7: Real-Time Sync Latency**
     - **Validates: Requirements 2.3, 4.1, 6.1, 7.5, 8.4**
@@ -95,7 +88,6 @@ Testing tasks are marked as optional (*) to allow for faster MVP delivery if nee
     - Implement `OptimisticUpdateManager` in `src/lib/collaboration/optimisticUpdates.ts`
     - Add apply, confirm, and rollback functions
     - _Requirements: 2.4_
-  
   - [ ] 9.2 Write property test for optimistic update rollback
     - **Property 8: Optimistic Update Rollback**
     - **Validates: Requirements 2.4**
@@ -105,7 +97,6 @@ Testing tasks are marked as optional (*) to allow for faster MVP delivery if nee
     - Implement local change queue in IndexedDB
     - Add sync-on-reconnect logic
     - _Requirements: 2.5_
-  
   - [ ] 10.2 Write property test for offline queue and sync
     - **Property 9: Offline Queue and Sync**
     - **Validates: Requirements 2.5**
@@ -131,11 +122,9 @@ Testing tasks are marked as optional (*) to allow for faster MVP delivery if nee
     - Add permission level definitions and checks
     - Implement permission enforcement middleware
     - _Requirements: 3.2, 3.3, 3.4_
-  
   - [ ] 13.2 Write property test for permission level enforcement
     - **Property 11: Permission Level Enforcement**
     - **Validates: Requirements 3.2**
-  
   - [ ] 13.3 Write property test for permission change immediacy
     - **Property 12: Permission Change Immediacy**
     - **Validates: Requirements 3.3**
@@ -146,7 +135,6 @@ Testing tasks are marked as optional (*) to allow for faster MVP delivery if nee
     - Add email sending via Resend
     - Implement invitation acceptance flow
     - _Requirements: 3.1, 3.6_
-  
   - [ ] 14.2 Write property test for invitation token security
     - **Property 10: Invitation Token Security**
     - **Validates: Requirements 3.1**
@@ -156,7 +144,6 @@ Testing tasks are marked as optional (*) to allow for faster MVP delivery if nee
     - Implement revokeAccess function
     - Add session termination on revocation
     - _Requirements: 3.4, 3.5_
-  
   - [ ] 15.2 Write property test for access revocation completeness
     - **Property 13: Access Revocation Completeness**
     - **Validates: Requirements 3.4, 3.5**
@@ -183,15 +170,12 @@ Testing tasks are marked as optional (*) to allow for faster MVP delivery if nee
     - Add activity logging for all event operations
     - Implement activity grouping logic
     - _Requirements: 4.1, 4.2, 4.3, 4.5_
-  
   - [ ] 18.2 Write property test for activity content completeness
     - **Property 14: Activity Content Completeness**
     - **Validates: Requirements 4.2**
-  
   - [ ] 18.3 Write property test for activity grouping
     - **Property 15: Activity Grouping**
     - **Validates: Requirements 4.3**
-  
   - [ ] 18.4 Write property test for activity retention limit
     - **Property 16: Activity Retention Limit**
     - **Validates: Requirements 4.5**
@@ -209,15 +193,12 @@ Testing tasks are marked as optional (*) to allow for faster MVP delivery if nee
     - Add multi-channel notification delivery
     - Implement notification batching
     - _Requirements: 9.1, 9.3, 9.4, 9.5_
-  
   - [ ] 20.2 Write property test for notification preference respect
     - **Property 30: Notification Preference Respect**
     - **Validates: Requirements 9.1, 9.3**
-  
   - [ ] 20.3 Write property test for notification batching
     - **Property 31: Notification Batching**
     - **Validates: Requirements 9.4**
-  
   - [ ] 20.4 Write property test for critical notification bypass
     - **Property 32: Critical Notification Bypass**
     - **Validates: Requirements 9.5**
@@ -228,19 +209,15 @@ Testing tasks are marked as optional (*) to allow for faster MVP delivery if nee
     - Add @mention parsing and notification
     - Implement deadline reminders
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
-  
   - [ ] 21.2 Write property test for task assignment notification
     - **Property 17: Task Assignment Notification**
     - **Validates: Requirements 5.1**
-  
   - [ ] 21.3 Write property test for task real-time updates
     - **Property 18: Task Real-Time Updates**
     - **Validates: Requirements 5.2**
-  
   - [ ] 21.4 Write property test for mention notification delivery
     - **Property 19: Mention Notification Delivery**
     - **Validates: Requirements 5.3, 9.2**
-  
   - [ ] 21.5 Write property test for task deadline reminder
     - **Property 20: Task Deadline Reminder**
     - **Validates: Requirements 5.4**
@@ -267,11 +244,9 @@ Testing tasks are marked as optional (*) to allow for faster MVP delivery if nee
     - Implement approval workflow for large changes
     - Add budget audit trail
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
-  
   - [ ] 24.2 Write property test for budget approval workflow
     - **Property 21: Budget Approval Workflow**
     - **Validates: Requirements 6.3**
-  
   - [ ] 24.3 Write property test for budget audit trail
     - **Property 22: Budget Audit Trail**
     - **Validates: Requirements 6.4**
@@ -282,15 +257,12 @@ Testing tasks are marked as optional (*) to allow for faster MVP delivery if nee
     - Add collaborative notes
     - Implement status change notifications
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
-  
   - [ ] 25.2 Write property test for vendor assignment notification
     - **Property 23: Vendor Assignment Notification**
     - **Validates: Requirements 7.1**
-  
   - [ ] 25.3 Write property test for vendor assignment tracking
     - **Property 24: Vendor Assignment Tracking**
     - **Validates: Requirements 7.2**
-  
   - [ ] 25.4 Write property test for collaborative notes visibility
     - **Property 25: Collaborative Notes Visibility**
     - **Validates: Requirements 7.4**
@@ -308,25 +280,20 @@ Testing tasks are marked as optional (*) to allow for faster MVP delivery if nee
     - Implement cursor position broadcasting
     - Create cursor indicator components
     - _Requirements: 8.1_
-  
   - [ ] 27.2 Write property test for cursor position sharing
     - **Property 26: Cursor Position Sharing**
     - **Validates: Requirements 8.1**
-  
   - [ ] 27.3 Add object locking
     - Implement object selection locking
     - Create lock indicator UI
     - _Requirements: 8.3_
-  
   - [ ] 27.4 Write property test for object locking
     - **Property 28: Object Locking**
     - **Validates: Requirements 8.3**
-  
   - [ ] 27.5 Implement collaborative undo/redo
     - Modify undo/redo to respect multi-user context
     - Track operation ownership
     - _Requirements: 8.5_
-  
   - [ ] 27.6 Write property test for collaborative undo/redo
     - **Property 29: Collaborative Undo/Redo**
     - **Validates: Requirements 8.5**
@@ -350,19 +317,15 @@ Testing tasks are marked as optional (*) to allow for faster MVP delivery if nee
     - Implement time tracking
     - Add peak period identification
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5_
-  
   - [ ] 30.2 Write property test for contribution tracking accuracy
     - **Property 33: Contribution Tracking Accuracy**
     - **Validates: Requirements 10.1, 10.2**
-  
   - [ ] 30.3 Write property test for activity timeline ordering
     - **Property 34: Activity Timeline Ordering**
     - **Validates: Requirements 10.3**
-  
   - [ ] 30.4 Write property test for peak period identification
     - **Property 35: Peak Period Identification**
     - **Validates: Requirements 10.4**
-  
   - [ ] 30.5 Write property test for privacy-respecting analytics
     - **Property 36: Privacy-Respecting Analytics**
     - **Validates: Requirements 10.5**

@@ -33,42 +33,36 @@ describe('Analytics Data Anonymization - Property Tests', () => {
   describe('Property 18.1: Email Anonymization', () => {
     it('should hash all email addresses consistently', () => {
       fc.assert(
-        fc.property(
-          fc.emailAddress(),
-          (email) => {
-            const result = anonymizeEmail(email)
+        fc.property(fc.emailAddress(), (email) => {
+          const result = anonymizeEmail(email)
 
-            // Email should be hashed
-            expect(result.emailHash).toBeDefined()
-            expect(result.emailHash).not.toBe(email)
+          // Email should be hashed
+          expect(result.emailHash).toBeDefined()
+          expect(result.emailHash).not.toBe(email)
 
-            // Hash should be consistent
-            const result2 = anonymizeEmail(email)
-            expect(result.emailHash).toBe(result2.emailHash)
+          // Hash should be consistent
+          const result2 = anonymizeEmail(email)
+          expect(result.emailHash).toBe(result2.emailHash)
 
-            // Hash should be a hex string (64 characters for SHA-256)
-            if (result.emailHash) {
-              expect(result.emailHash.length).toBe(64)
-              expect(result.emailHash).toMatch(/^[a-f0-9]{64}$/)
-            }
+          // Hash should be a hex string (64 characters for SHA-256)
+          if (result.emailHash) {
+            expect(result.emailHash.length).toBe(64)
+            expect(result.emailHash).toMatch(/^[a-f0-9]{64}$/)
           }
-        ),
+        }),
         { numRuns: 100 }
       )
     })
 
     it('should preserve email domain for analytics', () => {
       fc.assert(
-        fc.property(
-          fc.emailAddress(),
-          (email) => {
-            const result = anonymizeEmail(email)
-            const expectedDomain = email.split('@')[1]
+        fc.property(fc.emailAddress(), (email) => {
+          const result = anonymizeEmail(email)
+          const expectedDomain = email.split('@')[1]
 
-            // Domain should be preserved
-            expect(result.emailDomain).toBe(expectedDomain)
-          }
-        ),
+          // Domain should be preserved
+          expect(result.emailDomain).toBe(expectedDomain)
+        }),
         { numRuns: 100 }
       )
     })
@@ -93,22 +87,19 @@ describe('Analytics Data Anonymization - Property Tests', () => {
   describe('Property 18.2: Name Anonymization', () => {
     it('should hash all names consistently', () => {
       fc.assert(
-        fc.property(
-          fc.string({ minLength: 1, maxLength: 100 }),
-          (name) => {
-            const hash1 = hashValue(name)
-            const hash2 = hashValue(name)
+        fc.property(fc.string({ minLength: 1, maxLength: 100 }), (name) => {
+          const hash1 = hashValue(name)
+          const hash2 = hashValue(name)
 
-            // Hash should be consistent
-            expect(hash1).toBe(hash2)
+          // Hash should be consistent
+          expect(hash1).toBe(hash2)
 
-            // Hash should not equal original name (it's a hex string, so may contain characters from the original)
-            if (hash1) {
-              expect(hash1).not.toBe(name)
-              expect(hash1.length).toBeGreaterThan(name.length) // SHA-256 produces 64 hex chars
-            }
+          // Hash should not equal original name (it's a hex string, so may contain characters from the original)
+          if (hash1) {
+            expect(hash1).not.toBe(name)
+            expect(hash1.length).toBeGreaterThan(name.length) // SHA-256 produces 64 hex chars
           }
-        ),
+        }),
         { numRuns: 100 }
       )
     })
@@ -136,38 +127,32 @@ describe('Analytics Data Anonymization - Property Tests', () => {
   describe('Property 18.3: IP Address Anonymization', () => {
     it('should hash all IP addresses', () => {
       fc.assert(
-        fc.property(
-          fc.ipV4(),
-          (ip) => {
-            const result = anonymizeIPAddress(ip)
+        fc.property(fc.ipV4(), (ip) => {
+          const result = anonymizeIPAddress(ip)
 
-            // IP should be hashed
-            expect(result.ipAddressHash).toBeDefined()
-            expect(result.ipAddressHash).not.toBe(ip)
+          // IP should be hashed
+          expect(result.ipAddressHash).toBeDefined()
+          expect(result.ipAddressHash).not.toBe(ip)
 
-            // Original IP should not appear in hash
-            expect(result.ipAddressHash).not.toContain(ip)
-          }
-        ),
+          // Original IP should not appear in hash
+          expect(result.ipAddressHash).not.toContain(ip)
+        }),
         { numRuns: 100 }
       )
     })
 
     it('should preserve IP prefix for geographic analytics', () => {
       fc.assert(
-        fc.property(
-          fc.ipV4(),
-          (ip) => {
-            const result = anonymizeIPAddress(ip)
-            const parts = ip.split('.')
+        fc.property(fc.ipV4(), (ip) => {
+          const result = anonymizeIPAddress(ip)
+          const parts = ip.split('.')
 
-            // First two octets should be preserved
-            if (parts.length >= 2) {
-              const expectedPrefix = `${parts[0]}.${parts[1]}`
-              expect(result.ipPrefix).toBe(expectedPrefix)
-            }
+          // First two octets should be preserved
+          if (parts.length >= 2) {
+            const expectedPrefix = `${parts[0]}.${parts[1]}`
+            expect(result.ipPrefix).toBe(expectedPrefix)
           }
-        ),
+        }),
         { numRuns: 100 }
       )
     })
@@ -176,16 +161,13 @@ describe('Analytics Data Anonymization - Property Tests', () => {
   describe('Property 18.4: User Agent Anonymization', () => {
     it('should hash user agent strings', () => {
       fc.assert(
-        fc.property(
-          fc.string({ minLength: 10, maxLength: 200 }),
-          (userAgent) => {
-            const result = anonymizeUserAgent(userAgent)
+        fc.property(fc.string({ minLength: 10, maxLength: 200 }), (userAgent) => {
+          const result = anonymizeUserAgent(userAgent)
 
-            // User agent should be hashed
-            expect(result.userAgentHash).toBeDefined()
-            expect(result.userAgentHash).not.toBe(userAgent)
-          }
-        ),
+          // User agent should be hashed
+          expect(result.userAgentHash).toBeDefined()
+          expect(result.userAgentHash).not.toBe(userAgent)
+        }),
         { numRuns: 100 }
       )
     })
@@ -222,8 +204,8 @@ describe('Analytics Data Anonymization - Property Tests', () => {
         fc.property(
           fc.record({
             email: fc.emailAddress(),
-            name: fc.string({ minLength: 1, maxLength: 100 }).filter(s => s.trim().length > 0), // Exclude whitespace-only
-            phone: fc.string({ minLength: 10, maxLength: 15 }).filter(s => s.trim().length > 0), // Exclude whitespace-only
+            name: fc.string({ minLength: 1, maxLength: 100 }).filter((s) => s.trim().length > 0), // Exclude whitespace-only
+            phone: fc.string({ minLength: 10, maxLength: 15 }).filter((s) => s.trim().length > 0), // Exclude whitespace-only
             ipAddress: fc.ipV4(),
           }),
           (pii) => {
@@ -396,12 +378,9 @@ describe('Analytics Data Anonymization - Property Tests', () => {
   describe('Property 18.10: PII Detection', () => {
     it('should detect email addresses as PII', () => {
       fc.assert(
-        fc.property(
-          fc.emailAddress(),
-          (email) => {
-            expect(containsPII(email)).toBe(true)
-          }
-        ),
+        fc.property(fc.emailAddress(), (email) => {
+          expect(containsPII(email)).toBe(true)
+        }),
         { numRuns: 100 }
       )
     })
@@ -409,12 +388,7 @@ describe('Analytics Data Anonymization - Property Tests', () => {
     it('should detect phone numbers as PII', () => {
       fc.assert(
         fc.property(
-          fc.constantFrom(
-            '123-456-7890',
-            '123.456.7890',
-            '123 456 7890',
-            '1234567890'
-          ),
+          fc.constantFrom('123-456-7890', '123.456.7890', '123 456 7890', '1234567890'),
           (phone) => {
             expect(containsPII(phone)).toBe(true)
           }
@@ -425,12 +399,9 @@ describe('Analytics Data Anonymization - Property Tests', () => {
 
     it('should detect IP addresses as PII', () => {
       fc.assert(
-        fc.property(
-          fc.ipV4(),
-          (ip) => {
-            expect(containsPII(ip)).toBe(true)
-          }
-        ),
+        fc.property(fc.ipV4(), (ip) => {
+          expect(containsPII(ip)).toBe(true)
+        }),
         { numRuns: 100 }
       )
     })
@@ -438,13 +409,7 @@ describe('Analytics Data Anonymization - Property Tests', () => {
     it('should not flag non-PII strings', () => {
       fc.assert(
         fc.property(
-          fc.constantFrom(
-            'conference',
-            'workshop',
-            'active',
-            'completed',
-            'organizer'
-          ),
+          fc.constantFrom('conference', 'workshop', 'active', 'completed', 'organizer'),
           (str) => {
             expect(containsPII(str)).toBe(false)
           }
@@ -457,34 +422,28 @@ describe('Analytics Data Anonymization - Property Tests', () => {
   describe('Property 18.11: Hash Consistency', () => {
     it('should produce consistent hashes for the same input', () => {
       fc.assert(
-        fc.property(
-          fc.string({ minLength: 1, maxLength: 100 }),
-          (input) => {
-            const hash1 = hashValue(input)
-            const hash2 = hashValue(input)
-            const hash3 = hashValue(input)
+        fc.property(fc.string({ minLength: 1, maxLength: 100 }), (input) => {
+          const hash1 = hashValue(input)
+          const hash2 = hashValue(input)
+          const hash3 = hashValue(input)
 
-            // All hashes should be identical
-            expect(hash1).toBe(hash2)
-            expect(hash2).toBe(hash3)
-          }
-        ),
+          // All hashes should be identical
+          expect(hash1).toBe(hash2)
+          expect(hash2).toBe(hash3)
+        }),
         { numRuns: 100 }
       )
     })
 
     it('should be case-insensitive for consistency', () => {
       fc.assert(
-        fc.property(
-          fc.string({ minLength: 1, maxLength: 100 }),
-          (input) => {
-            const hash1 = hashValue(input.toLowerCase())
-            const hash2 = hashValue(input.toUpperCase())
+        fc.property(fc.string({ minLength: 1, maxLength: 100 }), (input) => {
+          const hash1 = hashValue(input.toLowerCase())
+          const hash2 = hashValue(input.toUpperCase())
 
-            // Hashes should be the same regardless of case
-            expect(hash1).toBe(hash2)
-          }
-        ),
+          // Hashes should be the same regardless of case
+          expect(hash1).toBe(hash2)
+        }),
         { numRuns: 100 }
       )
     })

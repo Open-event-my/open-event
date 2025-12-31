@@ -112,9 +112,7 @@ export const create = mutation({
       const orgId = args.organizationId // Store to help TypeScript narrowing
       const membership = await ctx.db
         .query('organizationMembers')
-        .withIndex('by_org_user', (q) =>
-          q.eq('organizationId', orgId).eq('userId', user._id)
-        )
+        .withIndex('by_org_user', (q) => q.eq('organizationId', orgId).eq('userId', user._id))
         .first()
 
       if (!membership || membership.status !== 'active') {

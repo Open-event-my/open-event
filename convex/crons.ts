@@ -10,7 +10,9 @@ import { makeFunctionReference } from 'convex/server'
 import { internal } from './_generated/api'
 
 // Create function reference for paymentIdempotency cleanup
-const cleanupPaymentIdempotency = makeFunctionReference<'mutation'>('paymentIdempotency:cleanupExpired')
+const cleanupPaymentIdempotency = makeFunctionReference<'mutation'>(
+  'paymentIdempotency:cleanupExpired'
+)
 
 const crons = cronJobs()
 
@@ -44,11 +46,7 @@ crons.interval('cleanup-old-webhook-events', { hours: 1 }, internal.orders.clean
  *
  * This prevents the failedLoginAttempts table from growing indefinitely.
  */
-crons.interval(
-  'cleanup-lockout-records',
-  { hours: 6 },
-  internal.accountLockout.cleanupOldRecords
-)
+crons.interval('cleanup-lockout-records', { hours: 6 }, internal.accountLockout.cleanupOldRecords)
 
 /**
  * Clean up old global rate limit records every hour
@@ -56,11 +54,7 @@ crons.interval(
  * Removes rate limit records older than 1 hour.
  * These are only needed for the current window.
  */
-crons.interval(
-  'cleanup-rate-limits',
-  { hours: 1 },
-  internal.globalRateLimit.cleanupOldRecords
-)
+crons.interval('cleanup-rate-limits', { hours: 1 }, internal.globalRateLimit.cleanupOldRecords)
 
 /**
  * Clean up expired payment idempotency records every hour
@@ -68,11 +62,7 @@ crons.interval(
  * Removes idempotency records that have expired (older than 24 hours).
  * These are only needed to prevent duplicate payments within a short window.
  */
-crons.interval(
-  'cleanup-payment-idempotency',
-  { hours: 1 },
-  cleanupPaymentIdempotency
-)
+crons.interval('cleanup-payment-idempotency', { hours: 1 }, cleanupPaymentIdempotency)
 
 /**
  * Clean up old audit logs every day
@@ -81,7 +71,12 @@ crons.interval(
  * This keeps the audit trail manageable while maintaining
  * sufficient history for security reviews.
  */
-crons.daily('cleanup-audit-logs', { hourUTC: 3, minuteUTC: 0 }, internal.auditLog.cleanupOldLogs, {})
+crons.daily(
+  'cleanup-audit-logs',
+  { hourUTC: 3, minuteUTC: 0 },
+  internal.auditLog.cleanupOldLogs,
+  {}
+)
 
 /**
  * Run data retention policies every day at 2 AM UTC

@@ -13,20 +13,20 @@ Cross-Site Request Forgery (CSRF) protection is implemented to secure all state-
 When a user logs in or starts a session, generate a CSRF token:
 
 ```typescript
-import { useMutation } from 'convex/react';
-import { api } from '../convex/_generated/api';
+import { useMutation } from 'convex/react'
+import { api } from '../convex/_generated/api'
 
 function MyComponent() {
-  const generateToken = useMutation(api.lib.security.csrf.generateCSRFToken);
-  
+  const generateToken = useMutation(api.lib.security.csrf.generateCSRFToken)
+
   useEffect(() => {
     const initCSRF = async () => {
-      const { token } = await generateToken();
+      const { token } = await generateToken()
       // Store token in state or context
-      setCSRFToken(token);
-    };
-    initCSRF();
-  }, []);
+      setCSRFToken(token)
+    }
+    initCSRF()
+  }, [])
 }
 ```
 
@@ -36,9 +36,9 @@ Add `csrfToken` as a required argument to all state-changing mutations:
 
 ```typescript
 // convex/events.ts
-import { v } from 'convex/values';
-import { mutation } from './_generated/server';
-import { requireValidCSRFToken } from './lib/security/csrf';
+import { v } from 'convex/values'
+import { mutation } from './_generated/server'
+import { requireValidCSRFToken } from './lib/security/csrf'
 
 export const createEvent = mutation({
   args: {
@@ -49,18 +49,18 @@ export const createEvent = mutation({
   },
   handler: async (ctx, args) => {
     // Validate CSRF token FIRST
-    await requireValidCSRFToken(ctx, args.csrfToken);
-    
+    await requireValidCSRFToken(ctx, args.csrfToken)
+
     // Continue with mutation logic
     const eventId = await ctx.db.insert('events', {
       title: args.title,
       description: args.description,
       // ...
-    });
-    
-    return eventId;
+    })
+
+    return eventId
   },
-});
+})
 ```
 
 #### 3. Send CSRF Token from Frontend
@@ -68,27 +68,28 @@ export const createEvent = mutation({
 Include the CSRF token when calling mutations:
 
 ```typescript
-import { useMutation } from 'convex/react';
-import { api } from '../convex/_generated/api';
+import { useMutation } from 'convex/react'
+import { api } from '../convex/_generated/api'
 
 function CreateEventForm() {
-  const createEvent = useMutation(api.events.createEvent);
-  const csrfToken = useCSRFToken(); // Get from context/state
-  
+  const createEvent = useMutation(api.events.createEvent)
+  const csrfToken = useCSRFToken() // Get from context/state
+
   const handleSubmit = async (data) => {
     await createEvent({
       csrfToken, // Include CSRF token
       title: data.title,
       description: data.description,
       // ...
-    });
-  };
+    })
+  }
 }
 ```
 
 ### Which Mutations Need CSRF Protection?
 
 Apply CSRF protection to ALL mutations that:
+
 - Create, update, or delete data
 - Change user state or permissions
 - Perform financial transactions
@@ -96,6 +97,7 @@ Apply CSRF protection to ALL mutations that:
 - Modify system configuration
 
 **Exceptions** (queries don't need CSRF protection):
+
 - Read-only queries
 - Public data fetching
 - Authentication mutations (login/signup already have their own protection)
@@ -152,31 +154,31 @@ export const updateEvent = mutation({
   },
   handler: async (ctx, args) => {
     // 1. Validate CSRF token
-    await requireValidCSRFToken(ctx, args.csrfToken);
-    
+    await requireValidCSRFToken(ctx, args.csrfToken)
+
     // 2. Validate user permissions
-    const user = await getCurrentUser(ctx);
-    const event = await ctx.db.get(args.eventId);
+    const user = await getCurrentUser(ctx)
+    const event = await ctx.db.get(args.eventId)
     if (event.organizerId !== user._id) {
-      throw new Error('Access denied');
+      throw new Error('Access denied')
     }
-    
+
     // 3. Perform update
     await ctx.db.patch(args.eventId, {
       title: args.title,
       description: args.description,
       updatedAt: Date.now(),
-    });
-    
-    return { success: true };
+    })
+
+    return { success: true }
   },
-});
+})
 
 // Frontend (src/components/events/EditEventForm.tsx)
 function EditEventForm({ eventId }) {
-  const updateEvent = useMutation(api.events.updateEvent);
-  const { csrfToken } = useCSRF();
-  
+  const updateEvent = useMutation(api.events.updateEvent)
+  const { csrfToken } = useCSRF()
+
   const handleSubmit = async (data) => {
     try {
       await updateEvent({
@@ -184,18 +186,18 @@ function EditEventForm({ eventId }) {
         eventId,
         title: data.title,
         description: data.description,
-      });
-      toast.success('Event updated');
+      })
+      toast.success('Event updated')
     } catch (error) {
       if (error.code === 'CSRF_TOKEN_EXPIRED') {
         // Refresh token and retry
-        await refreshCSRFToken();
-        toast.error('Session expired. Please try again.');
+        await refreshCSRFToken()
+        toast.error('Session expired. Please try again.')
       } else {
-        toast.error('Failed to update event');
+        toast.error('Failed to update event')
       }
     }
-  };
+  }
 }
 ```
 

@@ -210,10 +210,7 @@ export const ValidationRules = {
   /**
    * Date range validation (end date must be after start date)
    */
-  dateAfter: (
-    startDateField: string,
-    message?: string
-  ): ValidationRule<number> => ({
+  dateAfter: (startDateField: string, message?: string): ValidationRule<number> => ({
     validate: (value, formData) => {
       if (!value || !formData) return true
       const startDate = formData[startDateField] as number | undefined
@@ -226,11 +223,7 @@ export const ValidationRules = {
   /**
    * Budget range validation (min must be <= max)
    */
-  budgetRange: (
-    minField: string,
-    maxField: string,
-    message?: string
-  ): ValidationRule<number> => ({
+  budgetRange: (minField: string, maxField: string, message?: string): ValidationRule<number> => ({
     validate: (_value, formData) => {
       if (!formData) return true
       const min = formData[minField] as number | undefined
@@ -244,10 +237,7 @@ export const ValidationRules = {
   /**
    * Confirmation field validation (must match another field)
    */
-  matches: (
-    fieldToMatch: string,
-    message?: string
-  ): ValidationRule<unknown> => ({
+  matches: (fieldToMatch: string, message?: string): ValidationRule<unknown> => ({
     validate: (value, formData) => {
       if (!formData) return true
       return value === formData[fieldToMatch]
@@ -301,9 +291,7 @@ export function validateField<T>(
   for (const rule of schema.rules) {
     if (!rule.validate(value, formData)) {
       const message =
-        typeof rule.message === 'function'
-          ? rule.message(value, fieldName)
-          : rule.message
+        typeof rule.message === 'function' ? rule.message(value, fieldName) : rule.message
       errors.push(message)
     }
   }
@@ -349,9 +337,9 @@ export function validateForm(
 /**
  * Create a form schema builder for type-safe schema creation
  */
-export function createFormSchema<T extends Record<string, unknown>>(
-  schema: { [K in keyof T]: FieldSchema<T[K]> }
-): FormSchema {
+export function createFormSchema<T extends Record<string, unknown>>(schema: {
+  [K in keyof T]: FieldSchema<T[K]>
+}): FormSchema {
   return schema as FormSchema
 }
 
@@ -369,9 +357,7 @@ export function getFieldLabel(fieldName: string): string {
 /**
  * Format validation errors for display
  */
-export function formatValidationErrors(
-  errors: Record<string, string[]>
-): string[] {
+export function formatValidationErrors(errors: Record<string, string[]>): string[] {
   const formattedErrors: string[] = []
 
   for (const [fieldName, fieldErrors] of Object.entries(errors)) {

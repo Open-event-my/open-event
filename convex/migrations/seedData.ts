@@ -88,9 +88,15 @@ export const seed = internalMutation({
     const vendorData = [
       {
         name: `${SEED_PREFIX} Elite Catering Co.`,
-        description: 'Premium catering services for corporate events, weddings, and large gatherings. Award-winning cuisine with customizable menus.',
+        description:
+          'Premium catering services for corporate events, weddings, and large gatherings. Award-winning cuisine with customizable menus.',
         category: 'Catering',
-        services: ['Buffet Service', 'Plated Dinner', 'Cocktail Reception', 'Dietary Accommodations'],
+        services: [
+          'Buffet Service',
+          'Plated Dinner',
+          'Cocktail Reception',
+          'Dietary Accommodations',
+        ],
         location: 'New York, NY',
         priceRange: 'premium',
         rating: 4.8,
@@ -106,7 +112,8 @@ export const seed = internalMutation({
       },
       {
         name: `${SEED_PREFIX} SoundWave Audio`,
-        description: 'Professional audio and visual equipment rental with full technical support. Specializing in conferences and live events.',
+        description:
+          'Professional audio and visual equipment rental with full technical support. Specializing in conferences and live events.',
         category: 'Audio/Visual',
         services: ['Sound Systems', 'LED Screens', 'Stage Lighting', 'Live Streaming'],
         location: 'Los Angeles, CA',
@@ -124,9 +131,15 @@ export const seed = internalMutation({
       },
       {
         name: `${SEED_PREFIX} Bloom Florals`,
-        description: 'Creative floral arrangements and event decoration. From intimate gatherings to grand celebrations.',
+        description:
+          'Creative floral arrangements and event decoration. From intimate gatherings to grand celebrations.',
         category: 'Decoration',
-        services: ['Floral Arrangements', 'Centerpieces', 'Venue Decoration', 'Custom Installations'],
+        services: [
+          'Floral Arrangements',
+          'Centerpieces',
+          'Venue Decoration',
+          'Custom Installations',
+        ],
         location: 'Miami, FL',
         priceRange: 'mid',
         rating: 4.9,
@@ -141,7 +154,8 @@ export const seed = internalMutation({
       },
       {
         name: `${SEED_PREFIX} SecureEvent Guards`,
-        description: 'Professional event security services with trained personnel for all event types.',
+        description:
+          'Professional event security services with trained personnel for all event types.',
         category: 'Security',
         services: ['Crowd Management', 'VIP Protection', 'Access Control', 'Emergency Response'],
         location: 'Chicago, IL',
@@ -196,7 +210,8 @@ export const seed = internalMutation({
     const sponsorData = [
       {
         name: `${SEED_PREFIX} TechCorp Industries`,
-        description: 'Leading technology company supporting innovation through strategic event partnerships.',
+        description:
+          'Leading technology company supporting innovation through strategic event partnerships.',
         industry: 'Technology',
         sponsorshipTiers: ['platinum', 'gold'],
         budgetMin: 50000,
@@ -211,11 +226,17 @@ export const seed = internalMutation({
         status: 'approved' as const,
         companySize: 'enterprise',
         yearFounded: 1998,
-        deliverablesOffered: ['Logo Placement', 'Speaking Slot', 'Booth Space', 'Networking Events'],
+        deliverablesOffered: [
+          'Logo Placement',
+          'Speaking Slot',
+          'Booth Space',
+          'Networking Events',
+        ],
       },
       {
         name: `${SEED_PREFIX} GreenLife Foods`,
-        description: 'Organic food company passionate about sustainable events and healthy communities.',
+        description:
+          'Organic food company passionate about sustainable events and healthy communities.',
         industry: 'Food & Beverage',
         sponsorshipTiers: ['gold', 'silver'],
         budgetMin: 10000,
@@ -234,7 +255,8 @@ export const seed = internalMutation({
       },
       {
         name: `${SEED_PREFIX} Urban Bank`,
-        description: 'Community-focused financial institution investing in local events and initiatives.',
+        description:
+          'Community-focused financial institution investing in local events and initiatives.',
         industry: 'Finance',
         sponsorshipTiers: ['silver', 'bronze'],
         budgetMin: 5000,
@@ -265,7 +287,12 @@ export const seed = internalMutation({
         status: 'approved' as const,
         companySize: 'medium',
         yearFounded: 2008,
-        deliverablesOffered: ['Branded Merchandise', 'Booth Space', 'Logo Placement', 'Athlete Meet & Greet'],
+        deliverablesOffered: [
+          'Branded Merchandise',
+          'Booth Space',
+          'Logo Placement',
+          'Athlete Meet & Greet',
+        ],
       },
     ]
 
@@ -288,7 +315,8 @@ export const seed = internalMutation({
     const eventData = [
       {
         title: `${SEED_PREFIX} Tech Innovation Summit 2025`,
-        description: 'Annual technology conference featuring keynote speakers, workshops, and networking opportunities for tech professionals.',
+        description:
+          'Annual technology conference featuring keynote speakers, workshops, and networking opportunities for tech professionals.',
         eventType: 'Conference',
         status: 'active',
         locationType: 'in-person',
@@ -303,7 +331,8 @@ export const seed = internalMutation({
         seekingVendors: true,
         seekingSponsors: true,
         vendorCategories: ['Catering', 'Audio/Visual', 'Photography'],
-        sponsorBenefits: 'Logo placement, speaking slots, booth space, and exclusive networking access.',
+        sponsorBenefits:
+          'Logo placement, speaking slots, booth space, and exclusive networking access.',
         requirements: {
           catering: true,
           av: true,
@@ -313,7 +342,8 @@ export const seed = internalMutation({
       },
       {
         title: `${SEED_PREFIX} Annual Charity Gala`,
-        description: 'Elegant fundraising event supporting local education initiatives. Includes dinner, auction, and live entertainment.',
+        description:
+          'Elegant fundraising event supporting local education initiatives. Includes dinner, auction, and live entertainment.',
         eventType: 'Gala',
         status: 'planning',
         locationType: 'in-person',
@@ -349,7 +379,8 @@ export const seed = internalMutation({
       },
       {
         title: `${SEED_PREFIX} Summer Music Festival`,
-        description: 'Three-day outdoor music festival featuring local and international artists across multiple stages.',
+        description:
+          'Three-day outdoor music festival featuring local and international artists across multiple stages.',
         eventType: 'Festival',
         status: 'active',
         locationType: 'in-person',
@@ -373,7 +404,8 @@ export const seed = internalMutation({
       },
       {
         title: `${SEED_PREFIX} Product Launch Party`,
-        description: 'Exclusive launch event for our new product line with press, influencers, and VIP guests.',
+        description:
+          'Exclusive launch event for our new product line with press, influencers, and VIP guests.',
         eventType: 'Launch',
         status: 'completed',
         locationType: 'hybrid',
@@ -426,11 +458,44 @@ export const seed = internalMutation({
     console.log('[SEED] Creating event-vendor relationships...')
 
     const eventVendorData = [
-      { eventId: techSummitId, vendorId: vendorIds[0], status: 'confirmed', proposedBudget: 15000, finalBudget: 14500, notes: 'Full catering package agreed' },
-      { eventId: techSummitId, vendorId: vendorIds[1], status: 'confirmed', proposedBudget: 8000, finalBudget: 8000, notes: 'AV equipment and support' },
-      { eventId: musicFestivalId, vendorId: vendorIds[4], status: 'negotiating', proposedBudget: 5000, notes: 'Discussing coverage package' },
-      { eventId: charityGalaId, vendorId: vendorIds[2], status: 'inquiry', proposedBudget: 6000, notes: 'Initial inquiry for floral decorations' },
-      { eventId: productLaunchId, vendorId: vendorIds[0], status: 'completed', proposedBudget: 8000, finalBudget: 8500, notes: 'Catering for launch event completed' },
+      {
+        eventId: techSummitId,
+        vendorId: vendorIds[0],
+        status: 'confirmed',
+        proposedBudget: 15000,
+        finalBudget: 14500,
+        notes: 'Full catering package agreed',
+      },
+      {
+        eventId: techSummitId,
+        vendorId: vendorIds[1],
+        status: 'confirmed',
+        proposedBudget: 8000,
+        finalBudget: 8000,
+        notes: 'AV equipment and support',
+      },
+      {
+        eventId: musicFestivalId,
+        vendorId: vendorIds[4],
+        status: 'negotiating',
+        proposedBudget: 5000,
+        notes: 'Discussing coverage package',
+      },
+      {
+        eventId: charityGalaId,
+        vendorId: vendorIds[2],
+        status: 'inquiry',
+        proposedBudget: 6000,
+        notes: 'Initial inquiry for floral decorations',
+      },
+      {
+        eventId: productLaunchId,
+        vendorId: vendorIds[0],
+        status: 'completed',
+        proposedBudget: 8000,
+        finalBudget: 8500,
+        notes: 'Catering for launch event completed',
+      },
     ]
 
     for (const ev of eventVendorData) {
@@ -448,10 +513,38 @@ export const seed = internalMutation({
     console.log('[SEED] Creating event-sponsor relationships...')
 
     const eventSponsorData = [
-      { eventId: techSummitId, sponsorId: sponsorIds[0], tier: 'platinum', status: 'confirmed', amount: 100000, benefits: ['Keynote Slot', 'Premium Booth', 'Logo on All Materials', 'VIP Dinner Hosting'] },
-      { eventId: techSummitId, sponsorId: sponsorIds[2], tier: 'silver', status: 'negotiating', amount: 25000, notes: 'Discussing terms' },
-      { eventId: musicFestivalId, sponsorId: sponsorIds[3], tier: 'gold', status: 'confirmed', amount: 50000, benefits: ['Stage Branding', 'Booth Space', 'Athlete Meet & Greet', 'Social Media Feature'] },
-      { eventId: charityGalaId, sponsorId: sponsorIds[1], tier: 'gold', status: 'confirmed', amount: 30000, benefits: ['Table Sponsorship', 'Menu Feature', 'Logo Placement'] },
+      {
+        eventId: techSummitId,
+        sponsorId: sponsorIds[0],
+        tier: 'platinum',
+        status: 'confirmed',
+        amount: 100000,
+        benefits: ['Keynote Slot', 'Premium Booth', 'Logo on All Materials', 'VIP Dinner Hosting'],
+      },
+      {
+        eventId: techSummitId,
+        sponsorId: sponsorIds[2],
+        tier: 'silver',
+        status: 'negotiating',
+        amount: 25000,
+        notes: 'Discussing terms',
+      },
+      {
+        eventId: musicFestivalId,
+        sponsorId: sponsorIds[3],
+        tier: 'gold',
+        status: 'confirmed',
+        amount: 50000,
+        benefits: ['Stage Branding', 'Booth Space', 'Athlete Meet & Greet', 'Social Media Feature'],
+      },
+      {
+        eventId: charityGalaId,
+        sponsorId: sponsorIds[1],
+        tier: 'gold',
+        status: 'confirmed',
+        amount: 30000,
+        benefits: ['Table Sponsorship', 'Menu Feature', 'Logo Placement'],
+      },
     ]
 
     for (const es of eventSponsorData) {
@@ -470,14 +563,86 @@ export const seed = internalMutation({
 
     const ticketTypeData = [
       // Tech Summit tickets
-      { eventId: techSummitId, name: 'VIP Pass', description: 'Full conference access with VIP lounge and networking dinner', price: 29900, currency: 'usd', quantity: 50, soldCount: 23, sortOrder: 1, isActive: true, isHidden: false, perks: ['VIP Lounge Access', 'Networking Dinner', 'Priority Seating', 'Gift Bag'] },
-      { eventId: techSummitId, name: 'General Admission', description: 'Full conference access to all sessions and expo hall', price: 9900, currency: 'usd', quantity: 400, soldCount: 156, sortOrder: 2, isActive: true, isHidden: false, perks: ['All Sessions', 'Expo Hall', 'Lunch Included'] },
-      { eventId: techSummitId, name: 'Student Pass', description: 'Discounted access for students with valid ID', price: 4900, currency: 'usd', quantity: 100, soldCount: 45, sortOrder: 3, isActive: true, isHidden: false, perks: ['All Sessions', 'Expo Hall'] },
+      {
+        eventId: techSummitId,
+        name: 'VIP Pass',
+        description: 'Full conference access with VIP lounge and networking dinner',
+        price: 29900,
+        currency: 'usd',
+        quantity: 50,
+        soldCount: 23,
+        sortOrder: 1,
+        isActive: true,
+        isHidden: false,
+        perks: ['VIP Lounge Access', 'Networking Dinner', 'Priority Seating', 'Gift Bag'],
+      },
+      {
+        eventId: techSummitId,
+        name: 'General Admission',
+        description: 'Full conference access to all sessions and expo hall',
+        price: 9900,
+        currency: 'usd',
+        quantity: 400,
+        soldCount: 156,
+        sortOrder: 2,
+        isActive: true,
+        isHidden: false,
+        perks: ['All Sessions', 'Expo Hall', 'Lunch Included'],
+      },
+      {
+        eventId: techSummitId,
+        name: 'Student Pass',
+        description: 'Discounted access for students with valid ID',
+        price: 4900,
+        currency: 'usd',
+        quantity: 100,
+        soldCount: 45,
+        sortOrder: 3,
+        isActive: true,
+        isHidden: false,
+        perks: ['All Sessions', 'Expo Hall'],
+      },
 
       // Music Festival tickets
-      { eventId: musicFestivalId, name: 'Weekend Pass', description: 'Full 3-day festival access', price: 15000, currency: 'usd', quantity: 3000, soldCount: 1847, sortOrder: 1, isActive: true, isHidden: false, perks: ['All Stages', 'All 3 Days', 'Free Parking'] },
-      { eventId: musicFestivalId, name: 'Day Pass', description: 'Single day access', price: 6000, currency: 'usd', quantity: 2000, soldCount: 523, sortOrder: 2, isActive: true, isHidden: false, perks: ['All Stages', 'One Day'] },
-      { eventId: musicFestivalId, name: 'Early Bird Special', description: 'Limited early bird pricing', price: 9900, currency: 'usd', quantity: 500, soldCount: 500, sortOrder: 3, isActive: false, isHidden: false, perks: ['All Stages', 'All 3 Days', 'Early Entry'] },
+      {
+        eventId: musicFestivalId,
+        name: 'Weekend Pass',
+        description: 'Full 3-day festival access',
+        price: 15000,
+        currency: 'usd',
+        quantity: 3000,
+        soldCount: 1847,
+        sortOrder: 1,
+        isActive: true,
+        isHidden: false,
+        perks: ['All Stages', 'All 3 Days', 'Free Parking'],
+      },
+      {
+        eventId: musicFestivalId,
+        name: 'Day Pass',
+        description: 'Single day access',
+        price: 6000,
+        currency: 'usd',
+        quantity: 2000,
+        soldCount: 523,
+        sortOrder: 2,
+        isActive: true,
+        isHidden: false,
+        perks: ['All Stages', 'One Day'],
+      },
+      {
+        eventId: musicFestivalId,
+        name: 'Early Bird Special',
+        description: 'Limited early bird pricing',
+        price: 9900,
+        currency: 'usd',
+        quantity: 500,
+        soldCount: 500,
+        sortOrder: 3,
+        isActive: false,
+        isHidden: false,
+        perks: ['All Stages', 'All 3 Days', 'Early Entry'],
+      },
     ]
 
     const ticketTypeIds: Id<'ticketTypes'>[] = []
@@ -496,10 +661,45 @@ export const seed = internalMutation({
     // ========================================================================
     console.log('[SEED] Creating attendees...')
 
-    const firstNames = ['John', 'Jane', 'Michael', 'Emily', 'David', 'Sarah', 'Chris', 'Lisa', 'Robert', 'Amanda']
-    const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Davis', 'Miller', 'Wilson', 'Moore', 'Taylor']
-    const organizations = ['Acme Corp', 'Tech Startup', 'Global Industries', 'Innovation Labs', 'Future Co', null]
-    const statuses: Array<'registered' | 'confirmed' | 'checked_in' | 'cancelled' | 'no_show'> = ['registered', 'confirmed', 'checked_in', 'cancelled', 'no_show']
+    const firstNames = [
+      'John',
+      'Jane',
+      'Michael',
+      'Emily',
+      'David',
+      'Sarah',
+      'Chris',
+      'Lisa',
+      'Robert',
+      'Amanda',
+    ]
+    const lastNames = [
+      'Smith',
+      'Johnson',
+      'Williams',
+      'Brown',
+      'Jones',
+      'Davis',
+      'Miller',
+      'Wilson',
+      'Moore',
+      'Taylor',
+    ]
+    const organizations = [
+      'Acme Corp',
+      'Tech Startup',
+      'Global Industries',
+      'Innovation Labs',
+      'Future Co',
+      null,
+    ]
+    const statuses: Array<'registered' | 'confirmed' | 'checked_in' | 'cancelled' | 'no_show'> = [
+      'registered',
+      'confirmed',
+      'checked_in',
+      'cancelled',
+      'no_show',
+    ]
 
     // Tech Summit attendees
     for (let i = 0; i < 10; i++) {
@@ -552,17 +752,78 @@ export const seed = internalMutation({
 
     const orderData = [
       // Completed orders
-      { eventId: techSummitId, buyerEmail: 'buyer1@example.com', buyerName: `${SEED_PREFIX} Alice Walker`, ticketTypeId: ticketTypeIds[0], quantity: 2, paymentStatus: 'completed' as const, paidAt: daysAgo(5) },
-      { eventId: techSummitId, buyerEmail: 'buyer2@example.com', buyerName: `${SEED_PREFIX} Bob Martin`, ticketTypeId: ticketTypeIds[1], quantity: 5, paymentStatus: 'completed' as const, paidAt: daysAgo(3) },
-      { eventId: musicFestivalId, buyerEmail: 'buyer3@example.com', buyerName: `${SEED_PREFIX} Carol White`, ticketTypeId: ticketTypeIds[3], quantity: 4, paymentStatus: 'completed' as const, paidAt: daysAgo(10) },
-      { eventId: musicFestivalId, buyerEmail: 'buyer4@example.com', buyerName: `${SEED_PREFIX} Dan Brown`, ticketTypeId: ticketTypeIds[4], quantity: 2, paymentStatus: 'completed' as const, paidAt: daysAgo(7) },
+      {
+        eventId: techSummitId,
+        buyerEmail: 'buyer1@example.com',
+        buyerName: `${SEED_PREFIX} Alice Walker`,
+        ticketTypeId: ticketTypeIds[0],
+        quantity: 2,
+        paymentStatus: 'completed' as const,
+        paidAt: daysAgo(5),
+      },
+      {
+        eventId: techSummitId,
+        buyerEmail: 'buyer2@example.com',
+        buyerName: `${SEED_PREFIX} Bob Martin`,
+        ticketTypeId: ticketTypeIds[1],
+        quantity: 5,
+        paymentStatus: 'completed' as const,
+        paidAt: daysAgo(3),
+      },
+      {
+        eventId: musicFestivalId,
+        buyerEmail: 'buyer3@example.com',
+        buyerName: `${SEED_PREFIX} Carol White`,
+        ticketTypeId: ticketTypeIds[3],
+        quantity: 4,
+        paymentStatus: 'completed' as const,
+        paidAt: daysAgo(10),
+      },
+      {
+        eventId: musicFestivalId,
+        buyerEmail: 'buyer4@example.com',
+        buyerName: `${SEED_PREFIX} Dan Brown`,
+        ticketTypeId: ticketTypeIds[4],
+        quantity: 2,
+        paymentStatus: 'completed' as const,
+        paidAt: daysAgo(7),
+      },
       // Pending orders
-      { eventId: techSummitId, buyerEmail: 'buyer5@example.com', buyerName: `${SEED_PREFIX} Eve Davis`, ticketTypeId: ticketTypeIds[1], quantity: 1, paymentStatus: 'pending' as const },
-      { eventId: musicFestivalId, buyerEmail: 'buyer6@example.com', buyerName: `${SEED_PREFIX} Frank Miller`, ticketTypeId: ticketTypeIds[3], quantity: 2, paymentStatus: 'pending' as const },
+      {
+        eventId: techSummitId,
+        buyerEmail: 'buyer5@example.com',
+        buyerName: `${SEED_PREFIX} Eve Davis`,
+        ticketTypeId: ticketTypeIds[1],
+        quantity: 1,
+        paymentStatus: 'pending' as const,
+      },
+      {
+        eventId: musicFestivalId,
+        buyerEmail: 'buyer6@example.com',
+        buyerName: `${SEED_PREFIX} Frank Miller`,
+        ticketTypeId: ticketTypeIds[3],
+        quantity: 2,
+        paymentStatus: 'pending' as const,
+      },
       // Refunded order
-      { eventId: techSummitId, buyerEmail: 'buyer7@example.com', buyerName: `${SEED_PREFIX} Grace Lee`, ticketTypeId: ticketTypeIds[1], quantity: 3, paymentStatus: 'refunded' as const, refundReason: 'Unable to attend due to scheduling conflict' },
+      {
+        eventId: techSummitId,
+        buyerEmail: 'buyer7@example.com',
+        buyerName: `${SEED_PREFIX} Grace Lee`,
+        ticketTypeId: ticketTypeIds[1],
+        quantity: 3,
+        paymentStatus: 'refunded' as const,
+        refundReason: 'Unable to attend due to scheduling conflict',
+      },
       // Failed order
-      { eventId: musicFestivalId, buyerEmail: 'buyer8@example.com', buyerName: `${SEED_PREFIX} Henry Zhang`, ticketTypeId: ticketTypeIds[3], quantity: 1, paymentStatus: 'failed' as const },
+      {
+        eventId: musicFestivalId,
+        buyerEmail: 'buyer8@example.com',
+        buyerName: `${SEED_PREFIX} Henry Zhang`,
+        ticketTypeId: ticketTypeIds[3],
+        quantity: 1,
+        paymentStatus: 'failed' as const,
+      },
     ]
 
     for (const order of orderData) {
@@ -577,13 +838,15 @@ export const seed = internalMutation({
         eventId: order.eventId,
         buyerEmail: order.buyerEmail,
         buyerName: order.buyerName,
-        items: [{
-          ticketTypeId: order.ticketTypeId,
-          ticketTypeName: ticketType.name,
-          quantity: order.quantity,
-          unitPrice: ticketType.price,
-          subtotal,
-        }],
+        items: [
+          {
+            ticketTypeId: order.ticketTypeId,
+            ticketTypeName: ticketType.name,
+            quantity: order.quantity,
+            unitPrice: ticketType.price,
+            subtotal,
+          },
+        ],
         subtotal,
         fees,
         total,
@@ -606,20 +869,102 @@ export const seed = internalMutation({
 
     const budgetItemData = [
       // Tech Summit budget items
-      { eventId: techSummitId, category: 'venue', name: `${SEED_PREFIX} Convention Center Rental`, estimatedAmount: 25000, actualAmount: 24500, status: 'paid' as const },
-      { eventId: techSummitId, category: 'catering', name: `${SEED_PREFIX} Elite Catering Package`, estimatedAmount: 15000, actualAmount: 14500, status: 'paid' as const, vendorId: vendorIds[0] },
-      { eventId: techSummitId, category: 'av', name: `${SEED_PREFIX} Audio Visual Equipment`, estimatedAmount: 8000, actualAmount: 8000, status: 'committed' as const, vendorId: vendorIds[1] },
-      { eventId: techSummitId, category: 'marketing', name: `${SEED_PREFIX} Digital Marketing Campaign`, estimatedAmount: 5000, status: 'planned' as const },
-      { eventId: techSummitId, category: 'staffing', name: `${SEED_PREFIX} Event Staff`, estimatedAmount: 3000, status: 'planned' as const },
-      { eventId: techSummitId, category: 'permits', name: `${SEED_PREFIX} Event Permits & Insurance`, estimatedAmount: 2000, actualAmount: 1800, status: 'paid' as const },
+      {
+        eventId: techSummitId,
+        category: 'venue',
+        name: `${SEED_PREFIX} Convention Center Rental`,
+        estimatedAmount: 25000,
+        actualAmount: 24500,
+        status: 'paid' as const,
+      },
+      {
+        eventId: techSummitId,
+        category: 'catering',
+        name: `${SEED_PREFIX} Elite Catering Package`,
+        estimatedAmount: 15000,
+        actualAmount: 14500,
+        status: 'paid' as const,
+        vendorId: vendorIds[0],
+      },
+      {
+        eventId: techSummitId,
+        category: 'av',
+        name: `${SEED_PREFIX} Audio Visual Equipment`,
+        estimatedAmount: 8000,
+        actualAmount: 8000,
+        status: 'committed' as const,
+        vendorId: vendorIds[1],
+      },
+      {
+        eventId: techSummitId,
+        category: 'marketing',
+        name: `${SEED_PREFIX} Digital Marketing Campaign`,
+        estimatedAmount: 5000,
+        status: 'planned' as const,
+      },
+      {
+        eventId: techSummitId,
+        category: 'staffing',
+        name: `${SEED_PREFIX} Event Staff`,
+        estimatedAmount: 3000,
+        status: 'planned' as const,
+      },
+      {
+        eventId: techSummitId,
+        category: 'permits',
+        name: `${SEED_PREFIX} Event Permits & Insurance`,
+        estimatedAmount: 2000,
+        actualAmount: 1800,
+        status: 'paid' as const,
+      },
 
       // Music Festival budget items
-      { eventId: musicFestivalId, category: 'venue', name: `${SEED_PREFIX} Park Rental & Setup`, estimatedAmount: 50000, actualAmount: 52000, status: 'paid' as const },
-      { eventId: musicFestivalId, category: 'catering', name: `${SEED_PREFIX} Food Vendor Coordination`, estimatedAmount: 30000, status: 'committed' as const },
-      { eventId: musicFestivalId, category: 'av', name: `${SEED_PREFIX} Stage & Sound Systems`, estimatedAmount: 80000, actualAmount: 78500, status: 'paid' as const },
-      { eventId: musicFestivalId, category: 'marketing', name: `${SEED_PREFIX} Festival Marketing`, estimatedAmount: 25000, actualAmount: 27000, status: 'paid' as const },
-      { eventId: musicFestivalId, category: 'staffing', name: `${SEED_PREFIX} Security & Event Staff`, estimatedAmount: 40000, status: 'committed' as const, vendorId: vendorIds[3] },
-      { eventId: musicFestivalId, category: 'misc', name: `${SEED_PREFIX} Contingency Fund`, estimatedAmount: 15000, status: 'planned' as const },
+      {
+        eventId: musicFestivalId,
+        category: 'venue',
+        name: `${SEED_PREFIX} Park Rental & Setup`,
+        estimatedAmount: 50000,
+        actualAmount: 52000,
+        status: 'paid' as const,
+      },
+      {
+        eventId: musicFestivalId,
+        category: 'catering',
+        name: `${SEED_PREFIX} Food Vendor Coordination`,
+        estimatedAmount: 30000,
+        status: 'committed' as const,
+      },
+      {
+        eventId: musicFestivalId,
+        category: 'av',
+        name: `${SEED_PREFIX} Stage & Sound Systems`,
+        estimatedAmount: 80000,
+        actualAmount: 78500,
+        status: 'paid' as const,
+      },
+      {
+        eventId: musicFestivalId,
+        category: 'marketing',
+        name: `${SEED_PREFIX} Festival Marketing`,
+        estimatedAmount: 25000,
+        actualAmount: 27000,
+        status: 'paid' as const,
+      },
+      {
+        eventId: musicFestivalId,
+        category: 'staffing',
+        name: `${SEED_PREFIX} Security & Event Staff`,
+        estimatedAmount: 40000,
+        status: 'committed' as const,
+        vendorId: vendorIds[3],
+      },
+      {
+        eventId: musicFestivalId,
+        category: 'misc',
+        name: `${SEED_PREFIX} Contingency Fund`,
+        estimatedAmount: 15000,
+        status: 'planned' as const,
+      },
     ]
 
     for (const item of budgetItemData) {
@@ -689,12 +1034,58 @@ export const seed = internalMutation({
     console.log('[SEED] Creating event applications...')
 
     const applicationData = [
-      { eventId: techSummitId, applicantType: 'vendor' as const, applicantId: vendorIds[2].toString(), status: 'pending' as const, message: 'We would love to provide floral decorations for your event.', proposedBudget: 4000 },
-      { eventId: musicFestivalId, applicantType: 'vendor' as const, applicantId: vendorIds[4].toString(), status: 'under_review' as const, message: 'Professional photography services for your festival.', proposedBudget: 6000 },
-      { eventId: charityGalaId, applicantType: 'sponsor' as const, applicantId: sponsorIds[2].toString(), status: 'pending' as const, message: 'Urban Bank would like to support your charity event.', proposedTier: 'silver', proposedBudget: 20000 },
-      { eventId: techSummitId, applicantType: 'sponsor' as const, applicantId: sponsorIds[3].toString(), status: 'accepted' as const, message: 'Excited to sponsor the tech summit!', proposedTier: 'bronze', proposedBudget: 15000 },
-      { eventId: musicFestivalId, applicantType: 'sponsor' as const, applicantId: sponsorIds[1].toString(), status: 'rejected' as const, message: 'GreenLife Foods partnership proposal', proposedTier: 'gold', proposedBudget: 40000, rejectionReason: 'Already have a food sponsor for this tier' },
-      { eventId: charityGalaId, applicantType: 'vendor' as const, applicantId: vendorIds[0].toString(), status: 'accepted' as const, message: 'Elite Catering at your service', proposedBudget: 12000 },
+      {
+        eventId: techSummitId,
+        applicantType: 'vendor' as const,
+        applicantId: vendorIds[2].toString(),
+        status: 'pending' as const,
+        message: 'We would love to provide floral decorations for your event.',
+        proposedBudget: 4000,
+      },
+      {
+        eventId: musicFestivalId,
+        applicantType: 'vendor' as const,
+        applicantId: vendorIds[4].toString(),
+        status: 'under_review' as const,
+        message: 'Professional photography services for your festival.',
+        proposedBudget: 6000,
+      },
+      {
+        eventId: charityGalaId,
+        applicantType: 'sponsor' as const,
+        applicantId: sponsorIds[2].toString(),
+        status: 'pending' as const,
+        message: 'Urban Bank would like to support your charity event.',
+        proposedTier: 'silver',
+        proposedBudget: 20000,
+      },
+      {
+        eventId: techSummitId,
+        applicantType: 'sponsor' as const,
+        applicantId: sponsorIds[3].toString(),
+        status: 'accepted' as const,
+        message: 'Excited to sponsor the tech summit!',
+        proposedTier: 'bronze',
+        proposedBudget: 15000,
+      },
+      {
+        eventId: musicFestivalId,
+        applicantType: 'sponsor' as const,
+        applicantId: sponsorIds[1].toString(),
+        status: 'rejected' as const,
+        message: 'GreenLife Foods partnership proposal',
+        proposedTier: 'gold',
+        proposedBudget: 40000,
+        rejectionReason: 'Already have a food sponsor for this tier',
+      },
+      {
+        eventId: charityGalaId,
+        applicantType: 'vendor' as const,
+        applicantId: vendorIds[0].toString(),
+        status: 'accepted' as const,
+        message: 'Elite Catering at your service',
+        proposedBudget: 12000,
+      },
     ]
 
     for (const app of applicationData) {
@@ -752,9 +1143,7 @@ export const clear = internalMutation({
     console.log('[SEED CLEAR] Starting cleanup of seeded data...')
 
     // Find seeded events first
-    const seededEvents = await ctx.db
-      .query('events')
-      .collect()
+    const seededEvents = await ctx.db.query('events').collect()
     const seededEventIds = seededEvents
       .filter((e) => e.title.startsWith(SEED_PREFIX))
       .map((e) => e._id)
@@ -807,8 +1196,10 @@ export const clear = internalMutation({
     // Delete promo codes (check by code or for seeded events)
     const promoCodes = await ctx.db.query('promoCodes').collect()
     for (const promo of promoCodes) {
-      if ((promo.eventId && seededEventIds.includes(promo.eventId)) ||
-          ['EARLY20', 'VIP50', 'EXPIRED10'].includes(promo.code)) {
+      if (
+        (promo.eventId && seededEventIds.includes(promo.eventId)) ||
+        ['EARLY20', 'VIP50', 'EXPIRED10'].includes(promo.code)
+      ) {
         await ctx.db.delete(promo._id)
         results.promoCodes++
       }
@@ -909,9 +1300,10 @@ export const dryRun = internalMutation({
         promoCodes: 3,
         eventApplications: 6,
       },
-      note: seededEvents.length > 0
-        ? 'Warning: Seeded data already exists. Run clear first or existing data will remain.'
-        : 'No existing seeded data found. Safe to run seed.',
+      note:
+        seededEvents.length > 0
+          ? 'Warning: Seeded data already exists. Run clear first or existing data will remain.'
+          : 'No existing seeded data found. Safe to run seed.',
     }
   },
 })

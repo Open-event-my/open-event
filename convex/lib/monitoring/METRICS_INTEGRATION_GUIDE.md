@@ -5,6 +5,7 @@ This guide explains how to add metrics collection to Convex API endpoints.
 ## Overview
 
 The metrics middleware automatically collects:
+
 - **API Request Metrics**: Response times, status codes, endpoint names
 - **API Usage Tracking**: User/organization usage per endpoint
 - **Database Query Metrics**: Query types, tables, durations
@@ -16,24 +17,24 @@ The metrics middleware automatically collects:
 For existing endpoints, wrap the handler function:
 
 ```typescript
-import { query, mutation } from './_generated/server';
-import { withQueryMetrics, withMutationMetrics } from './lib/monitoring/metricsMiddleware';
+import { query, mutation } from './_generated/server'
+import { withQueryMetrics, withMutationMetrics } from './lib/monitoring/metricsMiddleware'
 
 // Before:
 export const list = query({
   args: { category: v.optional(v.string()) },
   handler: async (ctx, args) => {
-    return await ctx.db.query('vendors').collect();
+    return await ctx.db.query('vendors').collect()
   },
-});
+})
 
 // After:
 export const list = query({
   args: { category: v.optional(v.string()) },
   handler: withQueryMetrics('vendors:list', async (ctx, args) => {
-    return await ctx.db.query('vendors').collect();
+    return await ctx.db.query('vendors').collect()
   }),
-});
+})
 ```
 
 ### Option 2: Use Helper Functions (For New Code)
@@ -41,21 +42,25 @@ export const list = query({
 For new endpoints, use the helper functions:
 
 ```typescript
-import { createMetricsQuery, createMetricsMutation } from './lib/monitoring/metricsMiddleware';
+import { createMetricsQuery, createMetricsMutation } from './lib/monitoring/metricsMiddleware'
 
-export const list = query(createMetricsQuery({
-  args: { category: v.optional(v.string()) },
-  handler: async (ctx, args) => {
-    return await ctx.db.query('vendors').collect();
-  },
-}));
+export const list = query(
+  createMetricsQuery({
+    args: { category: v.optional(v.string()) },
+    handler: async (ctx, args) => {
+      return await ctx.db.query('vendors').collect()
+    },
+  })
+)
 
-export const create = mutation(createMetricsMutation({
-  args: { name: v.string() },
-  handler: async (ctx, args) => {
-    return await ctx.db.insert('vendors', { name: args.name });
-  },
-}));
+export const create = mutation(
+  createMetricsMutation({
+    args: { name: v.string() },
+    handler: async (ctx, args) => {
+      return await ctx.db.insert('vendors', { name: args.name })
+    },
+  })
+)
 ```
 
 ## Adding Database Query Metrics
@@ -63,25 +68,26 @@ export const create = mutation(createMetricsMutation({
 For expensive database operations, add explicit database metrics:
 
 ```typescript
-import { withDatabaseMetrics } from './lib/monitoring/metricsMiddleware';
+import { withDatabaseMetrics } from './lib/monitoring/metricsMiddleware'
 
 export const list = query({
   args: {},
   handler: withQueryMetrics('vendors:list', async (ctx, args) => {
     // Wrap database query with metrics
-    const vendors = await withDatabaseMetrics(
-      () => ctx.db.query('vendors').collect(),
-      { queryType: 'read', table: 'vendors' }
-    );
-    
-    return vendors;
+    const vendors = await withDatabaseMetrics(() => ctx.db.query('vendors').collect(), {
+      queryType: 'read',
+      table: 'vendors',
+    })
+
+    return vendors
   }),
-});
+})
 ```
 
 ## Naming Convention
 
 Use a consistent naming pattern for function names:
+
 - Format: `{table}:{operation}`
 - Examples:
   - `vendors:list`
@@ -110,12 +116,14 @@ When you wrap a handler, the middleware automatically tracks:
 ### API Usage Tracking
 
 For authenticated requests, the middleware also records:
+
 - User ID
 - Organization ID (if available)
 - Endpoint accessed
 - Action type (query/mutation/action)
 
 This enables tracking:
+
 - API usage per user
 - API usage per organization
 - Most popular endpoints
@@ -127,9 +135,13 @@ Here's how to integrate metrics into a complete Convex file:
 
 ```typescript
 // convex/vendors.ts
-import { v } from 'convex/values';
-import { mutation, query } from './_generated/server';
-import { withQueryMetrics, withMutationMetrics, withDatabaseMetrics } from './lib/monitoring/metricsMiddleware';
+import { v } from 'convex/values'
+import { mutation, query } from './_generated/server'
+import {
+  withQueryMetrics,
+  withMutationMetrics,
+  withDatabaseMetrics,
+} from './lib/monitoring/metricsMiddleware'
 
 // List vendors with metrics
 export const list = query({
@@ -140,34 +152,35 @@ export const list = query({
   handler: withQueryMetrics('vendors:list', async (ctx, args) => {
     // Wrap the database query
     let vendors = await withDatabaseMetrics(
-      () => ctx.db
-        .query('vendors')
-        .withIndex('by_status', (q) => q.eq('status', 'approved'))
-        .collect(),
+      () =>
+        ctx.db
+          .query('vendors')
+          .withIndex('by_status', (q) => q.eq('status', 'approved'))
+          .collect(),
       { queryType: 'read', table: 'vendors' }
-    );
+    )
 
     // Filter logic...
     if (args.category && args.category !== 'all') {
-      vendors = vendors.filter((v) => v.category === args.category);
+      vendors = vendors.filter((v) => v.category === args.category)
     }
 
-    return vendors;
+    return vendors
   }),
-});
+})
 
 // Get single vendor with metrics
 export const get = query({
   args: { id: v.id('vendors') },
   handler: withQueryMetrics('vendors:get', async (ctx, args) => {
-    const vendor = await withDatabaseMetrics(
-      () => ctx.db.get(args.id),
-      { queryType: 'read', table: 'vendors' }
-    );
-    
-    return vendor;
+    const vendor = await withDatabaseMetrics(() => ctx.db.get(args.id), {
+      queryType: 'read',
+      table: 'vendors',
+    })
+
+    return vendor
   }),
-});
+})
 
 // Create vendor with metrics
 export const create = mutation({
@@ -178,19 +191,20 @@ export const create = mutation({
   },
   handler: withMutationMetrics('vendors:create', async (ctx, args) => {
     const vendorId = await withDatabaseMetrics(
-      () => ctx.db.insert('vendors', {
-        name: args.name,
-        category: args.category,
-        description: args.description,
-        status: 'pending',
-        createdAt: Date.now(),
-      }),
+      () =>
+        ctx.db.insert('vendors', {
+          name: args.name,
+          category: args.category,
+          description: args.description,
+          status: 'pending',
+          createdAt: Date.now(),
+        }),
       { queryType: 'write', table: 'vendors' }
-    );
-    
-    return vendorId;
+    )
+
+    return vendorId
   }),
-});
+})
 
 // Update vendor with metrics
 export const update = mutation({
@@ -201,26 +215,27 @@ export const update = mutation({
   },
   handler: withMutationMetrics('vendors:update', async (ctx, args) => {
     await withDatabaseMetrics(
-      () => ctx.db.patch(args.id, {
-        ...(args.name && { name: args.name }),
-        ...(args.category && { category: args.category }),
-        updatedAt: Date.now(),
-      }),
+      () =>
+        ctx.db.patch(args.id, {
+          ...(args.name && { name: args.name }),
+          ...(args.category && { category: args.category }),
+          updatedAt: Date.now(),
+        }),
       { queryType: 'write', table: 'vendors' }
-    );
+    )
   }),
-});
+})
 
 // Delete vendor with metrics
 export const remove = mutation({
   args: { id: v.id('vendors') },
   handler: withMutationMetrics('vendors:delete', async (ctx, args) => {
-    await withDatabaseMetrics(
-      () => ctx.db.delete(args.id),
-      { queryType: 'delete', table: 'vendors' }
-    );
+    await withDatabaseMetrics(() => ctx.db.delete(args.id), {
+      queryType: 'delete',
+      table: 'vendors',
+    })
   }),
-});
+})
 ```
 
 ## Viewing Metrics
@@ -228,21 +243,21 @@ export const remove = mutation({
 Metrics are collected in memory and can be accessed via the `metricsCollector`:
 
 ```typescript
-import { metricsCollector } from './lib/monitoring/metrics';
+import { metricsCollector } from './lib/monitoring/metrics'
 
 // Get all API request metrics
-const apiMetrics = metricsCollector.getMetricsByName('api.request');
+const apiMetrics = metricsCollector.getMetricsByName('api.request')
 
 // Get metrics for a specific endpoint
-const vendorListMetrics = metricsCollector.getMetricsByTag('endpoint', 'vendors:list');
+const vendorListMetrics = metricsCollector.getMetricsByTag('endpoint', 'vendors:list')
 
 // Get metrics for a specific user
-const userMetrics = metricsCollector.getMetricsByTag('userId', 'user123');
+const userMetrics = metricsCollector.getMetricsByTag('userId', 'user123')
 
 // Get statistics for response times
-const stats = metricsCollector.getMetricStats('api.request');
-console.log(`Avg response time: ${stats.avg}ms`);
-console.log(`Max response time: ${stats.max}ms`);
+const stats = metricsCollector.getMetricStats('api.request')
+console.log(`Avg response time: ${stats.avg}ms`)
+console.log(`Max response time: ${stats.max}ms`)
 ```
 
 ## Best Practices
@@ -256,12 +271,14 @@ console.log(`Max response time: ${stats.max}ms`);
 ## Performance Impact
 
 The metrics middleware has minimal performance impact:
+
 - ~1-2ms overhead per request
 - Metrics stored in memory (max 1000 entries)
 - No external API calls
 - No database writes (metrics are in-memory only)
 
 For production, you may want to:
+
 - Export metrics to external monitoring (Datadog, CloudWatch, etc.)
 - Store metrics in database for historical analysis
 - Set up alerts based on metric thresholds

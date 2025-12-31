@@ -4,7 +4,7 @@ codecov:
 coverage:
   precision: 2
   round: down
-  range: "50...90"
+  range: '50...90'
 
   status:
     project:
@@ -26,20 +26,20 @@ parsers:
       macro: false
 
 comment:
-  layout: "reach,diff,flags,files,footer"
+  layout: 'reach,diff,flags,files,footer'
   behavior: default
   require_changes: true
   require_base: false
   require_head: true
 
 ignore:
-  - "**/*.test.ts"
-  - "**/*.test.tsx"
-  - "**/*.spec.ts"
-  - "**/test/**"
-  - "**/e2e/**"
-  - "convex/_generated/**"
-  - "dist/**"
-  - "node_modules/**"
-  - "playwright-report/**"
-  - "coverage/**"
+  - '**/*.test.ts'
+  - '**/*.test.tsx'
+  - '**/*.spec.ts'
+  - '**/test/**'
+  - '**/e2e/**'
+  - 'convex/_generated/**'
+  - 'dist/**'
+  - 'node_modules/**'
+  - 'playwright-report/**'
+  - 'coverage/**'

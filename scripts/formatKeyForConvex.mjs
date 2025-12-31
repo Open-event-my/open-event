@@ -50,4 +50,3 @@ console.log(output)
 // Also write to a file for easy copying
 writeFileSync('KEYS_FOR_CONVEX.md', output)
 console.log('\n✅ Keys also saved to KEYS_FOR_CONVEX.md for easy reference')
-

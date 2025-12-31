@@ -37,7 +37,8 @@ console.log(`  ✅ Ends with END: ${checks.endsWithEnd ? 'YES' : 'NO'}`)
 console.log(`  ✅ Has newlines: ${checks.hasNewlines ? 'YES' : 'NO'}`)
 console.log('')
 
-const isValid = checks.hasBeginMarker && checks.hasEndMarker && checks.startsWithBegin && checks.endsWithEnd
+const isValid =
+  checks.hasBeginMarker && checks.hasEndMarker && checks.startsWithBegin && checks.endsWithEnd
 
 if (isValid) {
   console.log('✅ Key format is CORRECT!')
@@ -57,4 +58,3 @@ if (isValid) {
   console.log('  4. Restart Convex dev server')
   process.exit(1)
 }
-

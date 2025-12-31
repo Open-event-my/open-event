@@ -378,7 +378,7 @@ export const remove = mutation({
 /**
  * Validate an API key and return the key info
  * Called from HTTP actions
- * 
+ *
  * Supports both encrypted keys (new) and hashed keys (legacy)
  */
 export const validateKey = internalQuery({
@@ -395,8 +395,8 @@ export const validateKey = internalQuery({
 
     // Try to find matching key (supports both encrypted and hashed)
     for (const key of keys) {
-      let isValid = false;
-      
+      let isValid = false
+
       // Check if this is an encrypted key (new approach)
       if (key.encryptedKey && key.encryptionIV && key.encryptionTag && key.encryptionSalt) {
         try {
@@ -409,7 +409,7 @@ export const validateKey = internalQuery({
             salt: key.encryptionSalt,
           }
           const decryptedKey = await decryptAPIKey(encrypted, masterKey)
-          
+
           // Hash the decrypted key and compare with provided hash
           const decryptedHash = await hashApiKey(decryptedKey)
           isValid = decryptedHash === args.keyHash
@@ -423,7 +423,7 @@ export const validateKey = internalQuery({
       else if (key.keyHash) {
         isValid = key.keyHash === args.keyHash
       }
-      
+
       if (isValid) {
         // Check if key is active
         if (key.status !== 'active') {

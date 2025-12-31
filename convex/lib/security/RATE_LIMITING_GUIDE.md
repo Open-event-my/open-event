@@ -11,7 +11,12 @@ Rate limiting protects public endpoints from abuse by limiting the number of req
 ### 1. Import the middleware
 
 ```typescript
-import { withRateLimit, withAuthRateLimit, withAPIRateLimit, withAIRateLimit } from './lib/security/rateLimitMiddleware';
+import {
+  withRateLimit,
+  withAuthRateLimit,
+  withAPIRateLimit,
+  withAIRateLimit,
+} from './lib/security/rateLimitMiddleware'
 ```
 
 ### 2. Wrap your endpoint
@@ -41,6 +46,7 @@ export const myEndpoint = mutation(
 **Limits:** 5 requests per 15 minutes per IP address
 
 **Example:**
+
 ```typescript
 export const login = mutation(
   withAuthRateLimit({
@@ -52,7 +58,7 @@ export const login = mutation(
       // Login logic
     },
   })
-);
+)
 ```
 
 ### AI Endpoints (`withAIRateLimit`)
@@ -62,6 +68,7 @@ export const login = mutation(
 **Limits:** 50 requests per hour per user
 
 **Example:**
+
 ```typescript
 export const generateDescription = action(
   withAIRateLimit({
@@ -72,7 +79,7 @@ export const generateDescription = action(
       // AI generation logic
     },
   })
-);
+)
 ```
 
 ### Public API Endpoints (`withAPIRateLimit`)
@@ -82,17 +89,19 @@ export const generateDescription = action(
 **Limits:** 100 requests per minute per user/IP
 
 **Example:**
+
 ```typescript
 export const listPublicEvents = query(
   withAPIRateLimit({
     args: {},
     handler: async (ctx) => {
-      return await ctx.db.query('events')
-        .filter(q => q.eq(q.field('isPublic'), true))
-        .collect();
+      return await ctx.db
+        .query('events')
+        .filter((q) => q.eq(q.field('isPublic'), true))
+        .collect()
     },
   })
-);
+)
 ```
 
 ### Custom Rate Limits (`withRateLimit`)
@@ -100,6 +109,7 @@ export const listPublicEvents = query(
 **Use for:** Endpoints with specific requirements
 
 **Example:**
+
 ```typescript
 import { withRateLimit } from './lib/security/rateLimitMiddleware';
 
@@ -150,6 +160,7 @@ export const uploadFile = mutation(
 ### Low Priority (Internal/Admin Only)
 
 These endpoints typically don't need rate limiting as they're already protected by authentication:
+
 - Admin-only mutations
 - Internal queries
 - Authenticated user operations
@@ -176,7 +187,7 @@ try {
   if (error.data?.retryAfter) {
     // Show user-friendly message
     toast.error(`Too many requests. Please wait ${error.data.retryAfter} seconds.`);
-    
+
     // Optionally, retry after the specified time
     setTimeout(() => {
       // Retry the request
@@ -213,7 +224,7 @@ export const DEFAULT_RATE_LIMITS = {
   ai: { windowMs: 60 * 60 * 1000, maxRequests: 50 },
   api: { windowMs: 60 * 1000, maxRequests: 100 },
   default: { windowMs: 60 * 1000, maxRequests: 60 },
-};
+}
 ```
 
 ### Environment Variables
@@ -234,7 +245,7 @@ console.log('Rate limit status:', {
   remaining: 95, // requests remaining in window
   resetAt: 1234567890, // when window resets
   limit: 100, // max requests allowed
-});
+})
 ```
 
 ### Metrics to Track
@@ -249,12 +260,12 @@ Old rate limit records should be cleaned up periodically:
 
 ```typescript
 // Add to convex/crons.ts
-export default cronJobs;
+export default cronJobs
 cronJobs.interval(
-  "cleanup rate limits",
+  'cleanup rate limits',
   { hours: 24 }, // Run daily
-  internal.lib.security.rateLimiter.cleanup,
-);
+  internal.lib.security.rateLimiter.cleanup
+)
 ```
 
 ## Best Practices
@@ -288,13 +299,15 @@ cronJobs.interval(
 ### Issue: Rate limits not working
 
 **Check:**
+
 1. Middleware is properly applied to endpoint
 2. Database has `globalRateLimits` table
 3. Rate limiter is using correct key generator
 
 ### Issue: Performance impact
 
-**Solution:** 
+**Solution:**
+
 1. Add database indexes on `identifier` and `windowStart`
 2. Run cleanup job more frequently
 3. Consider caching rate limit status

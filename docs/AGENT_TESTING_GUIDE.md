@@ -369,6 +369,7 @@ flowchart TD
    - Maintain code style consistency
 
 7. **Type check**
+
    ```bash
    npm run build
    ```
@@ -389,6 +390,7 @@ flowchart TD
    - Focus on critical paths
 
 9. **Add E2E tests** (For critical user flows)
+
    ```bash
    npm run test:e2e
    ```

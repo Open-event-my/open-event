@@ -5,8 +5,7 @@ import { cn } from '@/lib/utils'
 import type { VariantProps } from 'class-variance-authority'
 
 export interface LoadingButtonProps
-  extends React.ComponentProps<'button'>,
-    VariantProps<typeof buttonVariants> {
+  extends React.ComponentProps<'button'>, VariantProps<typeof buttonVariants> {
   /** Whether the button is in loading state */
   isLoading?: boolean
   /** Text to show while loading (defaults to children) */
@@ -21,30 +20,30 @@ export interface LoadingButtonProps
 
 /**
  * Button component with built-in loading state support.
- * 
+ *
  * Features:
  * - Shows spinner when loading
  * - Disables button during loading
  * - Optional loading text
  * - Configurable spinner position
- * 
+ *
  * @example
  * ```tsx
  * // Basic usage
  * <LoadingButton isLoading={isSubmitting} onClick={handleSubmit}>
  *   Submit
  * </LoadingButton>
- * 
+ *
  * // With loading text
- * <LoadingButton 
- *   isLoading={isSaving} 
+ * <LoadingButton
+ *   isLoading={isSaving}
  *   loadingText="Saving..."
  *   onClick={handleSave}
  * >
  *   Save Changes
  * </LoadingButton>
  * ```
- * 
+ *
  * **Validates: Requirements 11.7** - Show loading states for all async operations
  */
 export function LoadingButton({
@@ -61,12 +60,7 @@ export function LoadingButton({
   ...props
 }: LoadingButtonProps) {
   const spinner = (
-    <CircleNotch
-      size={spinnerSize}
-      weight="bold"
-      className="animate-spin"
-      aria-hidden="true"
-    />
+    <CircleNotch size={spinnerSize} weight="bold" className="animate-spin" aria-hidden="true" />
   )
 
   const content = isLoading ? (
@@ -120,12 +114,7 @@ export function LoadingIconButton({
       {...props}
     >
       {isLoading ? (
-        <CircleNotch
-          size={spinnerSize}
-          weight="bold"
-          className="animate-spin"
-          aria-hidden="true"
-        />
+        <CircleNotch size={spinnerSize} weight="bold" className="animate-spin" aria-hidden="true" />
       ) : (
         children
       )}

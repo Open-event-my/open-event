@@ -83,7 +83,9 @@ export function ErrorDisplayExample() {
           </div>
 
           {lastError && (
-            <div className={`p-4 rounded-lg border ${lastError.category === 'server' ? 'border-destructive bg-destructive/10' : 'border-border bg-muted'}`}>
+            <div
+              className={`p-4 rounded-lg border ${lastError.category === 'server' ? 'border-destructive bg-destructive/10' : 'border-border bg-muted'}`}
+            >
               <div className="flex items-start gap-2">
                 <WarningCircle size={16} weight="duotone" className="mt-0.5" />
                 <div>
@@ -132,8 +134,8 @@ export function ErrorDisplayExample() {
             <li className="flex items-start">
               <Info size={16} className="mr-2 mt-0.5 text-blue-500" />
               <span>
-                <strong>Actionable Suggestions:</strong> Users get clear steps on how to resolve
-                the issue
+                <strong>Actionable Suggestions:</strong> Users get clear steps on how to resolve the
+                issue
               </span>
             </li>
             <li className="flex items-start">
@@ -146,8 +148,8 @@ export function ErrorDisplayExample() {
             <li className="flex items-start">
               <Info size={16} className="mr-2 mt-0.5 text-blue-500" />
               <span>
-                <strong>Consistent Experience:</strong> All errors follow the same format across
-                the application
+                <strong>Consistent Experience:</strong> All errors follow the same format across the
+                application
               </span>
             </li>
           </ul>

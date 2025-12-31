@@ -83,9 +83,7 @@ export function AdminManagement() {
   const filteredAdmins = admins?.filter((admin) => {
     if (!searchQuery) return true
     const query = searchQuery.toLowerCase()
-    return (
-      admin.name?.toLowerCase().includes(query) || admin.email?.toLowerCase().includes(query)
-    )
+    return admin.name?.toLowerCase().includes(query) || admin.email?.toLowerCase().includes(query)
   })
 
   const handleCreateAdmin = async () => {
@@ -163,9 +161,7 @@ export function AdminManagement() {
             <UserGear size={28} weight="duotone" className="text-purple-500" />
             Admin Management
           </h1>
-          <p className="text-muted-foreground mt-1">
-            Manage admin accounts and permissions
-          </p>
+          <p className="text-muted-foreground mt-1">Manage admin accounts and permissions</p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
@@ -428,8 +424,8 @@ export function AdminManagement() {
             </DialogTitle>
             <DialogDescription>
               Are you sure you want to remove admin privileges from{' '}
-              <strong>{selectedAdmin?.name || selectedAdmin?.email}</strong>? They will be
-              demoted to organizer role.
+              <strong>{selectedAdmin?.name || selectedAdmin?.email}</strong>? They will be demoted
+              to organizer role.
             </DialogDescription>
           </DialogHeader>
 
