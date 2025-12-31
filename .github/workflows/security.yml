@@ -51,7 +51,7 @@ jobs:
           # Count vulnerabilities by severity (handle grep returning 1 when no matches)
           HIGH=$(grep -c "high" audit-output.txt 2>/dev/null || true)
           CRITICAL=$(grep -c "critical" audit-output.txt 2>/dev/null || true)
-          
+
           # Default to 0 if empty
           HIGH=${HIGH:-0}
           CRITICAL=${CRITICAL:-0}
