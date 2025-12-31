@@ -378,7 +378,8 @@ try {
                   message: 'User creation failed - patch error',
                   data: {
                     userId: userId.toString(),
-                    patchError: patchError.message,
+                    patchError:
+                      patchError instanceof Error ? patchError.message : String(patchError),
                     authAccountExists: !!authAccount,
                   },
                   timestamp: Date.now(),

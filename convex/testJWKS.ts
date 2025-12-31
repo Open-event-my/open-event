@@ -4,8 +4,7 @@
  */
 import { mutation } from './_generated/server'
 import { importPKCS8, importJWK, SignJWT, jwtVerify } from 'jose'
-
-import { KeyLike } from 'jose'
+import type { KeyLike, JWK } from 'jose'
 
 export const testJWKS = mutation({
   args: {},
@@ -50,7 +49,7 @@ export const testJWKS = mutation({
       }
     }
 
-    const jwk = jwksParsed.keys[0]
+    const jwk = jwksParsed.keys[0] as unknown as JWK
 
     // Try to import the private key
     let privateKey: KeyLike
@@ -66,7 +65,14 @@ export const testJWKS = mutation({
     // Try to import the public key from JWKS
     let publicKey: KeyLike
     try {
-      publicKey = await importJWK(jwk, 'RS256')
+      const imported = await importJWK(jwk, 'RS256')
+      if (imported instanceof Uint8Array) {
+        return {
+          success: false,
+          error: 'importJWK returned a Uint8Array instead of KeyLike',
+        }
+      }
+      publicKey = imported
     } catch (error) {
       return {
         success: false,

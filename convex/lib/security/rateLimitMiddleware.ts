@@ -87,7 +87,9 @@ export function withRateLimit<Args extends FunctionArgs, Output, Ctx extends Con
       if ('db' in ctx) {
         const ctxWithDb = ctx as unknown as CtxWithDb
         const rateLimiter = new RateLimiter(ctxWithDb.db)
-        const key = config.keyGenerator ? config.keyGenerator(ctx) : generateRateLimitKey(ctx)
+        const key = config.keyGenerator
+          ? config.keyGenerator(ctxWithDb as unknown as Parameters<typeof config.keyGenerator>[0])
+          : generateRateLimitKey(ctxWithDb as unknown as Parameters<typeof generateRateLimitKey>[0])
 
         const result = await rateLimiter.checkLimit(key, config)
 

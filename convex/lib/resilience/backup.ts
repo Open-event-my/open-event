@@ -265,7 +265,7 @@ export class BackupService {
    * @param encryptedData - Encrypted data as base64 string
    * @returns Decrypted data
    */
-  // @ts-expect-error - Placeholder for future implementation
+
   private async _decryptData(encryptedData: string): Promise<string> {
     // Note: This is a placeholder. Real implementation would use
     // a proper encryption service with key management.

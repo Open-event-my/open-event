@@ -277,7 +277,8 @@ export function withAdminAuditLog<Args extends Record<string, unknown>, Output>(
  */
 export function auditedMutation<Args extends Record<string, unknown>, Output>(config: {
   audit: AuditLogOptions
-  args: Record<string, unknown>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  args: any
   handler: (ctx: MutationCtx, args: Args) => Promise<Output>
 }) {
   return mutation({
@@ -317,7 +318,8 @@ export function auditedAdminMutation<Args extends Record<string, unknown>, Outpu
     severity?: 'low' | 'medium' | 'high' | 'critical'
     getImpactedUsers?: (args: Args) => string[]
   }
-  args: Record<string, unknown>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  args: any
   handler: (ctx: MutationCtx, args: Args) => Promise<Output>
 }) {
   return mutation({
