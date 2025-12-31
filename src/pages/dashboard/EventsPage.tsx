@@ -104,7 +104,7 @@ function StatusProgress({ currentStatus }: { currentStatus: string }) {
                       'w-2 h-2 rounded-full transition-all',
                       isCompleted && 'bg-emerald-500',
                       isCurrent &&
-                        config.bg.replace('/10', '').replace('bg-', 'bg-') +
+                        config.bg.replace('/10', '') +
                           ' ring-2 ring-offset-1 ring-offset-background ' +
                           config.bg.replace('/10', '/30'),
                       isUpcoming && 'bg-muted-foreground/20'

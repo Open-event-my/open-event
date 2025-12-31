@@ -3,6 +3,9 @@
  *
  * Tests for the InputSanitizer class to verify HTML sanitization,
  * text sanitization, and input validation functionality.
+ *
+ * SECURITY NOTE: The sanitizer now uses HTML entity encoding as the primary
+ * defense against XSS attacks. All HTML is escaped, not filtered.
  */
 
 import { describe, it, expect } from 'vitest'
@@ -12,71 +15,76 @@ describe('InputSanitizer', () => {
   const sanitizer = new InputSanitizer()
 
   describe('sanitizeHTML', () => {
-    it('should remove script tags', () => {
+    it('should escape script tags', () => {
       const input = '<p>Hello</p><script>alert("XSS")</script><p>World</p>'
       const result = sanitizer.sanitizeHTML(input)
-      expect(result).not.toContain('<script')
-      expect(result).not.toContain('alert')
+      // Script tags should be escaped, not executed
+      expect(result).toContain('&lt;script')
+      expect(result).toContain('&lt;&#x2F;script&gt;')
       expect(result).toContain('Hello')
       expect(result).toContain('World')
     })
 
-    it('should remove event handlers', () => {
+    it('should escape event handlers', () => {
       const input = '<div onclick="alert(\'XSS\')">Click me</div>'
       const result = sanitizer.sanitizeHTML(input)
-      expect(result).not.toContain('onclick')
+      // Event handlers should be escaped
+      expect(result).toContain('onclick&#x3D;')
       expect(result).toContain('Click me')
     })
 
-    it('should remove javascript: protocol', () => {
+    it('should escape javascript: protocol in href', () => {
       const input = '<a href="javascript:alert(\'XSS\')">Link</a>'
       const result = sanitizer.sanitizeHTML(input)
-      expect(result).not.toContain('javascript:')
+      // The entire tag structure should be escaped, making it safe
+      // The < and > are escaped, so the browser won't parse it as HTML
+      expect(result).toContain('&lt;a')
+      expect(result).toContain('href&#x3D;')
+      expect(result).toContain('Link')
+      // Verify the tag is not executable (< is escaped)
+      expect(result).not.toContain('<a')
     })
 
-    it('should remove style tags', () => {
+    it('should escape style tags', () => {
       const input = '<p>Text</p><style>body { display: none; }</style>'
       const result = sanitizer.sanitizeHTML(input)
-      expect(result).not.toContain('<style')
-      expect(result).not.toContain('display: none')
+      // Style tags should be escaped
+      expect(result).toContain('&lt;style&gt;')
+      expect(result).toContain('Text')
     })
 
-    it('should remove inline styles', () => {
+    it('should escape inline styles', () => {
       const input = '<div style="display:none">Hidden</div>'
       const result = sanitizer.sanitizeHTML(input)
-      expect(result).not.toContain('style=')
+      // Style attribute should be escaped
+      expect(result).toContain('style&#x3D;')
+      expect(result).toContain('Hidden')
     })
 
-    it('should remove iframe tags', () => {
+    it('should escape iframe tags', () => {
       const input = '<p>Text</p><iframe src="evil.com"></iframe>'
       const result = sanitizer.sanitizeHTML(input)
-      expect(result).not.toContain('<iframe')
-      expect(result).not.toContain('evil.com')
+      // iframe should be escaped
+      expect(result).toContain('&lt;iframe')
+      expect(result).toContain('Text')
     })
 
-    it('should preserve allowed tags', () => {
+    it('should escape all HTML tags', () => {
       const input = '<p>Hello <strong>World</strong></p>'
       const result = sanitizer.sanitizeHTML(input)
-      expect(result).toContain('<p>')
-      expect(result).toContain('<strong>')
+      // All tags should be escaped
+      expect(result).toContain('&lt;p&gt;')
+      expect(result).toContain('&lt;strong&gt;')
       expect(result).toContain('Hello')
       expect(result).toContain('World')
     })
 
-    it('should preserve allowed attributes', () => {
+    it('should escape attributes', () => {
       const input = '<a href="https://example.com" title="Example">Link</a>'
       const result = sanitizer.sanitizeHTML(input)
-      expect(result).toContain('href=')
-      expect(result).toContain('https://example.com')
-      expect(result).toContain('title=')
-    })
-
-    it('should strip all tags when stripTags option is true', () => {
-      const input = '<p>Hello <strong>World</strong></p>'
-      const result = sanitizer.sanitizeHTML(input, { stripTags: true })
-      expect(result).not.toContain('<')
-      expect(result).not.toContain('>')
-      expect(result).toBe('Hello World')
+      // Attributes should be escaped
+      expect(result).toContain('href&#x3D;')
+      expect(result).toContain('Link')
     })
 
     it('should truncate long input', () => {
@@ -91,16 +99,17 @@ describe('InputSanitizer', () => {
       expect(sanitizer.sanitizeHTML(undefined as unknown as string)).toBe('')
     })
 
-    it('should escape HTML when escapeHtml option is true', () => {
-      const input = '<p>Test & "quotes"</p>'
-      const result = sanitizer.sanitizeHTML(input, { escapeHtml: true })
+    it('should escape special characters', () => {
+      const input = '<p>Test & "quotes" \'apostrophe\'</p>'
+      const result = sanitizer.sanitizeHTML(input)
       expect(result).toContain('&lt;')
       expect(result).toContain('&gt;')
       expect(result).toContain('&amp;')
       expect(result).toContain('&quot;')
+      expect(result).toContain('&#x27;')
     })
 
-    it('should remove multiple XSS vectors in one input', () => {
+    it('should escape multiple XSS vectors in one input', () => {
       const input = `
         <script>alert('XSS')</script>
         <img src="x" onerror="alert('XSS')">
@@ -109,10 +118,16 @@ describe('InputSanitizer', () => {
         <iframe src="evil.com"></iframe>
       `
       const result = sanitizer.sanitizeHTML(input)
+      // All dangerous content should be escaped - tags become text
+      expect(result).toContain('&lt;script')
+      expect(result).toContain('onerror&#x3D;')
+      expect(result).toContain('onclick&#x3D;')
+      expect(result).toContain('&lt;iframe')
+      // Verify no actual HTML tags remain (< is escaped)
       expect(result).not.toContain('<script')
-      expect(result).not.toContain('onerror')
-      expect(result).not.toContain('javascript:')
-      expect(result).not.toContain('onclick')
+      expect(result).not.toContain('<img')
+      expect(result).not.toContain('<a ')
+      expect(result).not.toContain('<div')
       expect(result).not.toContain('<iframe')
     })
   })
@@ -122,13 +137,13 @@ describe('InputSanitizer', () => {
       const input = 'Hello\0World'
       const result = sanitizer.sanitizeText(input)
       expect(result).not.toContain('\0')
-      expect(result).toBe('Hello World')
+      expect(result).toBe('HelloWorld')
     })
 
     it('should remove control characters', () => {
       const input = 'Hello\x01\x02\x03World'
       const result = sanitizer.sanitizeText(input)
-      expect(result).toBe('Hello World')
+      expect(result).toBe('HelloWorld')
     })
 
     it('should normalize whitespace', () => {
@@ -320,14 +335,15 @@ describe('InputSanitizer', () => {
     it('should export sanitizeHTML convenience function', () => {
       const input = '<script>alert("XSS")</script><p>Safe</p>'
       const result = sanitizeHTML(input)
-      expect(result).not.toContain('<script')
+      // Script should be escaped
+      expect(result).toContain('&lt;script')
       expect(result).toContain('Safe')
     })
 
     it('should export sanitizeText convenience function', () => {
       const input = 'Hello\0World'
       const result = sanitizeText(input)
-      expect(result).toBe('Hello World')
+      expect(result).toBe('HelloWorld')
     })
 
     it('should export validateInput convenience function', () => {

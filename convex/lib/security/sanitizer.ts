@@ -4,6 +4,10 @@
  * Provides HTML sanitization and input validation to prevent XSS attacks
  * and ensure data integrity.
  *
+ * SECURITY NOTE: This implementation uses HTML entity encoding as the primary
+ * defense against XSS attacks. Regex-based HTML filtering is fundamentally
+ * insecure and should not be used for security-critical sanitization.
+ *
  * Requirements: 1.3, 1.8
  */
 
@@ -15,6 +19,28 @@ import type {
   ValidationError,
   ValidationSchema,
 } from './types'
+
+/**
+ * HTML entity map for escaping dangerous characters
+ */
+const HTML_ESCAPE_MAP: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#x27;',
+  '/': '&#x2F;',
+  '`': '&#x60;',
+  '=': '&#x3D;',
+}
+
+/**
+ * Escape HTML entities - the ONLY secure way to handle untrusted HTML
+ * This converts all potentially dangerous characters to their HTML entity equivalents
+ */
+function escapeHtmlEntities(text: string): string {
+  return text.replace(/[&<>"'`=/]/g, (char) => HTML_ESCAPE_MAP[char] || char)
+}
 
 /**
  * InputSanitizer class
@@ -40,94 +66,27 @@ export class InputSanitizer {
   /**
    * Sanitize HTML content to prevent XSS attacks
    *
-   * Removes or escapes potentially dangerous HTML elements and attributes
-   * while preserving safe formatting.
+   * SECURITY: This method escapes ALL HTML by default. The allowedTags option
+   * only works when combined with a proper HTML parser on the client side.
+   * For server-side sanitization, all HTML is escaped to prevent XSS.
    *
    * @param input - Raw HTML string from user
    * @param options - Optional sanitization options
-   * @returns Sanitized HTML string
+   * @returns Sanitized string with HTML entities escaped
    */
   sanitizeHTML(input: string, options: SanitizationOptions = {}): string {
     if (!input || typeof input !== 'string') {
       return ''
     }
 
-    const allowedTags = options.allowedTags || this.config.allowedTags
-    const allowedAttributes = options.allowedAttributes || this.config.allowedAttributes
     const maxLength = options.maxLength || this.config.maxLength
 
     // Truncate if too long
     let sanitized = input.slice(0, maxLength)
 
-    // Remove script tags and their content (loop until no more matches)
-    let prevLength: number
-    do {
-      prevLength = sanitized.length
-      sanitized = sanitized.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    } while (sanitized.length !== prevLength)
-
-    // Remove event handlers (onclick, onerror, etc.) - loop until no more matches
-    do {
-      prevLength = sanitized.length
-      sanitized = sanitized.replace(/\s*on\w+\s*=\s*["'][^"']*["']/gi, '')
-      sanitized = sanitized.replace(/\s*on\w+\s*=\s*[^\s>]*/gi, '')
-    } while (sanitized.length !== prevLength)
-
-    // Remove javascript: protocol (loop until no more matches)
-    do {
-      prevLength = sanitized.length
-      sanitized = sanitized.replace(/javascript:/gi, '')
-    } while (sanitized.length !== prevLength)
-
-    // Remove data: protocol (except for images if explicitly allowed)
-    if (!allowedTags.includes('img')) {
-      do {
-        prevLength = sanitized.length
-        sanitized = sanitized.replace(/data:/gi, '')
-      } while (sanitized.length !== prevLength)
-    }
-
-    // Remove vbscript: protocol (loop until no more matches)
-    do {
-      prevLength = sanitized.length
-      sanitized = sanitized.replace(/vbscript:/gi, '')
-    } while (sanitized.length !== prevLength)
-
-    // Remove style tags and their content (loop until no more matches)
-    do {
-      prevLength = sanitized.length
-      sanitized = sanitized.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
-    } while (sanitized.length !== prevLength)
-
-    // Remove inline styles (loop until no more matches)
-    do {
-      prevLength = sanitized.length
-      sanitized = sanitized.replace(/\s*style\s*=\s*["'][^"']*["']/gi, '')
-    } while (sanitized.length !== prevLength)
-
-    // Remove iframe, object, embed tags (loop until no more matches)
-    do {
-      prevLength = sanitized.length
-      sanitized = sanitized.replace(
-        /<(iframe|object|embed|applet|meta|link|base)\b[^<]*(?:(?!<\/\1>)<[^<]*)*<\/\1>/gi,
-        ''
-      )
-      sanitized = sanitized.replace(/<(iframe|object|embed|applet|meta|link|base)[^>]*>/gi, '')
-    } while (sanitized.length !== prevLength)
-
-    // Filter tags - remove tags not in allowedTags
-    if (options.stripTags || allowedTags.length === 0) {
-      // Strip all HTML tags
-      sanitized = sanitized.replace(/<[^>]*>/g, '')
-    } else {
-      // Remove disallowed tags but keep their content
-      sanitized = this.filterTags(sanitized, allowedTags, allowedAttributes)
-    }
-
-    // Escape any remaining HTML entities if escapeHtml option is set
-    if (options.escapeHtml) {
-      sanitized = this.escapeHTML(sanitized)
-    }
+    // SECURITY: Always escape HTML entities - this is the only secure approach
+    // Regex-based filtering is fundamentally insecure and can be bypassed
+    sanitized = escapeHtmlEntities(sanitized)
 
     return sanitized.trim()
   }
@@ -148,15 +107,15 @@ export class InputSanitizer {
 
     const limit = maxLength || this.config.maxLength
 
-    // Remove null bytes and replace with space
-    let sanitized = input.replace(/\0/g, ' ')
+    // Remove null bytes
+    let sanitized = input.replace(/\0/g, '')
 
-    // Remove other control characters except newlines and tabs, replace with space
+    // Remove other control characters except newlines and tabs
     // eslint-disable-next-line no-control-regex
-    sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ')
+    sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
 
-    // Normalize whitespace (collapse multiple spaces)
-    sanitized = sanitized.replace(/\s+/g, ' ')
+    // Normalize whitespace (collapse multiple spaces, but preserve newlines)
+    sanitized = sanitized.replace(/[^\S\n]+/g, ' ')
 
     // Truncate if too long
     sanitized = sanitized.slice(0, limit)
@@ -324,118 +283,6 @@ export class InputSanitizer {
       valid: errors.length === 0,
       errors,
     }
-  }
-
-  /**
-   * Filter HTML tags and attributes
-   *
-   * @param html - HTML string
-   * @param allowedTags - List of allowed tag names
-   * @param allowedAttributes - Map of tag names to allowed attributes
-   * @returns Filtered HTML string
-   */
-  private filterTags(
-    html: string,
-    allowedTags: string[],
-    allowedAttributes: Record<string, string[]>
-  ): string {
-    // Simple tag filtering using regex
-    // This is a basic implementation - for production, consider using a proper HTML parser
-
-    return html.replace(/<\/?([a-z][a-z0-9]*)\b([^>]*)>/gi, (match, tagName, attributes) => {
-      const tag = tagName.toLowerCase()
-
-      // Check if tag is allowed
-      if (!allowedTags.includes(tag)) {
-        return '' // Remove disallowed tags
-      }
-
-      // Filter attributes
-      const allowedAttrs = allowedAttributes[tag] || []
-      if (allowedAttrs.length === 0 && attributes.trim()) {
-        // No attributes allowed for this tag
-        return match.startsWith('</') ? `</${tag}>` : `<${tag}>`
-      }
-
-      // Parse and filter attributes
-      const filteredAttrs = this.filterAttributes(attributes, allowedAttrs)
-
-      if (match.startsWith('</')) {
-        return `</${tag}>`
-      }
-
-      return filteredAttrs ? `<${tag} ${filteredAttrs}>` : `<${tag}>`
-    })
-  }
-
-  /**
-   * Filter HTML attributes
-   *
-   * @param attributes - Attribute string from HTML tag
-   * @param allowedAttributes - List of allowed attribute names
-   * @returns Filtered attribute string
-   */
-  private filterAttributes(attributes: string, allowedAttributes: string[]): string {
-    if (!attributes || allowedAttributes.length === 0) {
-      return ''
-    }
-
-    // Parse attributes (simple regex-based approach)
-    const attrRegex = /([a-z][a-z0-9-]*)\s*=\s*["']([^"']*)["']/gi
-    const filtered: string[] = []
-    let match
-
-    while ((match = attrRegex.exec(attributes)) !== null) {
-      const [, attrName, attrValue] = match
-
-      if (allowedAttributes.includes(attrName.toLowerCase())) {
-        // Additional validation for href attributes
-        if (attrName.toLowerCase() === 'href') {
-          // Only allow http, https, and mailto protocols
-          if (/^(https?:\/\/|mailto:)/i.test(attrValue)) {
-            filtered.push(`${attrName}="${this.escapeAttribute(attrValue)}"`)
-          }
-        } else {
-          filtered.push(`${attrName}="${this.escapeAttribute(attrValue)}"`)
-        }
-      }
-    }
-
-    return filtered.join(' ')
-  }
-
-  /**
-   * Escape HTML entities
-   *
-   * @param text - Text to escape
-   * @returns Escaped text
-   */
-  private escapeHTML(text: string): string {
-    const escapeMap: Record<string, string> = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#x27;',
-      '/': '&#x2F;',
-    }
-
-    return text.replace(/[&<>"'/]/g, (char) => escapeMap[char] || char)
-  }
-
-  /**
-   * Escape HTML attribute value
-   *
-   * @param value - Attribute value to escape
-   * @returns Escaped attribute value
-   */
-  private escapeAttribute(value: string): string {
-    return value
-      .replace(/&/g, '&amp;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#x27;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
   }
 }
 

@@ -1496,7 +1496,8 @@ function extractPaymentErrorDetails(error: unknown): PaymentErrorDetails {
     const err = error as Record<string, unknown>
 
     // Stripe errors have a specific structure
-    if ('type' in err && err.type === 'StripeCardError') {
+    // Ensure type is a string before comparing
+    if ('type' in err && typeof err.type === 'string' && err.type === 'StripeCardError') {
       return {
         code: err.code as string | undefined,
         declineCode: err.decline_code as string | undefined,

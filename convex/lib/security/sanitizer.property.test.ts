@@ -4,6 +4,10 @@
  * Property-based tests using fast-check to verify sanitization
  * works correctly across all possible inputs.
  *
+ * SECURITY NOTE: The sanitizer uses HTML entity encoding as the primary
+ * defense against XSS attacks. All HTML is escaped (< becomes &lt;, etc.),
+ * making tags non-executable rather than removing them.
+ *
  * Feature: production-readiness
  */
 
@@ -19,83 +23,91 @@ describe('InputSanitizer Property Tests', () => {
    * Validates: Requirements 1.3
    *
    * For any user-generated content that is rendered in the UI,
-   * the system should sanitize the content to remove or escape
-   * potentially malicious scripts.
+   * the system should sanitize the content by escaping HTML entities,
+   * making potentially malicious scripts non-executable.
    */
   describe('Property 2: XSS Prevention Through Sanitization', () => {
-    it('should remove all script tags from any input', () => {
+    it('should escape all script tags from any input (< becomes &lt;)', () => {
       fc.assert(
         fc.property(fc.string(), fc.string(), (before, after) => {
           const input = `${before}<script>alert('XSS')</script>${after}`
           const result = sanitizer.sanitizeHTML(input)
 
-          // Verify no script tags remain
+          // Verify script tags are escaped (not executable)
+          // The < character should be escaped to &lt;
           expect(result).not.toMatch(/<script/i)
-          expect(result).not.toMatch(/<\/script>/i)
+          expect(result).toContain('&lt;script')
         }),
         { numRuns: 100 }
       )
     })
 
-    it('should remove javascript: protocol from any input', () => {
-      fc.assert(
-        fc.property(fc.string(), fc.string(), (linkText, rest) => {
-          const input = `<a href="javascript:alert('XSS')">${linkText}</a>${rest}`
-          const result = sanitizer.sanitizeHTML(input)
-
-          // Verify javascript: protocol is removed
-          expect(result).not.toMatch(/javascript:/i)
-        }),
-        { numRuns: 100 }
-      )
-    })
-
-    it('should remove all event handlers from any input', () => {
+    it('should escape all HTML tags making them non-executable', () => {
       fc.assert(
         fc.property(
-          fc.constantFrom('onclick', 'onerror', 'onload', 'onmouseover', 'onfocus'),
+          fc.constantFrom('div', 'span', 'a', 'img', 'iframe', 'script', 'style'),
           fc.string(),
-          fc.string(),
-          (eventHandler, content, rest) => {
-            const input = `<div ${eventHandler}="alert('XSS')">${content}</div>${rest}`
+          (tagName, content) => {
+            const input = `<${tagName}>${content}</${tagName}>`
             const result = sanitizer.sanitizeHTML(input)
 
-            // Verify event handler is removed
-            expect(result).not.toMatch(new RegExp(eventHandler, 'i'))
+            // Verify the opening < is escaped
+            expect(result).not.toContain(`<${tagName}`)
+            expect(result).toContain(`&lt;${tagName}`)
           }
         ),
         { numRuns: 100 }
       )
     })
 
-    it('should remove style tags from any input', () => {
+    it('should escape event handlers making them non-executable', () => {
+      fc.assert(
+        fc.property(
+          fc.constantFrom('onclick', 'onerror', 'onload', 'onmouseover', 'onfocus'),
+          fc.string(),
+          (eventHandler, content) => {
+            const input = `<div ${eventHandler}="alert('XSS')">${content}</div>`
+            const result = sanitizer.sanitizeHTML(input)
+
+            // The tag structure is escaped, making the event handler harmless
+            // The < is escaped to &lt;, so the browser won't parse it as HTML
+            expect(result).not.toContain('<div')
+            expect(result).toContain('&lt;div')
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
+
+    it('should escape style tags from any input', () => {
       fc.assert(
         fc.property(fc.string(), fc.string(), (before, after) => {
           const input = `${before}<style>body { display: none; }</style>${after}`
           const result = sanitizer.sanitizeHTML(input)
 
-          // Verify style tags are removed
+          // Verify style tags are escaped
           expect(result).not.toMatch(/<style/i)
-          expect(result).not.toMatch(/<\/style>/i)
+          expect(result).toContain('&lt;style')
         }),
         { numRuns: 100 }
       )
     })
 
-    it('should remove iframe tags from any input', () => {
+    it('should escape iframe tags from any input', () => {
       fc.assert(
         fc.property(fc.string(), fc.webUrl(), fc.string(), (before, url, after) => {
           const input = `${before}<iframe src="${url}"></iframe>${after}`
           const result = sanitizer.sanitizeHTML(input)
 
-          // Verify iframe tags are removed
+          // Verify iframe tags are escaped
           expect(result).not.toMatch(/<iframe/i)
+          expect(result).toContain('&lt;iframe')
         }),
         { numRuns: 100 }
       )
     })
 
-    it('should remove object and embed tags from any input', () => {
+    it('should escape object and embed tags from any input', () => {
       fc.assert(
         fc.property(
           fc.constantFrom('object', 'embed', 'applet'),
@@ -104,15 +116,16 @@ describe('InputSanitizer Property Tests', () => {
             const input = `<${tagName}>${content}</${tagName}>`
             const result = sanitizer.sanitizeHTML(input)
 
-            // Verify dangerous tags are removed
+            // Verify dangerous tags are escaped
             expect(result).not.toMatch(new RegExp(`<${tagName}`, 'i'))
+            expect(result).toContain(`&lt;${tagName}`)
           }
         ),
         { numRuns: 100 }
       )
     })
 
-    it('should handle multiple XSS vectors in any combination', () => {
+    it('should escape multiple XSS vectors in any combination', () => {
       fc.assert(
         fc.property(fc.string(), fc.string(), fc.string(), (text1, text2, text3) => {
           const input = `
@@ -126,28 +139,42 @@ describe('InputSanitizer Property Tests', () => {
             `
           const result = sanitizer.sanitizeHTML(input)
 
-          // Verify all XSS vectors are removed
+          // Verify all HTML tags are escaped (< becomes &lt;)
           expect(result).not.toMatch(/<script/i)
-          expect(result).not.toMatch(/onerror/i)
-          expect(result).not.toMatch(/javascript:/i)
+          expect(result).not.toMatch(/<img/i)
+          expect(result).not.toMatch(/<a /i)
           expect(result).not.toMatch(/<iframe/i)
         }),
         { numRuns: 100 }
       )
     })
 
-    it('should preserve safe content while removing XSS vectors', () => {
+    it('should preserve text content while escaping HTML structure', () => {
       fc.assert(
         fc.property(
-          fc.string({ minLength: 1 }).filter((s) => !s.includes('<') && !s.includes('>')),
+          // Filter out characters that get escaped: < > & " ' ` = /
+          fc
+            .string({ minLength: 1 })
+            .filter(
+              (s) =>
+                !s.includes('<') &&
+                !s.includes('>') &&
+                !s.includes('&') &&
+                !s.includes('"') &&
+                !s.includes("'") &&
+                !s.includes('`') &&
+                !s.includes('=') &&
+                !s.includes('/')
+            ),
           (safeContent) => {
             const input = `<p>${safeContent}</p><script>alert('XSS')</script>`
             const result = sanitizer.sanitizeHTML(input)
 
-            // Verify safe content is preserved (content without HTML tags)
+            // Verify safe text content is preserved (alphanumeric and safe chars)
             expect(result).toContain(safeContent)
-            // Verify XSS is removed
+            // Verify HTML tags are escaped
             expect(result).not.toMatch(/<script/i)
+            expect(result).not.toMatch(/<p>/i)
           }
         ),
         { numRuns: 100 }
@@ -160,8 +187,9 @@ describe('InputSanitizer Property Tests', () => {
           const input = `<div><script><script>alert('XSS')</script></script></div>${content}`
           const result = sanitizer.sanitizeHTML(input)
 
-          // Verify nested scripts are removed
+          // Verify nested scripts are escaped
           expect(result).not.toMatch(/<script/i)
+          expect(result).toContain('&lt;script')
         }),
         { numRuns: 100 }
       )
@@ -187,7 +215,7 @@ describe('InputSanitizer Property Tests', () => {
           const input = `${longString}<script>alert('XSS')</script>`
           const result = sanitizer.sanitizeHTML(input)
 
-          // Verify XSS is removed even in long strings
+          // Verify XSS is escaped even in long strings
           expect(result).not.toMatch(/<script/i)
           // Verify result is truncated to max length
           expect(result.length).toBeLessThanOrEqual(10000)
@@ -196,28 +224,20 @@ describe('InputSanitizer Property Tests', () => {
       )
     })
 
-    it('should remove vbscript: protocol from any input', () => {
+    it('should escape all dangerous protocols in href attributes', () => {
       fc.assert(
-        fc.property(fc.string(), (content) => {
-          const input = `<a href="vbscript:msgbox('XSS')">${content}</a>`
-          const result = sanitizer.sanitizeHTML(input)
+        fc.property(
+          fc.constantFrom('javascript:', 'vbscript:', 'data:text/html'),
+          fc.string(),
+          (protocol, content) => {
+            const input = `<a href="${protocol}alert('XSS')">${content}</a>`
+            const result = sanitizer.sanitizeHTML(input)
 
-          // Verify vbscript: protocol is removed
-          expect(result).not.toMatch(/vbscript:/i)
-        }),
-        { numRuns: 100 }
-      )
-    })
-
-    it('should remove data: protocol (except for allowed images)', () => {
-      fc.assert(
-        fc.property(fc.string(), (content) => {
-          const input = `<object data="data:text/html,<script>alert('XSS')</script>">${content}</object>`
-          const result = sanitizer.sanitizeHTML(input)
-
-          // Verify object tag is removed
-          expect(result).not.toMatch(/<object/i)
-        }),
+            // The entire tag is escaped, making the protocol harmless
+            expect(result).not.toContain('<a ')
+            expect(result).toContain('&lt;a')
+          }
+        ),
         { numRuns: 100 }
       )
     })
@@ -231,9 +251,8 @@ describe('InputSanitizer Property Tests', () => {
             const input = `<${scriptCase}>alert('XSS')</${scriptCase}>${content}`
             const result = sanitizer.sanitizeHTML(input)
 
-            // Verify script tags are removed regardless of case
+            // Verify script tags are escaped regardless of case
             expect(result).not.toMatch(/<script/i)
-            expect(result).not.toMatch(/<\/script>/i)
           }
         ),
         { numRuns: 100 }
@@ -248,8 +267,23 @@ describe('InputSanitizer Property Tests', () => {
 
           // Should handle malformed HTML without crashing
           expect(typeof result).toBe('string')
-          // Should still remove script tags
+          // Should still escape script tags
           expect(result).not.toMatch(/<script/i)
+        }),
+        { numRuns: 100 }
+      )
+    })
+
+    it('should escape special HTML characters', () => {
+      fc.assert(
+        fc.property(fc.string(), (content) => {
+          const input = `<div>${content}</div>`
+          const result = sanitizer.sanitizeHTML(input)
+
+          // All < and > should be escaped
+          expect(result).not.toContain('<div>')
+          expect(result).not.toContain('</div>')
+          expect(result).toContain('&lt;div&gt;')
         }),
         { numRuns: 100 }
       )
