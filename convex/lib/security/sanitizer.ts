@@ -59,36 +59,61 @@ export class InputSanitizer {
     // Truncate if too long
     let sanitized = input.slice(0, maxLength)
 
-    // Remove script tags and their content
-    sanitized = sanitized.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    // Remove script tags and their content (loop until no more matches)
+    let prevLength: number
+    do {
+      prevLength = sanitized.length
+      sanitized = sanitized.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    } while (sanitized.length !== prevLength)
 
-    // Remove event handlers (onclick, onerror, etc.)
-    sanitized = sanitized.replace(/\s*on\w+\s*=\s*["'][^"']*["']/gi, '')
-    sanitized = sanitized.replace(/\s*on\w+\s*=\s*[^\s>]*/gi, '')
+    // Remove event handlers (onclick, onerror, etc.) - loop until no more matches
+    do {
+      prevLength = sanitized.length
+      sanitized = sanitized.replace(/\s*on\w+\s*=\s*["'][^"']*["']/gi, '')
+      sanitized = sanitized.replace(/\s*on\w+\s*=\s*[^\s>]*/gi, '')
+    } while (sanitized.length !== prevLength)
 
-    // Remove javascript: protocol
-    sanitized = sanitized.replace(/javascript:/gi, '')
+    // Remove javascript: protocol (loop until no more matches)
+    do {
+      prevLength = sanitized.length
+      sanitized = sanitized.replace(/javascript:/gi, '')
+    } while (sanitized.length !== prevLength)
 
     // Remove data: protocol (except for images if explicitly allowed)
     if (!allowedTags.includes('img')) {
-      sanitized = sanitized.replace(/data:/gi, '')
+      do {
+        prevLength = sanitized.length
+        sanitized = sanitized.replace(/data:/gi, '')
+      } while (sanitized.length !== prevLength)
     }
 
-    // Remove vbscript: protocol
-    sanitized = sanitized.replace(/vbscript:/gi, '')
+    // Remove vbscript: protocol (loop until no more matches)
+    do {
+      prevLength = sanitized.length
+      sanitized = sanitized.replace(/vbscript:/gi, '')
+    } while (sanitized.length !== prevLength)
 
-    // Remove style tags and their content
-    sanitized = sanitized.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+    // Remove style tags and their content (loop until no more matches)
+    do {
+      prevLength = sanitized.length
+      sanitized = sanitized.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+    } while (sanitized.length !== prevLength)
 
-    // Remove inline styles
-    sanitized = sanitized.replace(/\s*style\s*=\s*["'][^"']*["']/gi, '')
+    // Remove inline styles (loop until no more matches)
+    do {
+      prevLength = sanitized.length
+      sanitized = sanitized.replace(/\s*style\s*=\s*["'][^"']*["']/gi, '')
+    } while (sanitized.length !== prevLength)
 
-    // Remove iframe, object, embed tags
-    sanitized = sanitized.replace(
-      /<(iframe|object|embed|applet|meta|link|base)\b[^<]*(?:(?!<\/\1>)<[^<]*)*<\/\1>/gi,
-      ''
-    )
-    sanitized = sanitized.replace(/<(iframe|object|embed|applet|meta|link|base)[^>]*>/gi, '')
+    // Remove iframe, object, embed tags (loop until no more matches)
+    do {
+      prevLength = sanitized.length
+      sanitized = sanitized.replace(
+        /<(iframe|object|embed|applet|meta|link|base)\b[^<]*(?:(?!<\/\1>)<[^<]*)*<\/\1>/gi,
+        ''
+      )
+      sanitized = sanitized.replace(/<(iframe|object|embed|applet|meta|link|base)[^>]*>/gi, '')
+    } while (sanitized.length !== prevLength)
 
     // Filter tags - remove tags not in allowedTags
     if (options.stripTags || allowedTags.length === 0) {

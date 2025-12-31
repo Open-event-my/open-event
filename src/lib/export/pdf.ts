@@ -461,8 +461,7 @@ export function generateAnalyticsPDF(
 
   // Engagement section
   if (sections.includes('engagement') && data.engagement) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- yPos updated for future sections
-    yPos = addEngagementSection(doc, data.engagement, yPos)
+    addEngagementSection(doc, data.engagement, yPos)
   }
 
   // Footer on each page

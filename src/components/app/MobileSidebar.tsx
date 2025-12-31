@@ -58,7 +58,7 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
           'fixed inset-y-0 left-0 z-50 w-[280px] sm:w-72 bg-sidebar border-r border-border lg:hidden',
           'transform transition-transform duration-300 ease-out',
           'safe-area-top safe-area-bottom',
-          open ? 'translate-x-0' : '-translate-x-full'
+          'translate-x-0'
         )}
       >
         {/* Header */}

@@ -39,9 +39,11 @@ export const TFA_CONFIG = {
  */
 function generateSecureRandom(length: number): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567' // Base32 alphabet
+  const randomValues = new Uint32Array(length)
+  crypto.getRandomValues(randomValues)
   let result = ''
   for (let i = 0; i < length; i++) {
-    result += chars[Math.floor(Math.random() * chars.length)]
+    result += chars[randomValues[i] % chars.length]
   }
   return result
 }
@@ -54,9 +56,11 @@ function generateBackupCodes(): string[] {
   const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
   for (let i = 0; i < TFA_CONFIG.BACKUP_CODE_COUNT; i++) {
+    const randomValues = new Uint32Array(TFA_CONFIG.BACKUP_CODE_LENGTH)
+    crypto.getRandomValues(randomValues)
     let code = ''
     for (let j = 0; j < TFA_CONFIG.BACKUP_CODE_LENGTH; j++) {
-      code += chars[Math.floor(Math.random() * chars.length)]
+      code += chars[randomValues[j] % chars.length]
     }
     // Format as XXXX-XXXX for readability
     codes.push(`${code.slice(0, 4)}-${code.slice(4)}`)

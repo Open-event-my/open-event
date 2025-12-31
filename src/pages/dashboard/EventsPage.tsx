@@ -252,7 +252,9 @@ export function EventsPage() {
                       />
                     )}
                     <span className="hidden sm:inline">{filter.label}</span>
-                    <span className="sm:hidden">{filter.label.split(' ')[0]}</span>
+                    <span className="sm:hidden">
+                      {filter.label.includes(' ') ? filter.label.split(' ')[0] : filter.label}
+                    </span>
                     <span
                       className={cn(
                         'px-1 sm:px-1.5 py-0.5 rounded text-[10px] sm:text-xs font-semibold min-w-[1rem] sm:min-w-[1.25rem] text-center',

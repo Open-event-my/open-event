@@ -219,8 +219,8 @@ export function wouldBeCached(url: string): {
     return { cached: true, cacheName: CACHE_NAMES.CONVEX_API, strategy: 'NetworkFirst' }
   }
 
-  // Stripe API - never cached
-  if (/^https:\/\/.*\.stripe\.com\/.*/i.test(url)) {
+  // Stripe API - never cached (match stripe.com and all subdomains)
+  if (/^https:\/\/([a-z0-9-]+\.)*stripe\.com(\/.*)?$/i.test(url)) {
     return { cached: false }
   }
 
