@@ -3,7 +3,7 @@
  *
  * Provides utilities to anonymize PII from analytics data to ensure GDPR compliance.
  * Hashes or removes personally identifiable information while preserving analytical value.
- * 
+ *
  * Note: This file uses pure JavaScript hashing instead of Node.js crypto
  * to be compatible with Convex's edge runtime.
  */
@@ -57,7 +57,7 @@ export function hashValue(value: string | undefined | null): string | undefined 
   const str = value.toLowerCase().trim()
   let hash = 5381
   for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) + hash) + str.charCodeAt(i)
+    hash = (hash << 5) + hash + str.charCodeAt(i)
     hash = hash & hash // Convert to 32bit integer
   }
   // Convert to hex string and ensure positive
@@ -77,7 +77,7 @@ export function anonymizeEmail(email: string | undefined | null): {
   }
 
   const trimmedEmail = email.toLowerCase().trim()
-  const [_localPart, domain] = trimmedEmail.split('@')
+  const [, domain] = trimmedEmail.split('@')
 
   return {
     emailHash: hashValue(trimmedEmail),
@@ -184,7 +184,16 @@ export function anonymizePII(pii: PIIFields): AnonymizedFields & {
  */
 export function removePII<T extends Record<string, unknown>>(
   obj: T,
-  piiFields: string[] = ['email', 'name', 'phone', 'ipAddress', 'contactEmail', 'contactName', 'contactPhone', 'userAgent']
+  piiFields: string[] = [
+    'email',
+    'name',
+    'phone',
+    'ipAddress',
+    'contactEmail',
+    'contactName',
+    'contactPhone',
+    'userAgent',
+  ]
 ): Omit<T, keyof PIIFields> {
   const result = { ...obj }
 

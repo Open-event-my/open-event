@@ -4,7 +4,7 @@
  * This is a stub implementation that provides no-op functions.
  * Sentry integration for Convex backend requires Node.js runtime
  * which is only available in Convex actions with "use node" directive.
- * 
+ *
  * For production error tracking, use the frontend Sentry integration
  * or create a dedicated action file with "use node" for server-side tracking.
  */
@@ -23,10 +23,7 @@ export function initSentry() {
 /**
  * Capture an error (no-op in edge runtime)
  */
-export function captureError(
-  error: Error,
-  context?: Record<string, unknown>
-): void {
+export function captureError(error: Error, context?: Record<string, unknown>): void {
   // Log to console instead of Sentry in edge runtime
   console.error('[Sentry Backend] Error captured:', error.message, context)
 }
@@ -45,7 +42,7 @@ export function captureMessage(
  * Set user context (no-op in edge runtime)
  */
 export function setUser(_user: { id: string; email?: string } | null): void {
-  // No-op in edge runtime
+  void _user // Intentionally unused - no-op in edge runtime
 }
 
 /**
@@ -57,5 +54,5 @@ export function addBreadcrumb(_breadcrumb: {
   level?: 'info' | 'warning' | 'error'
   data?: Record<string, unknown>
 }): void {
-  // No-op in edge runtime
+  void _breadcrumb // Intentionally unused - no-op in edge runtime
 }

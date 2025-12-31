@@ -97,11 +97,12 @@ export function AdminOrganizations() {
   const { execute, isLoading } = useAsyncAction()
 
   const filteredOrgs = useMemo(() => {
-    if (!orgsData?.items) return []
-    if (!searchQuery.trim()) return orgsData.items
+    const items = orgsData?.items
+    if (!items) return []
+    if (!searchQuery.trim()) return items
 
     const search = searchQuery.toLowerCase()
-    return orgsData.items.filter(
+    return items.filter(
       (org) =>
         org.name.toLowerCase().includes(search) ||
         org.slug.toLowerCase().includes(search) ||
@@ -149,9 +150,7 @@ export function AdminOrganizations() {
           <Buildings size={28} weight="duotone" className="text-primary" />
           Organizations
         </h1>
-        <p className="text-muted-foreground mt-1">
-          Manage all organizations on the platform
-        </p>
+        <p className="text-muted-foreground mt-1">Manage all organizations on the platform</p>
       </div>
 
       {/* Stats Cards */}
@@ -228,9 +227,7 @@ export function AdminOrganizations() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setStatusFilter('all')}>
-              All Status
-            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setStatusFilter('all')}>All Status</DropdownMenuItem>
             <DropdownMenuItem onClick={() => setStatusFilter('active')}>
               <CheckCircle size={14} className="mr-2 text-green-600" />
               Active
@@ -298,9 +295,7 @@ export function AdminOrganizations() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <Badge className={cn(plan.bg, plan.text, 'border-0')}>
-                        {plan.label}
-                      </Badge>
+                      <Badge className={cn(plan.bg, plan.text, 'border-0')}>{plan.label}</Badge>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5 text-sm">
@@ -315,7 +310,13 @@ export function AdminOrganizations() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className={cn('inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium', status.bg, status.text)}>
+                      <div
+                        className={cn(
+                          'inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium',
+                          status.bg,
+                          status.text
+                        )}
+                      >
                         <StatusIcon size={12} weight="fill" />
                         {status.label}
                       </div>
@@ -470,7 +471,13 @@ export function AdminOrganizations() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Plan</p>
-                  <Badge className={cn(planConfig[orgDetails.plan]?.bg, planConfig[orgDetails.plan]?.text, 'border-0')}>
+                  <Badge
+                    className={cn(
+                      planConfig[orgDetails.plan]?.bg,
+                      planConfig[orgDetails.plan]?.text,
+                      'border-0'
+                    )}
+                  >
                     {planConfig[orgDetails.plan]?.label || orgDetails.plan}
                   </Badge>
                 </div>
@@ -480,7 +487,13 @@ export function AdminOrganizations() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Status</p>
-                  <Badge className={cn(statusConfig[orgDetails.status as OrgStatus]?.bg, statusConfig[orgDetails.status as OrgStatus]?.text, 'border-0')}>
+                  <Badge
+                    className={cn(
+                      statusConfig[orgDetails.status as OrgStatus]?.bg,
+                      statusConfig[orgDetails.status as OrgStatus]?.text,
+                      'border-0'
+                    )}
+                  >
                     {statusConfig[orgDetails.status as OrgStatus]?.label || orgDetails.status}
                   </Badge>
                 </div>
@@ -499,7 +512,9 @@ export function AdminOrganizations() {
                         <p className="text-sm font-medium">{member.userName}</p>
                         <p className="text-xs text-muted-foreground">{member.userEmail}</p>
                       </div>
-                      <Badge variant="outline" className="capitalize">{member.role}</Badge>
+                      <Badge variant="outline" className="capitalize">
+                        {member.role}
+                      </Badge>
                     </div>
                   ))}
                 </div>
@@ -521,7 +536,9 @@ export function AdminOrganizations() {
                             {event.startDate ? formatRelativeTime(event.startDate) : 'No date set'}
                           </p>
                         </div>
-                        <Badge variant="outline" className="capitalize">{event.status}</Badge>
+                        <Badge variant="outline" className="capitalize">
+                          {event.status}
+                        </Badge>
                       </div>
                     ))}
                     {orgDetails.events.length > 5 && (

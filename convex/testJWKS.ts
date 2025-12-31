@@ -5,9 +5,11 @@
 import { mutation } from './_generated/server'
 import { importPKCS8, importJWK, SignJWT, jwtVerify } from 'jose'
 
+import { KeyLike } from 'jose'
+
 export const testJWKS = mutation({
   args: {},
-  handler: async (_ctx) => {
+  handler: async () => {
     const jwtPrivateKey = process.env.JWT_PRIVATE_KEY
     const jwks = process.env.JWKS
 
@@ -26,7 +28,7 @@ export const testJWKS = mutation({
     }
 
     // Parse JWKS
-    let jwksParsed: any
+    let jwksParsed: { keys: Array<Record<string, unknown>> }
     try {
       jwksParsed = JSON.parse(jwks)
     } catch (error) {
@@ -36,7 +38,12 @@ export const testJWKS = mutation({
       }
     }
 
-    if (!jwksParsed || !jwksParsed.keys || !Array.isArray(jwksParsed.keys) || jwksParsed.keys.length === 0) {
+    if (
+      !jwksParsed ||
+      !jwksParsed.keys ||
+      !Array.isArray(jwksParsed.keys) ||
+      jwksParsed.keys.length === 0
+    ) {
       return {
         success: false,
         error: 'JWKS does not contain a valid keys array',
@@ -46,7 +53,7 @@ export const testJWKS = mutation({
     const jwk = jwksParsed.keys[0]
 
     // Try to import the private key
-    let privateKey: any
+    let privateKey: KeyLike
     try {
       privateKey = await importPKCS8(jwtPrivateKey, 'RS256')
     } catch (error) {
@@ -57,7 +64,7 @@ export const testJWKS = mutation({
     }
 
     // Try to import the public key from JWKS
-    let publicKey: any
+    let publicKey: KeyLike
     try {
       publicKey = await importJWK(jwk, 'RS256')
     } catch (error) {
@@ -87,7 +94,8 @@ export const testJWKS = mutation({
       await jwtVerify(signedJWT, publicKey)
       return {
         success: true,
-        message: '✅ JWKS configuration is correct! The public key in JWKS matches the private key.',
+        message:
+          '✅ JWKS configuration is correct! The public key in JWKS matches the private key.',
         details: {
           jwksKeysCount: jwksParsed.keys.length,
           jwkAlg: jwk.alg,
@@ -111,4 +119,3 @@ export const testJWKS = mutation({
     }
   },
 })
-

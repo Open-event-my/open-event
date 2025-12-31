@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { useState, useRef, useEffect } from 'react'
 import type { ImgHTMLAttributes } from 'react'
 import { cn } from '@/lib/utils'
@@ -25,14 +26,14 @@ export interface OptimizedImageProps extends Omit<ImgHTMLAttributes<HTMLImageEle
 
 /**
  * OptimizedImage component with WebP support and lazy loading
- * 
+ *
  * Features:
  * - Automatic WebP format detection and fallback
  * - Native lazy loading with IntersectionObserver fallback
  * - Placeholder support (blur, skeleton, empty)
  * - Responsive image loading
  * - Accessibility compliant
- * 
+ *
  * @example
  * ```tsx
  * <OptimizedImage
@@ -69,9 +70,9 @@ export function OptimizedImage({
   const shouldLazyLoad = lazy && !priority
 
   // Generate WebP source if not provided (for local images)
-  const computedWebpSrc = webpSrc || (src.match(/\.(jpg|jpeg|png)$/i) 
-    ? src.replace(/\.(jpg|jpeg|png)$/i, '.webp') 
-    : undefined)
+  const computedWebpSrc =
+    webpSrc ||
+    (src.match(/\.(jpg|jpeg|png)$/i) ? src.replace(/\.(jpg|jpeg|png)$/i, '.webp') : undefined)
 
   // Use IntersectionObserver for lazy loading
   useEffect(() => {
@@ -119,9 +120,7 @@ export function OptimizedImage({
   )
 
   // Container styles for aspect ratio
-  const containerStyles = aspectRatio
-    ? { aspectRatio, ...style }
-    : style
+  const containerStyles = aspectRatio ? { aspectRatio, ...style } : style
 
   // If image failed to load, show fallback or nothing
   if (hasError && !fallbackSrc) {
@@ -139,13 +138,13 @@ export function OptimizedImage({
   }
 
   // Check if browser supports WebP
-  const supportsWebP = typeof window !== 'undefined' && 
+  const supportsWebP =
+    typeof window !== 'undefined' &&
     document.createElement('canvas').toDataURL('image/webp').indexOf('data:image/webp') === 0
 
   // Determine final source
-  const finalSrc = hasError && fallbackSrc 
-    ? fallbackSrc 
-    : (supportsWebP && computedWebpSrc ? computedWebpSrc : src)
+  const finalSrc =
+    hasError && fallbackSrc ? fallbackSrc : supportsWebP && computedWebpSrc ? computedWebpSrc : src
 
   return (
     <picture>
@@ -153,11 +152,11 @@ export function OptimizedImage({
       {computedWebpSrc && !hasError && (
         <source srcSet={isInView ? computedWebpSrc : undefined} type="image/webp" />
       )}
-      
+
       {/* Fallback source */}
       <img
         ref={imgRef}
-        src={isInView ? finalSrc : (blurDataUrl || undefined)}
+        src={isInView ? finalSrc : blurDataUrl || undefined}
         alt={alt}
         loading={shouldLazyLoad ? 'lazy' : 'eager'}
         decoding={priority ? 'sync' : 'async'}

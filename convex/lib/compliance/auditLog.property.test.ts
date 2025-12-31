@@ -1,59 +1,80 @@
 /**
  * Property-Based Tests for Audit Logging Service
- * 
+ *
  * Feature: production-readiness, Property 16: Audit Trail Creation
  * Feature: production-readiness, Property 19: Admin Action Audit Logging
  * Validates: Requirements 3.5, 3.10
- * 
+ *
  * These tests verify that audit logging correctly captures all data operations
  * and admin actions with full context.
  */
 
-import { describe, it, expect } from 'vitest';
-import fc from 'fast-check';
+import { describe, it, expect } from 'vitest'
+import fc from 'fast-check'
 
 // ============================================================================
 // Mock Context
 // ============================================================================
 
+interface AuditLogEntry {
+  userId: string
+  action: string
+  resource: string
+  resourceId: string
+  createdAt: number
+  changes?: Record<string, { old: unknown; new: unknown }>
+  ipAddress?: string
+  userAgent?: string
+  adminRole?: string
+  severity?: string
+  impactedUsers?: string[]
+  _id?: string
+}
+
+interface UserEntry {
+  _id: string
+  email: string
+  role: string
+}
+
 const createMockContext = () => {
   const mockData = {
-    auditLogs: new Map(),
-    users: new Map(),
-  };
+    auditLogs: new Map<string, AuditLogEntry>(),
+    users: new Map<string, UserEntry>(),
+  }
 
   return {
     db: {
-      insert: async (tableName: string, doc: any) => {
-        const table = mockData[tableName as keyof typeof mockData];
+      insert: async (tableName: string, doc: Record<string, unknown>) => {
+        const table = mockData[tableName as keyof typeof mockData]
         if (table) {
-          const id = `${tableName}_${Date.now()}_${Math.random()}`;
-          table.set(id, { ...doc, _id: id });
-          return id;
+          const id = `${tableName}_${Date.now()}_${Math.random()}`
+          ;(table as Map<string, unknown>).set(id, { ...doc, _id: id })
+          return id
         }
-        throw new Error(`Table ${tableName} not found`);
+        throw new Error(`Table ${tableName} not found`)
       },
       get: async (id: string) => {
         for (const table of Object.values(mockData)) {
           if (table.has(id)) {
-            return table.get(id);
+            return table.get(id)
           }
         }
-        return null;
+        return null
       },
       query: (tableName: string) => ({
-        withIndex: (indexName: string, filter: any) => ({
+        withIndex: () => ({
           collect: async () => {
-            const table = mockData[tableName as keyof typeof mockData];
-            if (!table) return [];
-            return Array.from(table.values());
+            const table = mockData[tableName as keyof typeof mockData]
+            if (!table) return []
+            return Array.from(table.values())
           },
-          order: (direction: string) => ({
+          order: () => ({
             take: async (limit: number) => {
-              const table = mockData[tableName as keyof typeof mockData];
-              if (!table) return [];
-              const values = Array.from(table.values());
-              return values.slice(0, limit);
+              const table = mockData[tableName as keyof typeof mockData]
+              if (!table) return []
+              const values = Array.from(table.values())
+              return values.slice(0, limit)
             },
           }),
         }),
@@ -65,31 +86,29 @@ const createMockContext = () => {
         subject: 'user_123',
       }),
     },
-    runMutation: async (mutation: any, args: any) => {
+    runMutation: async (_mutation: unknown, args: AuditLogEntry) => {
       // Simulate the internal mutation
-      await mockData.auditLogs.set(`log_${Date.now()}_${Math.random()}`, {
+      mockData.auditLogs.set(`log_${Date.now()}_${Math.random()}`, {
         ...args,
         createdAt: Date.now(),
-      });
+      })
     },
     mockData,
-  };
-};
+  }
+}
 
 // ============================================================================
 // Arbitraries
 // ============================================================================
 
-const userIdArbitrary = fc.string({ minLength: 10, maxLength: 30 });
-const emailArbitrary = fc.emailAddress();
-const timestampArbitrary = fc.integer({ min: 1600000000000, max: Date.now() });
-const stringArbitrary = fc.string({ minLength: 1, maxLength: 100 });
-const ipAddressArbitrary = fc.ipV4();
+const userIdArbitrary = fc.string({ minLength: 10, maxLength: 30 })
+const emailArbitrary = fc.emailAddress()
+const ipAddressArbitrary = fc.ipV4()
 const userAgentArbitrary = fc.constantFrom(
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36'
-);
+)
 
 const auditActionArbitrary = fc.constantFrom(
   'create',
@@ -99,7 +118,7 @@ const auditActionArbitrary = fc.constantFrom(
   'export',
   'login',
   'logout'
-);
+)
 
 const resourceArbitrary = fc.constantFrom(
   'user',
@@ -108,9 +127,9 @@ const resourceArbitrary = fc.constantFrom(
   'sponsor',
   'organization',
   'api_key'
-);
+)
 
-const resourceIdArbitrary = fc.string({ minLength: 10, maxLength: 30 });
+const resourceIdArbitrary = fc.string({ minLength: 10, maxLength: 30 })
 
 const changesArbitrary = fc.record({
   field1: fc.record({
@@ -124,10 +143,10 @@ const changesArbitrary = fc.record({
     }),
     { nil: undefined }
   ),
-});
+})
 
-const adminRoleArbitrary = fc.constantFrom('admin', 'superadmin');
-const severityArbitrary = fc.constantFrom('low', 'medium', 'high', 'critical');
+const adminRoleArbitrary = fc.constantFrom('admin', 'superadmin')
+const severityArbitrary = fc.constantFrom('low', 'medium', 'high', 'critical')
 
 // ============================================================================
 // Property Tests
@@ -147,7 +166,7 @@ describe('Audit Logging Service - Property Tests', () => {
           resourceArbitrary,
           resourceIdArbitrary,
           async (userId, resource, resourceId) => {
-            const ctx = createMockContext();
+            const ctx = createMockContext()
 
             // Simulate a create operation
             await ctx.runMutation(null, {
@@ -155,23 +174,23 @@ describe('Audit Logging Service - Property Tests', () => {
               action: 'create',
               resource,
               resourceId,
-            });
+            })
 
             // Verify audit log was created
-            const logs = Array.from(ctx.mockData.auditLogs.values());
-            expect(logs.length).toBeGreaterThan(0);
+            const logs = Array.from(ctx.mockData.auditLogs.values())
+            expect(logs.length).toBeGreaterThan(0)
 
-            const log = logs[logs.length - 1];
-            expect(log.userId).toBe(userId);
-            expect(log.action).toBe('create');
-            expect(log.resource).toBe(resource);
-            expect(log.resourceId).toBe(resourceId);
-            expect(log.createdAt).toBeGreaterThan(0);
+            const log = logs[logs.length - 1]
+            expect(log.userId).toBe(userId)
+            expect(log.action).toBe('create')
+            expect(log.resource).toBe(resource)
+            expect(log.resourceId).toBe(resourceId)
+            expect(log.createdAt).toBeGreaterThan(0)
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     /**
      * Property: For any update operation, the audit log should capture
@@ -185,7 +204,7 @@ describe('Audit Logging Service - Property Tests', () => {
           resourceIdArbitrary,
           changesArbitrary,
           async (userId, resource, resourceId, changes) => {
-            const ctx = createMockContext();
+            const ctx = createMockContext()
 
             // Simulate an update operation with changes
             await ctx.runMutation(null, {
@@ -194,24 +213,24 @@ describe('Audit Logging Service - Property Tests', () => {
               resource,
               resourceId,
               changes,
-            });
+            })
 
             // Verify audit log was created with changes
-            const logs = Array.from(ctx.mockData.auditLogs.values());
-            expect(logs.length).toBeGreaterThan(0);
+            const logs = Array.from(ctx.mockData.auditLogs.values())
+            expect(logs.length).toBeGreaterThan(0)
 
-            const log = logs[logs.length - 1];
-            expect(log.userId).toBe(userId);
-            expect(log.action).toBe('update');
-            expect(log.resource).toBe(resource);
-            expect(log.resourceId).toBe(resourceId);
-            expect(log.changes).toBeDefined();
-            expect(log.changes).toEqual(changes);
+            const log = logs[logs.length - 1]
+            expect(log.userId).toBe(userId)
+            expect(log.action).toBe('update')
+            expect(log.resource).toBe(resource)
+            expect(log.resourceId).toBe(resourceId)
+            expect(log.changes).toBeDefined()
+            expect(log.changes).toEqual(changes)
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     /**
      * Property: For any delete operation, an audit log entry should be created
@@ -224,7 +243,7 @@ describe('Audit Logging Service - Property Tests', () => {
           resourceArbitrary,
           resourceIdArbitrary,
           async (userId, resource, resourceId) => {
-            const ctx = createMockContext();
+            const ctx = createMockContext()
 
             // Simulate a delete operation
             await ctx.runMutation(null, {
@@ -232,22 +251,22 @@ describe('Audit Logging Service - Property Tests', () => {
               action: 'delete',
               resource,
               resourceId,
-            });
+            })
 
             // Verify audit log was created
-            const logs = Array.from(ctx.mockData.auditLogs.values());
-            expect(logs.length).toBeGreaterThan(0);
+            const logs = Array.from(ctx.mockData.auditLogs.values())
+            expect(logs.length).toBeGreaterThan(0)
 
-            const log = logs[logs.length - 1];
-            expect(log.userId).toBe(userId);
-            expect(log.action).toBe('delete');
-            expect(log.resource).toBe(resource);
-            expect(log.resourceId).toBe(resourceId);
+            const log = logs[logs.length - 1]
+            expect(log.userId).toBe(userId)
+            expect(log.action).toBe('delete')
+            expect(log.resource).toBe(resource)
+            expect(log.resourceId).toBe(resourceId)
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     /**
      * Property: For any data operation, the audit log should include
@@ -263,7 +282,7 @@ describe('Audit Logging Service - Property Tests', () => {
           ipAddressArbitrary,
           userAgentArbitrary,
           async (userId, action, resource, resourceId, ipAddress, userAgent) => {
-            const ctx = createMockContext();
+            const ctx = createMockContext()
 
             // Simulate an operation with request context
             await ctx.runMutation(null, {
@@ -273,22 +292,22 @@ describe('Audit Logging Service - Property Tests', () => {
               resourceId,
               ipAddress,
               userAgent,
-            });
+            })
 
             // Verify audit log includes context
-            const logs = Array.from(ctx.mockData.auditLogs.values());
-            expect(logs.length).toBeGreaterThan(0);
+            const logs = Array.from(ctx.mockData.auditLogs.values())
+            expect(logs.length).toBeGreaterThan(0)
 
-            const log = logs[logs.length - 1];
-            expect(log.userId).toBe(userId);
-            expect(log.action).toBe(action);
-            expect(log.ipAddress).toBe(ipAddress);
-            expect(log.userAgent).toBe(userAgent);
+            const log = logs[logs.length - 1]
+            expect(log.userId).toBe(userId)
+            expect(log.action).toBe(action)
+            expect(log.ipAddress).toBe(ipAddress)
+            expect(log.userAgent).toBe(userAgent)
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     /**
      * Property: All audit log entries should have a timestamp.
@@ -301,9 +320,9 @@ describe('Audit Logging Service - Property Tests', () => {
           resourceArbitrary,
           resourceIdArbitrary,
           async (userId, action, resource, resourceId) => {
-            const ctx = createMockContext();
+            const ctx = createMockContext()
 
-            const beforeTimestamp = Date.now();
+            const beforeTimestamp = Date.now()
 
             // Simulate an operation
             await ctx.runMutation(null, {
@@ -311,22 +330,22 @@ describe('Audit Logging Service - Property Tests', () => {
               action,
               resource,
               resourceId,
-            });
+            })
 
-            const afterTimestamp = Date.now();
+            const afterTimestamp = Date.now()
 
             // Verify audit log has timestamp
-            const logs = Array.from(ctx.mockData.auditLogs.values());
-            expect(logs.length).toBeGreaterThan(0);
+            const logs = Array.from(ctx.mockData.auditLogs.values())
+            expect(logs.length).toBeGreaterThan(0)
 
-            const log = logs[logs.length - 1];
-            expect(log.createdAt).toBeGreaterThanOrEqual(beforeTimestamp);
-            expect(log.createdAt).toBeLessThanOrEqual(afterTimestamp);
+            const log = logs[logs.length - 1]
+            expect(log.createdAt).toBeGreaterThanOrEqual(beforeTimestamp)
+            expect(log.createdAt).toBeLessThanOrEqual(afterTimestamp)
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     /**
      * Property: Audit logs should be immutable - once created, they cannot be modified.
@@ -339,7 +358,7 @@ describe('Audit Logging Service - Property Tests', () => {
           resourceArbitrary,
           resourceIdArbitrary,
           async (userId, resource, resourceId) => {
-            const ctx = createMockContext();
+            const ctx = createMockContext()
 
             // Create an audit log entry
             await ctx.runMutation(null, {
@@ -347,25 +366,25 @@ describe('Audit Logging Service - Property Tests', () => {
               action: 'create',
               resource,
               resourceId,
-            });
+            })
 
-            const logs = Array.from(ctx.mockData.auditLogs.values());
-            const originalLog = { ...logs[logs.length - 1] };
+            const logs = Array.from(ctx.mockData.auditLogs.values())
+            const originalLog = { ...logs[logs.length - 1] }
 
             // Verify the log entry exists and has expected properties
-            expect(originalLog.userId).toBe(userId);
-            expect(originalLog.action).toBe('create');
-            expect(originalLog.resource).toBe(resource);
-            expect(originalLog.resourceId).toBe(resourceId);
+            expect(originalLog.userId).toBe(userId)
+            expect(originalLog.action).toBe('create')
+            expect(originalLog.resource).toBe(resource)
+            expect(originalLog.resourceId).toBe(resourceId)
 
             // In a real system, there would be no update/delete functions for audit logs
             // This test verifies the structure is correct for immutability
           }
         ),
         { numRuns: 100 }
-      );
-    });
-  });
+      )
+    })
+  })
 
   describe('Property 19: Admin Action Audit Logging', () => {
     /**
@@ -383,14 +402,14 @@ describe('Audit Logging Service - Property Tests', () => {
           resourceArbitrary,
           resourceIdArbitrary,
           async (userId, email, adminRole, action, resource, resourceId) => {
-            const ctx = createMockContext();
+            const ctx = createMockContext()
 
             // Add admin user to mock database
             ctx.mockData.users.set(userId, {
               _id: userId,
               email,
               role: adminRole,
-            });
+            })
 
             // Simulate an admin action
             await ctx.runMutation(null, {
@@ -399,23 +418,23 @@ describe('Audit Logging Service - Property Tests', () => {
               resource,
               resourceId,
               adminRole,
-            });
+            })
 
             // Verify enhanced audit log was created
-            const logs = Array.from(ctx.mockData.auditLogs.values());
-            expect(logs.length).toBeGreaterThan(0);
+            const logs = Array.from(ctx.mockData.auditLogs.values())
+            expect(logs.length).toBeGreaterThan(0)
 
-            const log = logs[logs.length - 1];
-            expect(log.userId).toBe(userId);
-            expect(log.action).toBe(action);
-            expect(log.resource).toBe(resource);
-            expect(log.resourceId).toBe(resourceId);
-            expect(log.adminRole).toBe(adminRole);
+            const log = logs[logs.length - 1]
+            expect(log.userId).toBe(userId)
+            expect(log.action).toBe(action)
+            expect(log.resource).toBe(resource)
+            expect(log.resourceId).toBe(resourceId)
+            expect(log.adminRole).toBe(adminRole)
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     /**
      * Property: Admin actions should include severity level for critical operations.
@@ -429,7 +448,7 @@ describe('Audit Logging Service - Property Tests', () => {
           resourceIdArbitrary,
           severityArbitrary,
           async (userId, adminRole, resource, resourceId, severity) => {
-            const ctx = createMockContext();
+            const ctx = createMockContext()
 
             // Simulate an admin action with severity
             await ctx.runMutation(null, {
@@ -439,19 +458,19 @@ describe('Audit Logging Service - Property Tests', () => {
               resourceId,
               adminRole,
               severity,
-            });
+            })
 
             // Verify audit log includes severity
-            const logs = Array.from(ctx.mockData.auditLogs.values());
-            expect(logs.length).toBeGreaterThan(0);
+            const logs = Array.from(ctx.mockData.auditLogs.values())
+            expect(logs.length).toBeGreaterThan(0)
 
-            const log = logs[logs.length - 1];
-            expect(log.severity).toBe(severity);
+            const log = logs[logs.length - 1]
+            expect(log.severity).toBe(severity)
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     /**
      * Property: Admin actions that impact multiple users should list all impacted users.
@@ -465,7 +484,7 @@ describe('Audit Logging Service - Property Tests', () => {
           resourceIdArbitrary,
           fc.array(userIdArbitrary, { minLength: 1, maxLength: 10 }),
           async (userId, adminRole, resource, resourceId, impactedUsers) => {
-            const ctx = createMockContext();
+            const ctx = createMockContext()
 
             // Simulate an admin action affecting multiple users
             await ctx.runMutation(null, {
@@ -475,21 +494,21 @@ describe('Audit Logging Service - Property Tests', () => {
               resourceId,
               adminRole,
               impactedUsers,
-            });
+            })
 
             // Verify audit log includes impacted users
-            const logs = Array.from(ctx.mockData.auditLogs.values());
-            expect(logs.length).toBeGreaterThan(0);
+            const logs = Array.from(ctx.mockData.auditLogs.values())
+            expect(logs.length).toBeGreaterThan(0)
 
-            const log = logs[logs.length - 1];
-            expect(log.impactedUsers).toBeDefined();
-            expect(log.impactedUsers).toEqual(impactedUsers);
-            expect(log.impactedUsers.length).toBeGreaterThan(0);
+            const log = logs[logs.length - 1]
+            expect(log.impactedUsers).toBeDefined()
+            expect(log.impactedUsers).toEqual(impactedUsers)
+            expect(log.impactedUsers.length).toBeGreaterThan(0)
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     /**
      * Property: Admin role changes should be logged with both old and new roles.
@@ -503,7 +522,7 @@ describe('Audit Logging Service - Property Tests', () => {
           fc.constantFrom('organizer', 'admin', 'superadmin'),
           fc.constantFrom('organizer', 'admin', 'superadmin'),
           async (adminId, adminRole, targetUserId, oldRole, newRole) => {
-            const ctx = createMockContext();
+            const ctx = createMockContext()
 
             // Simulate a role change action
             await ctx.runMutation(null, {
@@ -515,23 +534,23 @@ describe('Audit Logging Service - Property Tests', () => {
               changes: {
                 role: { old: oldRole, new: newRole },
               },
-            });
+            })
 
             // Verify audit log captures role change
-            const logs = Array.from(ctx.mockData.auditLogs.values());
-            expect(logs.length).toBeGreaterThan(0);
+            const logs = Array.from(ctx.mockData.auditLogs.values())
+            expect(logs.length).toBeGreaterThan(0)
 
-            const log = logs[logs.length - 1];
-            expect(log.action).toBe('role_changed');
-            expect(log.changes).toBeDefined();
-            expect(log.changes.role).toBeDefined();
-            expect(log.changes.role.old).toBe(oldRole);
-            expect(log.changes.role.new).toBe(newRole);
+            const log = logs[logs.length - 1]
+            expect(log.action).toBe('role_changed')
+            expect(log.changes).toBeDefined()
+            expect(log.changes.role).toBeDefined()
+            expect(log.changes.role.old).toBe(oldRole)
+            expect(log.changes.role.new).toBe(newRole)
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     /**
      * Property: Critical admin actions (user suspension, data deletion) should
@@ -545,7 +564,7 @@ describe('Audit Logging Service - Property Tests', () => {
           fc.constantFrom('user_suspended', 'delete', 'role_changed'),
           resourceIdArbitrary,
           async (adminId, adminRole, criticalAction, resourceId) => {
-            const ctx = createMockContext();
+            const ctx = createMockContext()
 
             // Determine appropriate severity for critical actions
             const severity =
@@ -553,7 +572,7 @@ describe('Audit Logging Service - Property Tests', () => {
                 ? 'critical'
                 : criticalAction === 'user_suspended'
                   ? 'high'
-                  : 'medium';
+                  : 'medium'
 
             // Simulate a critical admin action
             await ctx.runMutation(null, {
@@ -563,20 +582,20 @@ describe('Audit Logging Service - Property Tests', () => {
               resourceId,
               adminRole,
               severity,
-            });
+            })
 
             // Verify audit log has appropriate severity
-            const logs = Array.from(ctx.mockData.auditLogs.values());
-            expect(logs.length).toBeGreaterThan(0);
+            const logs = Array.from(ctx.mockData.auditLogs.values())
+            expect(logs.length).toBeGreaterThan(0)
 
-            const log = logs[logs.length - 1];
-            expect(log.severity).toBeDefined();
-            expect(['medium', 'high', 'critical']).toContain(log.severity);
+            const log = logs[logs.length - 1]
+            expect(log.severity).toBeDefined()
+            expect(['medium', 'high', 'critical']).toContain(log.severity)
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     /**
      * Property: All admin actions should include the admin's role at the time
@@ -591,7 +610,7 @@ describe('Audit Logging Service - Property Tests', () => {
           resourceArbitrary,
           resourceIdArbitrary,
           async (adminId, adminRole, action, resource, resourceId) => {
-            const ctx = createMockContext();
+            const ctx = createMockContext()
 
             // Simulate an admin action
             await ctx.runMutation(null, {
@@ -600,21 +619,21 @@ describe('Audit Logging Service - Property Tests', () => {
               resource,
               resourceId,
               adminRole,
-            });
+            })
 
             // Verify admin role is logged
-            const logs = Array.from(ctx.mockData.auditLogs.values());
-            expect(logs.length).toBeGreaterThan(0);
+            const logs = Array.from(ctx.mockData.auditLogs.values())
+            expect(logs.length).toBeGreaterThan(0)
 
-            const log = logs[logs.length - 1];
-            expect(log.adminRole).toBe(adminRole);
-            expect(['admin', 'superadmin']).toContain(log.adminRole);
+            const log = logs[logs.length - 1]
+            expect(log.adminRole).toBe(adminRole)
+            expect(['admin', 'superadmin']).toContain(log.adminRole)
           }
         ),
         { numRuns: 100 }
-      );
-    });
-  });
+      )
+    })
+  })
 
   describe('Audit Log Query Properties', () => {
     /**
@@ -625,7 +644,7 @@ describe('Audit Logging Service - Property Tests', () => {
         fc.asyncProperty(
           fc.array(userIdArbitrary, { minLength: 2, maxLength: 5 }),
           async (userIds) => {
-            const ctx = createMockContext();
+            const ctx = createMockContext()
 
             // Create audit logs for multiple users
             for (const userId of userIds) {
@@ -634,24 +653,24 @@ describe('Audit Logging Service - Property Tests', () => {
                 action: 'create',
                 resource: 'event',
                 resourceId: `event_${userId}`,
-              });
+              })
             }
 
             // Query logs for first user
-            const targetUserId = userIds[0];
+            const targetUserId = userIds[0]
             const logs = Array.from(ctx.mockData.auditLogs.values()).filter(
-              (log: any) => log.userId === targetUserId
-            );
+              (log) => log.userId === targetUserId
+            )
 
             // Verify all returned logs belong to the target user
-            logs.forEach((log: any) => {
-              expect(log.userId).toBe(targetUserId);
-            });
+            logs.forEach((log) => {
+              expect(log.userId).toBe(targetUserId)
+            })
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     /**
      * Property: Audit logs should be ordered by timestamp (most recent first).
@@ -662,7 +681,7 @@ describe('Audit Logging Service - Property Tests', () => {
           userIdArbitrary,
           fc.array(auditActionArbitrary, { minLength: 3, maxLength: 10 }),
           async (userId, actions) => {
-            const ctx = createMockContext();
+            const ctx = createMockContext()
 
             // Create multiple audit logs
             for (const action of actions) {
@@ -671,21 +690,22 @@ describe('Audit Logging Service - Property Tests', () => {
                 action,
                 resource: 'event',
                 resourceId: `event_${Date.now()}`,
-              });
+              })
             }
 
             // Get all logs and sort by timestamp (most recent first)
-            const logs = Array.from(ctx.mockData.auditLogs.values())
-              .sort((a: any, b: any) => b.createdAt - a.createdAt);
+            const logs = Array.from(ctx.mockData.auditLogs.values()).sort(
+              (a, b) => b.createdAt - a.createdAt
+            )
 
             // Verify logs are in chronological order (most recent first)
             for (let i = 0; i < logs.length - 1; i++) {
-              expect(logs[i].createdAt).toBeGreaterThanOrEqual(logs[i + 1].createdAt);
+              expect(logs[i].createdAt).toBeGreaterThanOrEqual(logs[i + 1].createdAt)
             }
           }
         ),
         { numRuns: 100 }
-      );
-    }, 10000); // Increase timeout for property-based test
-  });
-});
+      )
+    }, 10000) // Increase timeout for property-based test
+  })
+})

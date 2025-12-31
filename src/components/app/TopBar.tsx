@@ -47,7 +47,7 @@ export function TopBar({ onMenuClick, sidebarCollapsed }: TopBarProps) {
         customSignOut().catch(() => {}), // Ignore errors, continue with sign out
         convexSignOut().catch(() => {}), // Ignore errors, continue with sign out
       ])
-    } catch (error) {
+    } catch {
       // Ignore errors, still navigate to sign-in
     } finally {
       navigate('/sign-in')

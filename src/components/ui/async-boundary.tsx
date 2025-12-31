@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import * as React from 'react'
 import { CircleNotch } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
@@ -45,17 +46,18 @@ export interface AsyncBoundaryProps {
 /**
  * Default inline loading indicator
  */
-function InlineLoading({ message, size = 'default' }: { message?: string; size?: 'sm' | 'default' | 'lg' }) {
+function InlineLoading({
+  message,
+  size = 'default',
+}: {
+  message?: string
+  size?: 'sm' | 'default' | 'lg'
+}) {
   const sizeMap = { sm: 14, default: 18, lg: 24 }
-  
+
   return (
     <span className="inline-flex items-center gap-2 text-muted-foreground">
-      <CircleNotch
-        size={sizeMap[size]}
-        weight="bold"
-        className="animate-spin"
-        aria-hidden="true"
-      />
+      <CircleNotch size={sizeMap[size]} weight="bold" className="animate-spin" aria-hidden="true" />
       {message && <span className="text-sm">{message}</span>}
     </span>
   )
@@ -64,9 +66,15 @@ function InlineLoading({ message, size = 'default' }: { message?: string; size?:
 /**
  * Default block loading indicator
  */
-function BlockLoading({ message, size = 'default' }: { message?: string; size?: 'sm' | 'default' | 'lg' }) {
+function BlockLoading({
+  message,
+  size = 'default',
+}: {
+  message?: string
+  size?: 'sm' | 'default' | 'lg'
+}) {
   const sizeMap = { sm: 24, default: 32, lg: 48 }
-  
+
   return (
     <div className="flex flex-col items-center justify-center py-12 gap-4">
       <CircleNotch
@@ -75,28 +83,26 @@ function BlockLoading({ message, size = 'default' }: { message?: string; size?: 
         className="animate-spin text-primary"
         aria-hidden="true"
       />
-      {message && (
-        <p className="text-sm text-muted-foreground animate-pulse">{message}</p>
-      )}
+      {message && <p className="text-sm text-muted-foreground animate-pulse">{message}</p>}
     </div>
   )
 }
 
 /**
  * Boundary component for async operations that handles loading, error, and empty states.
- * 
+ *
  * Features:
  * - Automatic loading indicator during async operations
  * - Error state with retry functionality
  * - Empty state with customizable message and action
  * - Inline and block variants
  * - Accessible loading announcements
- * 
+ *
  * @example
  * ```tsx
  * // Basic usage with Convex query
  * const events = useQuery(api.events.list)
- * 
+ *
  * <AsyncBoundary
  *   isLoading={events === undefined}
  *   isEmpty={events?.length === 0}
@@ -106,13 +112,13 @@ function BlockLoading({ message, size = 'default' }: { message?: string; size?: 
  * >
  *   <EventList events={events} />
  * </AsyncBoundary>
- * 
+ *
  * // Inline loading for smaller areas
  * <AsyncBoundary isLoading={isLoading} inline>
  *   <span>{data}</span>
  * </AsyncBoundary>
  * ```
- * 
+ *
  * **Validates: Requirements 11.7** - Show loading states for all async operations
  */
 export function AsyncBoundary({
@@ -140,10 +146,10 @@ export function AsyncBoundary({
     if (inline) {
       return loadingFallback ?? <InlineLoading message={loadingMessage} size={size} />
     }
-    
+
     return (
-      <div 
-        className={cn('w-full', className)} 
+      <div
+        className={cn('w-full', className)}
         style={containerStyle}
         role="status"
         aria-live="polite"
@@ -216,18 +222,13 @@ export function LoadingBoundary({
     if (fallback) {
       return <>{fallback}</>
     }
-    
+
     if (inline) {
       return <InlineLoading message={message} />
     }
-    
+
     return (
-      <div 
-        className={cn('w-full', className)}
-        role="status"
-        aria-live="polite"
-        aria-busy="true"
-      >
+      <div className={cn('w-full', className)} role="status" aria-live="polite" aria-busy="true">
         <BlockLoading message={message} />
         <span className="sr-only">{message}</span>
       </div>
@@ -239,12 +240,12 @@ export function LoadingBoundary({
 
 /**
  * Hook to create loading state props for AsyncBoundary from Convex query result.
- * 
+ *
  * @example
  * ```tsx
  * const events = useQuery(api.events.list)
  * const boundaryProps = useAsyncBoundaryProps(events, events?.length === 0)
- * 
+ *
  * <AsyncBoundary {...boundaryProps}>
  *   <EventList events={events!} />
  * </AsyncBoundary>

@@ -41,7 +41,10 @@ test.describe('Check-in System', () => {
     await page.goto('/dashboard/events/new')
     await page.waitForTimeout(2000)
 
-    const manualButton = page.locator('button').filter({ hasText: /manual form/i }).first()
+    const manualButton = page
+      .locator('button')
+      .filter({ hasText: /manual form/i })
+      .first()
     await expect(manualButton).toBeVisible({ timeout: 15000 })
     await manualButton.click()
     await page.waitForTimeout(1000)
@@ -53,7 +56,10 @@ test.describe('Check-in System', () => {
     tomorrow.setDate(tomorrow.getDate() + 1)
     await page.getByLabel(/start date/i).fill(tomorrow.toISOString().split('T')[0])
 
-    const createButton = page.locator('button').filter({ hasText: /create event/i }).first()
+    const createButton = page
+      .locator('button')
+      .filter({ hasText: /create event/i })
+      .first()
     await createButton.click()
     await page.waitForURL(/\/dashboard\/events\/[a-z0-9]+$/, { timeout: 20000 })
     await page.waitForTimeout(3000)
@@ -91,7 +97,9 @@ test.describe('Check-in System', () => {
     await page.waitForTimeout(2000)
 
     // Verify we're on the check-in page - use heading role to be specific
-    await expect(page.getByRole('heading', { name: 'Check-In Mode' })).toBeVisible({ timeout: 10000 })
+    await expect(page.getByRole('heading', { name: 'Check-In Mode' })).toBeVisible({
+      timeout: 10000,
+    })
 
     return { attendeeName, attendeeEmail }
   }
@@ -102,7 +110,10 @@ test.describe('Check-in System', () => {
     await page.waitForTimeout(2000)
 
     // Click first event
-    const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+    const eventCard = page
+      .locator('.rounded-lg.border')
+      .filter({ has: page.locator('h3') })
+      .first()
     if (await eventCard.isVisible({ timeout: 5000 }).catch(() => false)) {
       await eventCard.click()
       await page.waitForURL(/\/dashboard\/events\/[a-z0-9]+$/, { timeout: 10000 })
@@ -135,7 +146,9 @@ test.describe('Check-in System', () => {
     test('should navigate to check-in mode from attendees page', async ({ page }) => {
       const hasEvent = await navigateToCheckInPage(page)
       if (hasEvent) {
-        await expect(page.getByRole('heading', { name: 'Check-In Mode' })).toBeVisible({ timeout: 10000 })
+        await expect(page.getByRole('heading', { name: 'Check-In Mode' })).toBeVisible({
+          timeout: 10000,
+        })
         await expect(page).toHaveURL(/\/attendees\/check-in$/)
       }
     })
@@ -360,7 +373,7 @@ test.describe('Check-in System', () => {
     })
 
     test('should check in attendee successfully', async ({ page }) => {
-      const { attendeeName } = await createEventWithAttendeeAndGoToCheckIn(page)
+      await createEventWithAttendeeAndGoToCheckIn(page)
 
       // Get ticket number
       await page.goto(`/dashboard/events/${testEventId}/attendees`)

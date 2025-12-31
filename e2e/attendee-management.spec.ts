@@ -11,8 +11,6 @@
  */
 
 import { test, expect } from '@playwright/test'
-import path from 'path'
-import fs from 'fs'
 
 const TEST_EMAIL = 'test@example.com'
 const TEST_PASSWORD = 'TestPass123!'
@@ -36,9 +34,7 @@ test.describe('Attendee Management', () => {
   })
 
   // Helper to navigate to an event's attendees page
-  async function navigateToAttendeesPage(
-    page: import('@playwright/test').Page
-  ): Promise<boolean> {
+  async function navigateToAttendeesPage(page: import('@playwright/test').Page): Promise<boolean> {
     await page.goto('/dashboard/events')
     await page.waitForTimeout(2000)
 
@@ -60,9 +56,9 @@ test.describe('Attendee Management', () => {
       await page.waitForTimeout(2000)
 
       // Verify we're on the attendees page
-      await expect(
-        page.getByRole('heading', { name: 'Attendees', exact: true })
-      ).toBeVisible({ timeout: 10000 })
+      await expect(page.getByRole('heading', { name: 'Attendees', exact: true })).toBeVisible({
+        timeout: 10000,
+      })
       return true
     }
     return false
@@ -105,9 +101,9 @@ test.describe('Attendee Management', () => {
     await page.waitForTimeout(2000)
 
     // Verify we're on the attendees page
-    await expect(
-      page.getByRole('heading', { name: 'Attendees', exact: true })
-    ).toBeVisible({ timeout: 10000 })
+    await expect(page.getByRole('heading', { name: 'Attendees', exact: true })).toBeVisible({
+      timeout: 10000,
+    })
   }
 
   test.describe('Add Attendee Manually', () => {
@@ -300,12 +296,24 @@ test.describe('Attendee Management', () => {
       const statsSection = page.locator('.grid').filter({ hasText: 'Total' }).first()
       await expect(statsSection).toBeVisible({ timeout: 10000 })
       // Check for stat card labels (they have text-muted-foreground class)
-      await expect(page.locator('.text-muted-foreground').filter({ hasText: 'Total' }).first()).toBeVisible()
-      await expect(page.locator('.text-muted-foreground').filter({ hasText: 'Registered' })).toBeVisible()
-      await expect(page.locator('.text-muted-foreground').filter({ hasText: 'Confirmed' })).toBeVisible()
-      await expect(page.locator('.text-muted-foreground').filter({ hasText: 'Checked In' })).toBeVisible()
-      await expect(page.locator('.text-muted-foreground').filter({ hasText: 'Cancelled' })).toBeVisible()
-      await expect(page.locator('.text-muted-foreground').filter({ hasText: 'Check-in Rate' })).toBeVisible()
+      await expect(
+        page.locator('.text-muted-foreground').filter({ hasText: 'Total' }).first()
+      ).toBeVisible()
+      await expect(
+        page.locator('.text-muted-foreground').filter({ hasText: 'Registered' })
+      ).toBeVisible()
+      await expect(
+        page.locator('.text-muted-foreground').filter({ hasText: 'Confirmed' })
+      ).toBeVisible()
+      await expect(
+        page.locator('.text-muted-foreground').filter({ hasText: 'Checked In' })
+      ).toBeVisible()
+      await expect(
+        page.locator('.text-muted-foreground').filter({ hasText: 'Cancelled' })
+      ).toBeVisible()
+      await expect(
+        page.locator('.text-muted-foreground').filter({ hasText: 'Check-in Rate' })
+      ).toBeVisible()
     })
 
     test('should show attendee table headers', async ({ page }) => {
@@ -726,9 +734,7 @@ test.describe('Attendee Management', () => {
 
       if (hasEvent) {
         // Verify page elements
-        await expect(
-          page.getByRole('heading', { name: 'Attendees', exact: true })
-        ).toBeVisible()
+        await expect(page.getByRole('heading', { name: 'Attendees', exact: true })).toBeVisible()
         await expect(page.getByText('Total')).toBeVisible()
       }
     })

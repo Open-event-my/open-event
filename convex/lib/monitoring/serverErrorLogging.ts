@@ -11,8 +11,8 @@
  * Property 37: Server-Side Error Logging
  */
 
-import { captureError as sentryCaptureError } from '../sentry';
-import { logger, type LogLevel } from './logger';
+import { captureError as sentryCaptureError } from '../sentry'
+import { logger, type LogLevel } from './logger'
 
 /**
  * Sensitive data patterns that should never be logged or exposed
@@ -31,7 +31,7 @@ const SENSITIVE_PATTERNS = [
   /social[_-]?security/i,
   /bearer\s+[a-zA-Z0-9._-]+/i,
   /jwt/i,
-];
+]
 
 /**
  * Fields that should be redacted from logs
@@ -62,32 +62,32 @@ const SENSITIVE_FIELDS = [
   'session_token',
   'authorization',
   'cookie',
-];
+]
 
 /**
  * Server error log entry with full details for debugging
  */
 export interface ServerErrorLogEntry {
   /** Error message */
-  message: string;
+  message: string
   /** Full stack trace */
-  stackTrace?: string;
+  stackTrace?: string
   /** Error name/type */
-  errorName: string;
+  errorName: string
   /** User ID if available */
-  userId?: string;
+  userId?: string
   /** Request ID for tracing */
-  requestId?: string;
+  requestId?: string
   /** Timestamp of the error */
-  timestamp: number;
+  timestamp: number
   /** Additional context */
-  context: Record<string, unknown>;
+  context: Record<string, unknown>
   /** Error severity level */
-  severity: LogLevel;
+  severity: LogLevel
   /** Function or endpoint where error occurred */
-  source?: string;
+  source?: string
   /** Error code if available */
-  errorCode?: string;
+  errorCode?: string
 }
 
 /**
@@ -95,28 +95,26 @@ export interface ServerErrorLogEntry {
  */
 export interface ClientSafeError {
   /** User-friendly error message */
-  message: string;
+  message: string
   /** Error code for client handling */
-  code: string;
+  code: string
   /** Request ID for support reference */
-  requestId?: string;
+  requestId?: string
 }
 
 /**
  * Check if a string contains sensitive data patterns
  */
 export function containsSensitiveData(value: string): boolean {
-  return SENSITIVE_PATTERNS.some(pattern => pattern.test(value));
+  return SENSITIVE_PATTERNS.some((pattern) => pattern.test(value))
 }
 
 /**
  * Check if a field name is sensitive
  */
 export function isSensitiveField(fieldName: string): boolean {
-  const lowerFieldName = fieldName.toLowerCase();
-  return SENSITIVE_FIELDS.some(
-    sensitive => lowerFieldName.includes(sensitive.toLowerCase())
-  );
+  const lowerFieldName = fieldName.toLowerCase()
+  return SENSITIVE_FIELDS.some((sensitive) => lowerFieldName.includes(sensitive.toLowerCase()))
 }
 
 /**
@@ -128,50 +126,46 @@ export function redactSensitiveData<T extends Record<string, unknown>>(
   maxDepth = 10
 ): T {
   if (depth > maxDepth) {
-    return '[MAX_DEPTH_EXCEEDED]' as unknown as T;
+    return '[MAX_DEPTH_EXCEEDED]' as unknown as T
   }
 
   if (obj === null || obj === undefined) {
-    return obj;
+    return obj
   }
 
   if (typeof obj !== 'object') {
     // Check if string value contains sensitive patterns
     if (typeof obj === 'string' && containsSensitiveData(obj)) {
-      return '[REDACTED]' as unknown as T;
+      return '[REDACTED]' as unknown as T
     }
-    return obj;
+    return obj
   }
 
   if (Array.isArray(obj)) {
-    return obj.map(item =>
+    return obj.map((item) =>
       typeof item === 'object' && item !== null
         ? redactSensitiveData(item as Record<string, unknown>, depth + 1, maxDepth)
         : typeof item === 'string' && containsSensitiveData(item)
           ? '[REDACTED]'
           : item
-    ) as unknown as T;
+    ) as unknown as T
   }
 
-  const redacted: Record<string, unknown> = {};
+  const redacted: Record<string, unknown> = {}
 
   for (const [key, value] of Object.entries(obj)) {
     if (isSensitiveField(key)) {
-      redacted[key] = '[REDACTED]';
+      redacted[key] = '[REDACTED]'
     } else if (typeof value === 'string' && containsSensitiveData(value)) {
-      redacted[key] = '[REDACTED]';
+      redacted[key] = '[REDACTED]'
     } else if (typeof value === 'object' && value !== null) {
-      redacted[key] = redactSensitiveData(
-        value as Record<string, unknown>,
-        depth + 1,
-        maxDepth
-      );
+      redacted[key] = redactSensitiveData(value as Record<string, unknown>, depth + 1, maxDepth)
     } else {
-      redacted[key] = value;
+      redacted[key] = value
     }
   }
 
-  return redacted as T;
+  return redacted as T
 }
 
 /**
@@ -179,9 +173,9 @@ export function redactSensitiveData<T extends Record<string, unknown>>(
  */
 export function extractStackTrace(error: unknown): string | undefined {
   if (error instanceof Error && error.stack) {
-    return error.stack;
+    return error.stack
   }
-  return undefined;
+  return undefined
 }
 
 /**
@@ -189,15 +183,15 @@ export function extractStackTrace(error: unknown): string | undefined {
  */
 export function extractErrorName(error: unknown): string {
   if (error instanceof Error) {
-    return error.name || 'Error';
+    return error.name || 'Error'
   }
   if (typeof error === 'string') {
-    return 'StringError';
+    return 'StringError'
   }
   if (typeof error === 'object' && error !== null) {
-    return (error as { name?: string }).name || 'UnknownError';
+    return (error as { name?: string }).name || 'UnknownError'
   }
-  return 'UnknownError';
+  return 'UnknownError'
 }
 
 /**
@@ -205,25 +199,25 @@ export function extractErrorName(error: unknown): string {
  */
 export function extractErrorMessage(error: unknown): string {
   if (error instanceof Error) {
-    return error.message;
+    return error.message
   }
   if (typeof error === 'string') {
-    return error;
+    return error
   }
   if (typeof error === 'object' && error !== null) {
-    const msg = (error as { message?: unknown }).message;
+    const msg = (error as { message?: unknown }).message
     if (typeof msg === 'string') {
-      return msg;
+      return msg
     }
   }
-  return 'An unknown error occurred';
+  return 'An unknown error occurred'
 }
 
 /**
  * Generate a unique request ID
  */
 export function generateRequestId(): string {
-  return `req_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+  return `req_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
 }
 
 /**
@@ -232,25 +226,25 @@ export function generateRequestId(): string {
 export function createServerErrorLog(
   error: unknown,
   context: {
-    userId?: string;
-    requestId?: string;
-    source?: string;
-    errorCode?: string;
-    additionalContext?: Record<string, unknown>;
+    userId?: string
+    requestId?: string
+    source?: string
+    errorCode?: string
+    additionalContext?: Record<string, unknown>
   } = {}
 ): ServerErrorLogEntry {
-  const timestamp = Date.now();
-  const requestId = context.requestId || generateRequestId();
-  
+  const timestamp = Date.now()
+  const requestId = context.requestId || generateRequestId()
+
   // Extract error details
-  const message = extractErrorMessage(error);
-  const stackTrace = extractStackTrace(error);
-  const errorName = extractErrorName(error);
-  
+  const message = extractErrorMessage(error)
+  const stackTrace = extractStackTrace(error)
+  const errorName = extractErrorName(error)
+
   // Redact sensitive data from additional context
   const safeContext = context.additionalContext
     ? redactSensitiveData(context.additionalContext)
-    : {};
+    : {}
 
   return {
     message,
@@ -263,12 +257,12 @@ export function createServerErrorLog(
     severity: 'error',
     source: context.source,
     errorCode: context.errorCode,
-  };
+  }
 }
 
 /**
  * Log a server-side error with full details
- * 
+ *
  * This function:
  * 1. Creates a detailed log entry with stack trace and context
  * 2. Logs to the structured logger
@@ -278,16 +272,16 @@ export function createServerErrorLog(
 export function logServerError(
   error: unknown,
   context: {
-    userId?: string;
-    requestId?: string;
-    source?: string;
-    errorCode?: string;
-    additionalContext?: Record<string, unknown>;
+    userId?: string
+    requestId?: string
+    source?: string
+    errorCode?: string
+    additionalContext?: Record<string, unknown>
   } = {}
 ): ClientSafeError {
   // Create the full server log entry
-  const logEntry = createServerErrorLog(error, context);
-  
+  const logEntry = createServerErrorLog(error, context)
+
   // Log to structured logger with full details (server-side only)
   logger.error(logEntry.message, error, {
     userId: logEntry.userId,
@@ -297,8 +291,8 @@ export function logServerError(
     errorName: logEntry.errorName,
     stackTrace: logEntry.stackTrace,
     ...logEntry.context,
-  });
-  
+  })
+
   // Send to Sentry for production monitoring
   if (error instanceof Error) {
     sentryCaptureError(error, {
@@ -307,11 +301,11 @@ export function logServerError(
       source: logEntry.source,
       errorCode: logEntry.errorCode,
       ...logEntry.context,
-    });
+    })
   }
-  
+
   // Return client-safe error (no stack trace or sensitive data)
-  return createClientSafeError(logEntry);
+  return createClientSafeError(logEntry)
 }
 
 /**
@@ -327,16 +321,16 @@ export function createClientSafeError(logEntry: ServerErrorLogEntry): ClientSafe
     RATE_LIMITED: "You're making requests too quickly. Please wait a moment.",
     INTERNAL_ERROR: 'Something went wrong. Please try again later.',
     SERVICE_UNAVAILABLE: 'The service is temporarily unavailable.',
-  };
-  
-  const code = logEntry.errorCode || 'INTERNAL_ERROR';
-  const message = userFriendlyMessages[code] || 'An unexpected error occurred. Please try again.';
-  
+  }
+
+  const code = logEntry.errorCode || 'INTERNAL_ERROR'
+  const message = userFriendlyMessages[code] || 'An unexpected error occurred. Please try again.'
+
   return {
     message,
     code,
     requestId: logEntry.requestId,
-  };
+  }
 }
 
 /**
@@ -344,11 +338,11 @@ export function createClientSafeError(logEntry: ServerErrorLogEntry): ClientSafe
  */
 export function isValidServerErrorLog(entry: unknown): entry is ServerErrorLogEntry {
   if (!entry || typeof entry !== 'object') {
-    return false;
+    return false
   }
-  
-  const log = entry as Partial<ServerErrorLogEntry>;
-  
+
+  const log = entry as Partial<ServerErrorLogEntry>
+
   return (
     typeof log.message === 'string' &&
     typeof log.errorName === 'string' &&
@@ -356,7 +350,7 @@ export function isValidServerErrorLog(entry: unknown): entry is ServerErrorLogEn
     typeof log.context === 'object' &&
     log.context !== null &&
     typeof log.severity === 'string'
-  );
+  )
 }
 
 /**
@@ -365,19 +359,19 @@ export function isValidServerErrorLog(entry: unknown): entry is ServerErrorLogEn
 export function isClientSafe(error: ClientSafeError): boolean {
   // Check message doesn't contain sensitive patterns
   if (containsSensitiveData(error.message)) {
-    return false;
+    return false
   }
-  
+
   // Check code doesn't contain sensitive patterns
   if (containsSensitiveData(error.code)) {
-    return false;
+    return false
   }
-  
+
   // Check requestId doesn't contain sensitive patterns
   if (error.requestId && containsSensitiveData(error.requestId)) {
-    return false;
+    return false
   }
-  
+
   // Check message doesn't contain stack trace patterns
   const stackTracePatterns = [
     /at\s+[\w.]+\s+\([^)]+\)/,
@@ -386,27 +380,35 @@ export function isClientSafe(error: ClientSafeError): boolean {
     /node_modules/,
     /\.ts:\d+/,
     /\.js:\d+/,
-  ];
-  
-  if (stackTracePatterns.some(pattern => pattern.test(error.message))) {
-    return false;
+  ]
+
+  if (stackTracePatterns.some((pattern) => pattern.test(error.message))) {
+    return false
   }
-  
-  return true;
+
+  return true
+}
+
+/**
+ * Context type for Convex functions with optional auth
+ */
+interface ConvexContext {
+  auth?: { userId?: string }
+  functionName?: string
 }
 
 /**
  * Middleware wrapper for Convex functions with server-side error logging
  */
-export function withServerErrorLogging<TArgs, TResult>(
-  handler: (ctx: any, args: TArgs) => Promise<TResult>,
+export function withServerErrorLogging<TArgs extends Record<string, unknown>, TResult>(
+  handler: (ctx: ConvexContext, args: TArgs) => Promise<TResult>,
   source?: string
 ) {
-  return async (ctx: any, args: TArgs): Promise<TResult> => {
-    const requestId = generateRequestId();
-    
+  return async (ctx: ConvexContext, args: TArgs): Promise<TResult> => {
+    const requestId = generateRequestId()
+
     try {
-      return await handler(ctx, args);
+      return await handler(ctx, args)
     } catch (error) {
       const clientError = logServerError(error, {
         userId: ctx.auth?.userId,
@@ -415,10 +417,10 @@ export function withServerErrorLogging<TArgs, TResult>(
         additionalContext: {
           args: redactSensitiveData(args as Record<string, unknown>),
         },
-      });
-      
+      })
+
       // Re-throw with client-safe message
-      throw new Error(clientError.message);
+      throw new Error(clientError.message)
     }
-  };
+  }
 }

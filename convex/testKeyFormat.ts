@@ -7,7 +7,7 @@ import { importPKCS8 } from 'jose'
 
 export const testKeyFormat = mutation({
   args: {},
-  handler: async (_ctx) => {
+  handler: async () => {
     const key = process.env.JWT_PRIVATE_KEY
 
     if (!key) {
@@ -22,7 +22,11 @@ export const testKeyFormat = mutation({
       length: key.length,
       trimmedLength: key.trim().length,
       firstLine: key.split(/\r?\n/)[0] || '',
-      lastLine: key.split(/\r?\n/).filter((l) => l.trim()).pop() || '',
+      lastLine:
+        key
+          .split(/\r?\n/)
+          .filter((l) => l.trim())
+          .pop() || '',
       hasBegin: key.includes('-----BEGIN PRIVATE KEY-----'),
       hasEnd: key.includes('-----END PRIVATE KEY-----'),
       startsWithBegin: key.trim().startsWith('-----BEGIN PRIVATE KEY-----'),
@@ -51,4 +55,3 @@ export const testKeyFormat = mutation({
     }
   },
 })
-

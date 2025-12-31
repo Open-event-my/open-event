@@ -48,7 +48,7 @@ const ERROR_MESSAGES: Record<
   // Authentication errors
   UNAUTHORIZED: {
     message: 'You need to sign in to access this feature.',
-    suggestions: ['Sign in to your account', 'Create a new account if you don\'t have one'],
+    suggestions: ['Sign in to your account', "Create a new account if you don't have one"],
     category: 'auth',
   },
   INVALID_CREDENTIALS: {
@@ -67,7 +67,7 @@ const ERROR_MESSAGES: Record<
     message: "You don't have permission to perform this action.",
     suggestions: [
       'Contact your organization admin for access',
-      'Check if you\'re signed in to the correct account',
+      "Check if you're signed in to the correct account",
     ],
     category: 'permission',
   },
@@ -278,10 +278,10 @@ export function createValidationError(
  * })
  * ```
  */
-export function withErrorFormatting<T>(
-  handler: (...args: any[]) => Promise<T>
-): (...args: any[]) => Promise<T> {
-  return async (...args: any[]) => {
+export function withErrorFormatting<T, Args extends unknown[]>(
+  handler: (...args: Args) => Promise<T>
+): (...args: Args) => Promise<T> {
+  return async (...args: Args) => {
     try {
       return await handler(...args)
     } catch (error) {

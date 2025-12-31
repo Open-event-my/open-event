@@ -1,9 +1,9 @@
 /**
  * Data Retention Service
- * 
+ *
  * Implements automated data retention policies to comply with GDPR Article 5
  * (Storage Limitation Principle) and organizational data governance requirements.
- * 
+ *
  * This service:
  * - Defines retention periods for different data types
  * - Automatically identifies data that exceeds retention periods
@@ -11,8 +11,9 @@
  * - Logs all retention-related actions for audit purposes
  */
 
-import { v } from 'convex/values';
-import { mutation, query, internalMutation } from '../../_generated/server';
+import { v } from 'convex/values'
+import { mutation, query, internalMutation } from '../../_generated/server'
+import type { MutationCtx } from '../../_generated/server'
 
 /**
  * Retention policy configuration
@@ -20,16 +21,16 @@ import { mutation, query, internalMutation } from '../../_generated/server';
  */
 export interface RetentionPolicy {
   // Data type identifier
-  dataType: string;
-  
+  dataType: string
+
   // Retention period in days
-  retentionDays: number;
-  
+  retentionDays: number
+
   // Action to take when data exceeds retention period
-  action: 'delete' | 'anonymize';
-  
+  action: 'delete' | 'anonymize'
+
   // Description of the policy
-  description: string;
+  description: string
 }
 
 /**
@@ -97,18 +98,18 @@ export const DEFAULT_RETENTION_POLICIES: RetentionPolicy[] = [
     action: 'anonymize',
     description: 'Completed events older than 3 years',
   },
-];
+]
 
 /**
  * Result of a cleanup operation
  */
 export interface CleanupResult {
-  dataType: string;
-  recordsProcessed: number;
-  recordsDeleted: number;
-  recordsAnonymized: number;
-  errors: string[];
-  completedAt: number;
+  dataType: string
+  recordsProcessed: number
+  recordsDeleted: number
+  recordsAnonymized: number
+  errors: string[]
+  completedAt: number
 }
 
 /**
@@ -117,46 +118,46 @@ export interface CleanupResult {
  */
 export const getRetentionPolicies = query({
   args: {},
-  handler: async (_ctx): Promise<RetentionPolicy[]> => {
+  handler: async (): Promise<RetentionPolicy[]> => {
     // In the future, this could read from platformSettings
     // For now, return default policies
-    return DEFAULT_RETENTION_POLICIES;
+    return DEFAULT_RETENTION_POLICIES
   },
-});
+})
 
 /**
  * Clean up audit logs
  * Deletes audit logs older than the retention period
  */
 async function cleanupAuditLogs(
-  ctx: any,
+  ctx: MutationCtx,
   retentionDays: number
 ): Promise<{ deleted: number; errors: string[] }> {
-  const cutoffDate = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
-  const errors: string[] = [];
-  let deleted = 0;
+  const cutoffDate = Date.now() - retentionDays * 24 * 60 * 60 * 1000
+  const errors: string[] = []
+  let deleted = 0
 
   try {
     // Find old audit logs
     const oldLogs = await ctx.db
       .query('auditLogs')
-      .withIndex('by_date', (q: any) => q.lt('createdAt', cutoffDate))
-      .collect();
+      .withIndex('by_date', (q) => q.lt('createdAt', cutoffDate))
+      .collect()
 
     // Delete each log
     for (const log of oldLogs) {
       try {
-        await ctx.db.delete(log._id);
-        deleted++;
+        await ctx.db.delete(log._id)
+        deleted++
       } catch (error) {
-        errors.push(`Failed to delete audit log ${log._id}: ${error}`);
+        errors.push(`Failed to delete audit log ${log._id}: ${error}`)
       }
     }
   } catch (error) {
-    errors.push(`Failed to query audit logs: ${error}`);
+    errors.push(`Failed to query audit logs: ${error}`)
   }
 
-  return { deleted, errors };
+  return { deleted, errors }
 }
 
 /**
@@ -164,39 +165,39 @@ async function cleanupAuditLogs(
  * Deletes sessions older than the retention period
  */
 async function cleanupSessions(
-  ctx: any,
+  ctx: MutationCtx,
   retentionDays: number
 ): Promise<{ deleted: number; errors: string[] }> {
-  const cutoffDate = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
-  const errors: string[] = [];
-  let deleted = 0;
+  const cutoffDate = Date.now() - retentionDays * 24 * 60 * 60 * 1000
+  const errors: string[] = []
+  let deleted = 0
 
   try {
     // Find old sessions
-    const allSessions = await ctx.db.query('sessions').collect();
-    const oldSessions = allSessions.filter((session: any) => {
+    const allSessions = await ctx.db.query('sessions').collect()
+    const oldSessions = allSessions.filter((session) => {
       // Check if session is expired and old enough to delete
       const isExpired =
         (session.accessTokenExpiresAt && session.accessTokenExpiresAt < Date.now()) ||
-        (session.expiresAt && session.expiresAt < Date.now());
-      const isOld = session.createdAt < cutoffDate;
-      return isExpired && isOld;
-    });
+        (session.expiresAt && session.expiresAt < Date.now())
+      const isOld = session.createdAt < cutoffDate
+      return isExpired && isOld
+    })
 
     // Delete each session
     for (const session of oldSessions) {
       try {
-        await ctx.db.delete(session._id);
-        deleted++;
+        await ctx.db.delete(session._id)
+        deleted++
       } catch (error) {
-        errors.push(`Failed to delete session ${session._id}: ${error}`);
+        errors.push(`Failed to delete session ${session._id}: ${error}`)
       }
     }
   } catch (error) {
-    errors.push(`Failed to query sessions: ${error}`);
+    errors.push(`Failed to query sessions: ${error}`)
   }
 
-  return { deleted, errors };
+  return { deleted, errors }
 }
 
 /**
@@ -204,48 +205,48 @@ async function cleanupSessions(
  * Deletes used or expired verification tokens older than retention period
  */
 async function cleanupVerificationTokens(
-  ctx: any,
+  ctx: MutationCtx,
   retentionDays: number
 ): Promise<{ deleted: number; errors: string[] }> {
-  const cutoffDate = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
-  const errors: string[] = [];
-  let deleted = 0;
+  const cutoffDate = Date.now() - retentionDays * 24 * 60 * 60 * 1000
+  const errors: string[] = []
+  let deleted = 0
 
   try {
     // Find old used tokens
     const usedTokens = await ctx.db
       .query('verificationTokens')
-      .withIndex('by_type_used', (q: any) => q.eq('type', 'email_verification').eq('used', true))
-      .collect();
+      .withIndex('by_type_used', (q) => q.eq('type', 'email_verification').eq('used', true))
+      .collect()
 
-    const oldUsedTokens = usedTokens.filter((token: any) => token.createdAt < cutoffDate);
+    const oldUsedTokens = usedTokens.filter((token) => token.createdAt < cutoffDate)
 
     // Find old expired tokens
-    const allTokens = await ctx.db.query('verificationTokens').collect();
+    const allTokens = await ctx.db.query('verificationTokens').collect()
     const oldExpiredTokens = allTokens.filter(
-      (token: any) => token.expiresAt < Date.now() && token.createdAt < cutoffDate
-    );
+      (token) => token.expiresAt < Date.now() && token.createdAt < cutoffDate
+    )
 
     // Combine and deduplicate
-    const tokensToDelete = new Map();
-    [...oldUsedTokens, ...oldExpiredTokens].forEach((token) => {
-      tokensToDelete.set(token._id, token);
-    });
+    const tokensToDelete = new Map<string, (typeof allTokens)[number]>()
+    ;[...oldUsedTokens, ...oldExpiredTokens].forEach((token) => {
+      tokensToDelete.set(token._id, token)
+    })
 
     // Delete each token
     for (const token of tokensToDelete.values()) {
       try {
-        await ctx.db.delete(token._id);
-        deleted++;
+        await ctx.db.delete(token._id)
+        deleted++
       } catch (error) {
-        errors.push(`Failed to delete verification token ${token._id}: ${error}`);
+        errors.push(`Failed to delete verification token ${token._id}: ${error}`)
       }
     }
   } catch (error) {
-    errors.push(`Failed to query verification tokens: ${error}`);
+    errors.push(`Failed to query verification tokens: ${error}`)
   }
 
-  return { deleted, errors };
+  return { deleted, errors }
 }
 
 /**
@@ -253,32 +254,32 @@ async function cleanupVerificationTokens(
  * Deletes failed login attempt records older than retention period
  */
 async function cleanupFailedLoginAttempts(
-  ctx: any,
+  ctx: MutationCtx,
   retentionDays: number
 ): Promise<{ deleted: number; errors: string[] }> {
-  const cutoffDate = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
-  const errors: string[] = [];
-  let deleted = 0;
+  const cutoffDate = Date.now() - retentionDays * 24 * 60 * 60 * 1000
+  const errors: string[] = []
+  let deleted = 0
 
   try {
     // Find old failed login records
-    const allRecords = await ctx.db.query('failedLoginAttempts').collect();
-    const oldRecords = allRecords.filter((record: any) => record.createdAt < cutoffDate);
+    const allRecords = await ctx.db.query('failedLoginAttempts').collect()
+    const oldRecords = allRecords.filter((record) => record.createdAt < cutoffDate)
 
     // Delete each record
     for (const record of oldRecords) {
       try {
-        await ctx.db.delete(record._id);
-        deleted++;
+        await ctx.db.delete(record._id)
+        deleted++
       } catch (error) {
-        errors.push(`Failed to delete failed login record ${record._id}: ${error}`);
+        errors.push(`Failed to delete failed login record ${record._id}: ${error}`)
       }
     }
   } catch (error) {
-    errors.push(`Failed to query failed login attempts: ${error}`);
+    errors.push(`Failed to query failed login attempts: ${error}`)
   }
 
-  return { deleted, errors };
+  return { deleted, errors }
 }
 
 /**
@@ -286,34 +287,34 @@ async function cleanupFailedLoginAttempts(
  * Deletes read notifications older than retention period
  */
 async function cleanupNotifications(
-  ctx: any,
+  ctx: MutationCtx,
   retentionDays: number
 ): Promise<{ deleted: number; errors: string[] }> {
-  const cutoffDate = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
-  const errors: string[] = [];
-  let deleted = 0;
+  const cutoffDate = Date.now() - retentionDays * 24 * 60 * 60 * 1000
+  const errors: string[] = []
+  let deleted = 0
 
   try {
     // Find old read notifications
-    const allNotifications = await ctx.db.query('notifications').collect();
+    const allNotifications = await ctx.db.query('notifications').collect()
     const oldReadNotifications = allNotifications.filter(
-      (notif: any) => notif.read && notif.createdAt < cutoffDate
-    );
+      (notif) => notif.read && notif.createdAt < cutoffDate
+    )
 
     // Delete each notification
     for (const notif of oldReadNotifications) {
       try {
-        await ctx.db.delete(notif._id);
-        deleted++;
+        await ctx.db.delete(notif._id)
+        deleted++
       } catch (error) {
-        errors.push(`Failed to delete notification ${notif._id}: ${error}`);
+        errors.push(`Failed to delete notification ${notif._id}: ${error}`)
       }
     }
   } catch (error) {
-    errors.push(`Failed to query notifications: ${error}`);
+    errors.push(`Failed to query notifications: ${error}`)
   }
 
-  return { deleted, errors };
+  return { deleted, errors }
 }
 
 /**
@@ -321,38 +322,36 @@ async function cleanupNotifications(
  * Deletes read admin notifications older than retention period
  */
 async function cleanupAdminNotifications(
-  ctx: any,
+  ctx: MutationCtx,
   retentionDays: number
 ): Promise<{ deleted: number; errors: string[] }> {
-  const cutoffDate = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
-  const errors: string[] = [];
-  let deleted = 0;
+  const cutoffDate = Date.now() - retentionDays * 24 * 60 * 60 * 1000
+  const errors: string[] = []
+  let deleted = 0
 
   try {
     // Find old read admin notifications
     const readNotifications = await ctx.db
       .query('adminNotifications')
-      .withIndex('by_read', (q: any) => q.eq('read', true))
-      .collect();
+      .withIndex('by_read', (q) => q.eq('read', true))
+      .collect()
 
-    const oldReadNotifications = readNotifications.filter(
-      (notif: any) => notif.createdAt < cutoffDate
-    );
+    const oldReadNotifications = readNotifications.filter((notif) => notif.createdAt < cutoffDate)
 
     // Delete each notification
     for (const notif of oldReadNotifications) {
       try {
-        await ctx.db.delete(notif._id);
-        deleted++;
+        await ctx.db.delete(notif._id)
+        deleted++
       } catch (error) {
-        errors.push(`Failed to delete admin notification ${notif._id}: ${error}`);
+        errors.push(`Failed to delete admin notification ${notif._id}: ${error}`)
       }
     }
   } catch (error) {
-    errors.push(`Failed to query admin notifications: ${error}`);
+    errors.push(`Failed to query admin notifications: ${error}`)
   }
 
-  return { deleted, errors };
+  return { deleted, errors }
 }
 
 /**
@@ -360,34 +359,34 @@ async function cleanupAdminNotifications(
  * Deletes API request logs older than retention period
  */
 async function cleanupApiRequestLogs(
-  ctx: any,
+  ctx: MutationCtx,
   retentionDays: number
 ): Promise<{ deleted: number; errors: string[] }> {
-  const cutoffDate = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
-  const errors: string[] = [];
-  let deleted = 0;
+  const cutoffDate = Date.now() - retentionDays * 24 * 60 * 60 * 1000
+  const errors: string[] = []
+  let deleted = 0
 
   try {
     // Find old API request logs
     const oldLogs = await ctx.db
       .query('apiRequestLogs')
-      .withIndex('by_date', (q: any) => q.lt('createdAt', cutoffDate))
-      .collect();
+      .withIndex('by_date', (q) => q.lt('createdAt', cutoffDate))
+      .collect()
 
     // Delete each log
     for (const log of oldLogs) {
       try {
-        await ctx.db.delete(log._id);
-        deleted++;
+        await ctx.db.delete(log._id)
+        deleted++
       } catch (error) {
-        errors.push(`Failed to delete API request log ${log._id}: ${error}`);
+        errors.push(`Failed to delete API request log ${log._id}: ${error}`)
       }
     }
   } catch (error) {
-    errors.push(`Failed to query API request logs: ${error}`);
+    errors.push(`Failed to query API request logs: ${error}`)
   }
 
-  return { deleted, errors };
+  return { deleted, errors }
 }
 
 /**
@@ -395,34 +394,34 @@ async function cleanupApiRequestLogs(
  * Deletes webhook delivery logs older than retention period
  */
 async function cleanupWebhookDeliveries(
-  ctx: any,
+  ctx: MutationCtx,
   retentionDays: number
 ): Promise<{ deleted: number; errors: string[] }> {
-  const cutoffDate = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
-  const errors: string[] = [];
-  let deleted = 0;
+  const cutoffDate = Date.now() - retentionDays * 24 * 60 * 60 * 1000
+  const errors: string[] = []
+  let deleted = 0
 
   try {
     // Find old webhook deliveries
     const oldDeliveries = await ctx.db
       .query('webhookDeliveries')
-      .withIndex('by_date', (q: any) => q.lt('createdAt', cutoffDate))
-      .collect();
+      .withIndex('by_date', (q) => q.lt('createdAt', cutoffDate))
+      .collect()
 
     // Delete each delivery
     for (const delivery of oldDeliveries) {
       try {
-        await ctx.db.delete(delivery._id);
-        deleted++;
+        await ctx.db.delete(delivery._id)
+        deleted++
       } catch (error) {
-        errors.push(`Failed to delete webhook delivery ${delivery._id}: ${error}`);
+        errors.push(`Failed to delete webhook delivery ${delivery._id}: ${error}`)
       }
     }
   } catch (error) {
-    errors.push(`Failed to query webhook deliveries: ${error}`);
+    errors.push(`Failed to query webhook deliveries: ${error}`)
   }
 
-  return { deleted, errors };
+  return { deleted, errors }
 }
 
 /**
@@ -430,34 +429,34 @@ async function cleanupWebhookDeliveries(
  * Deletes moderation logs older than retention period
  */
 async function cleanupModerationLogs(
-  ctx: any,
+  ctx: MutationCtx,
   retentionDays: number
 ): Promise<{ deleted: number; errors: string[] }> {
-  const cutoffDate = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
-  const errors: string[] = [];
-  let deleted = 0;
+  const cutoffDate = Date.now() - retentionDays * 24 * 60 * 60 * 1000
+  const errors: string[] = []
+  let deleted = 0
 
   try {
     // Find old moderation logs
     const oldLogs = await ctx.db
       .query('moderationLogs')
-      .withIndex('by_date', (q: any) => q.lt('createdAt', cutoffDate))
-      .collect();
+      .withIndex('by_date', (q) => q.lt('createdAt', cutoffDate))
+      .collect()
 
     // Delete each log
     for (const log of oldLogs) {
       try {
-        await ctx.db.delete(log._id);
-        deleted++;
+        await ctx.db.delete(log._id)
+        deleted++
       } catch (error) {
-        errors.push(`Failed to delete moderation log ${log._id}: ${error}`);
+        errors.push(`Failed to delete moderation log ${log._id}: ${error}`)
       }
     }
   } catch (error) {
-    errors.push(`Failed to query moderation logs: ${error}`);
+    errors.push(`Failed to query moderation logs: ${error}`)
   }
 
-  return { deleted, errors };
+  return { deleted, errors }
 }
 
 /**
@@ -465,25 +464,25 @@ async function cleanupModerationLogs(
  * Anonymizes events that have been completed for longer than retention period
  */
 async function anonymizeCompletedEvents(
-  ctx: any,
+  ctx: MutationCtx,
   retentionDays: number
 ): Promise<{ anonymized: number; errors: string[] }> {
-  const cutoffDate = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
-  const errors: string[] = [];
-  let anonymized = 0;
+  const cutoffDate = Date.now() - retentionDays * 24 * 60 * 60 * 1000
+  const errors: string[] = []
+  let anonymized = 0
 
   try {
     // Find old completed events
     const completedEvents = await ctx.db
       .query('events')
-      .withIndex('by_status', (q: any) => q.eq('status', 'completed'))
-      .collect();
+      .withIndex('by_status', (q) => q.eq('status', 'completed'))
+      .collect()
 
-    const oldCompletedEvents = completedEvents.filter((event: any) => {
+    const oldCompletedEvents = completedEvents.filter((event) => {
       // Use endDate if available, otherwise use updatedAt or createdAt
-      const completionDate = event.endDate || event.updatedAt || event.createdAt;
-      return completionDate < cutoffDate;
-    });
+      const completionDate = event.endDate || event.updatedAt || event.createdAt
+      return completionDate < cutoffDate
+    })
 
     // Anonymize each event
     for (const event of oldCompletedEvents) {
@@ -497,17 +496,17 @@ async function anonymizeCompletedEvents(
           requirements: undefined,
           sponsorBenefits: undefined,
           updatedAt: Date.now(),
-        });
-        anonymized++;
+        })
+        anonymized++
       } catch (error) {
-        errors.push(`Failed to anonymize event ${event._id}: ${error}`);
+        errors.push(`Failed to anonymize event ${event._id}: ${error}`)
       }
     }
   } catch (error) {
-    errors.push(`Failed to query completed events: ${error}`);
+    errors.push(`Failed to query completed events: ${error}`)
   }
 
-  return { anonymized, errors };
+  return { anonymized, errors }
 }
 
 /**
@@ -515,82 +514,82 @@ async function anonymizeCompletedEvents(
  * This is the actual implementation that can be called directly
  */
 async function executeRetentionCleanupHandler(
-  ctx: any,
+  ctx: MutationCtx,
   args: { dataType: string; retentionDays: number; action: 'delete' | 'anonymize' }
 ): Promise<CleanupResult> {
-  const { dataType, retentionDays, action } = args;
+  const { dataType, retentionDays, action } = args
 
-  let recordsDeleted = 0;
-  let recordsAnonymized = 0;
-  const errors: string[] = [];
+  let recordsDeleted = 0
+  let recordsAnonymized = 0
+  const errors: string[] = []
 
   try {
     switch (dataType) {
       case 'audit_logs': {
-        const result = await cleanupAuditLogs(ctx, retentionDays);
-        recordsDeleted = result.deleted;
-        errors.push(...result.errors);
-        break;
+        const result = await cleanupAuditLogs(ctx, retentionDays)
+        recordsDeleted = result.deleted
+        errors.push(...result.errors)
+        break
       }
       case 'sessions': {
-        const result = await cleanupSessions(ctx, retentionDays);
-        recordsDeleted = result.deleted;
-        errors.push(...result.errors);
-        break;
+        const result = await cleanupSessions(ctx, retentionDays)
+        recordsDeleted = result.deleted
+        errors.push(...result.errors)
+        break
       }
       case 'verification_tokens': {
-        const result = await cleanupVerificationTokens(ctx, retentionDays);
-        recordsDeleted = result.deleted;
-        errors.push(...result.errors);
-        break;
+        const result = await cleanupVerificationTokens(ctx, retentionDays)
+        recordsDeleted = result.deleted
+        errors.push(...result.errors)
+        break
       }
       case 'failed_login_attempts': {
-        const result = await cleanupFailedLoginAttempts(ctx, retentionDays);
-        recordsDeleted = result.deleted;
-        errors.push(...result.errors);
-        break;
+        const result = await cleanupFailedLoginAttempts(ctx, retentionDays)
+        recordsDeleted = result.deleted
+        errors.push(...result.errors)
+        break
       }
       case 'notifications': {
-        const result = await cleanupNotifications(ctx, retentionDays);
-        recordsDeleted = result.deleted;
-        errors.push(...result.errors);
-        break;
+        const result = await cleanupNotifications(ctx, retentionDays)
+        recordsDeleted = result.deleted
+        errors.push(...result.errors)
+        break
       }
       case 'admin_notifications': {
-        const result = await cleanupAdminNotifications(ctx, retentionDays);
-        recordsDeleted = result.deleted;
-        errors.push(...result.errors);
-        break;
+        const result = await cleanupAdminNotifications(ctx, retentionDays)
+        recordsDeleted = result.deleted
+        errors.push(...result.errors)
+        break
       }
       case 'api_request_logs': {
-        const result = await cleanupApiRequestLogs(ctx, retentionDays);
-        recordsDeleted = result.deleted;
-        errors.push(...result.errors);
-        break;
+        const result = await cleanupApiRequestLogs(ctx, retentionDays)
+        recordsDeleted = result.deleted
+        errors.push(...result.errors)
+        break
       }
       case 'webhook_deliveries': {
-        const result = await cleanupWebhookDeliveries(ctx, retentionDays);
-        recordsDeleted = result.deleted;
-        errors.push(...result.errors);
-        break;
+        const result = await cleanupWebhookDeliveries(ctx, retentionDays)
+        recordsDeleted = result.deleted
+        errors.push(...result.errors)
+        break
       }
       case 'moderation_logs': {
-        const result = await cleanupModerationLogs(ctx, retentionDays);
-        recordsDeleted = result.deleted;
-        errors.push(...result.errors);
-        break;
+        const result = await cleanupModerationLogs(ctx, retentionDays)
+        recordsDeleted = result.deleted
+        errors.push(...result.errors)
+        break
       }
       case 'completed_events': {
-        const result = await anonymizeCompletedEvents(ctx, retentionDays);
-        recordsAnonymized = result.anonymized;
-        errors.push(...result.errors);
-        break;
+        const result = await anonymizeCompletedEvents(ctx, retentionDays)
+        recordsAnonymized = result.anonymized
+        errors.push(...result.errors)
+        break
       }
       default:
-        errors.push(`Unknown data type: ${dataType}`);
+        errors.push(`Unknown data type: ${dataType}`)
     }
   } catch (error) {
-    errors.push(`Cleanup failed for ${dataType}: ${error}`);
+    errors.push(`Cleanup failed for ${dataType}: ${error}`)
   }
 
   const result: CleanupResult = {
@@ -600,7 +599,7 @@ async function executeRetentionCleanupHandler(
     recordsAnonymized,
     errors,
     completedAt: Date.now(),
-  };
+  }
 
   // Log the cleanup operation in audit logs
   await ctx.db.insert('auditLogs', {
@@ -621,9 +620,9 @@ async function executeRetentionCleanupHandler(
     },
     status: errors.length === 0 ? 'success' : 'failure',
     createdAt: Date.now(),
-  });
+  })
 
-  return result;
+  return result
 }
 
 /**
@@ -637,9 +636,9 @@ export const executeRetentionCleanup = internalMutation({
     action: v.union(v.literal('delete'), v.literal('anonymize')),
   },
   handler: async (ctx, args): Promise<CleanupResult> => {
-    return executeRetentionCleanupHandler(ctx, args);
+    return executeRetentionCleanupHandler(ctx, args)
   },
-});
+})
 
 /**
  * Run all retention policies
@@ -649,8 +648,8 @@ export const executeRetentionCleanup = internalMutation({
 export const runAllRetentionPolicies = internalMutation({
   args: {},
   handler: async (ctx): Promise<CleanupResult[]> => {
-    const policies = DEFAULT_RETENTION_POLICIES;
-    const results: CleanupResult[] = [];
+    const policies = DEFAULT_RETENTION_POLICIES
+    const results: CleanupResult[] = []
 
     for (const policy of policies) {
       try {
@@ -659,8 +658,8 @@ export const runAllRetentionPolicies = internalMutation({
           dataType: policy.dataType,
           retentionDays: policy.retentionDays,
           action: policy.action,
-        });
-        results.push(result);
+        })
+        results.push(result)
       } catch (error) {
         // Log error but continue with other policies
         results.push({
@@ -670,13 +669,13 @@ export const runAllRetentionPolicies = internalMutation({
           recordsAnonymized: 0,
           errors: [`Failed to execute policy: ${error}`],
           completedAt: Date.now(),
-        });
+        })
       }
     }
 
-    return results;
+    return results
   },
-});
+})
 
 /**
  * Manual trigger for retention cleanup (admin only)
@@ -688,48 +687,48 @@ export const triggerRetentionCleanup = mutation({
   },
   handler: async (ctx, args) => {
     // Verify authentication
-    const identity = await ctx.auth.getUserIdentity();
+    const identity = await ctx.auth.getUserIdentity()
     if (!identity) {
-      throw new Error('Not authenticated');
+      throw new Error('Not authenticated')
     }
 
     // Get requesting user
     const user = await ctx.db
       .query('users')
       .withIndex('email', (q) => q.eq('email', identity.email))
-      .first();
+      .first()
 
     if (!user) {
-      throw new Error('User not found');
+      throw new Error('User not found')
     }
 
     // Verify admin authorization
     if (user.role !== 'admin' && user.role !== 'superadmin') {
-      throw new Error('Unauthorized: Only admins can trigger retention cleanup');
+      throw new Error('Unauthorized: Only admins can trigger retention cleanup')
     }
 
     // If specific data type requested, run only that policy
     if (args.dataType) {
-      const policy = DEFAULT_RETENTION_POLICIES.find((p) => p.dataType === args.dataType);
+      const policy = DEFAULT_RETENTION_POLICIES.find((p) => p.dataType === args.dataType)
       if (!policy) {
-        throw new Error(`Unknown data type: ${args.dataType}`);
+        throw new Error(`Unknown data type: ${args.dataType}`)
       }
 
       const result = await executeRetentionCleanupHandler(ctx, {
         dataType: policy.dataType,
         retentionDays: policy.retentionDays,
         action: policy.action,
-      });
+      })
 
       return {
         success: true,
         results: [result],
-      };
+      }
     }
 
     // Otherwise, run all policies
-    const policies = DEFAULT_RETENTION_POLICIES;
-    const results: CleanupResult[] = [];
+    const policies = DEFAULT_RETENTION_POLICIES
+    const results: CleanupResult[] = []
 
     for (const policy of policies) {
       try {
@@ -737,8 +736,8 @@ export const triggerRetentionCleanup = mutation({
           dataType: policy.dataType,
           retentionDays: policy.retentionDays,
           action: policy.action,
-        });
-        results.push(result);
+        })
+        results.push(result)
       } catch (error) {
         results.push({
           dataType: policy.dataType,
@@ -747,13 +746,13 @@ export const triggerRetentionCleanup = mutation({
           recordsAnonymized: 0,
           errors: [`Failed to execute policy: ${error}`],
           completedAt: Date.now(),
-        });
+        })
       }
     }
 
     return {
       success: true,
       results,
-    };
+    }
   },
-});
+})

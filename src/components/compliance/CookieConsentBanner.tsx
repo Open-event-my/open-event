@@ -1,52 +1,51 @@
-import { useState, useEffect } from 'react';
-import { X, Cookie } from '@phosphor-icons/react';
-import { Button } from '@/components/ui/button';
-import { cookieConsentManager } from '@/lib/compliance/cookieConsent';
-import { cn } from '@/lib/utils';
+import { useState, useEffect } from 'react'
+import { X, Cookie } from '@phosphor-icons/react'
+import { Button } from '@/components/ui/button'
+import { cookieConsentManager } from '@/lib/compliance/cookieConsent'
+import { cn } from '@/lib/utils'
 
 export function CookieConsentBanner() {
-  const [isVisible, setIsVisible] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
+  // Initialize state based on consent status
+  const [isVisible, setIsVisible] = useState(() => {
+    return !cookieConsentManager.hasConsentBeenGiven()
+  })
+  const [showDetails, setShowDetails] = useState(false)
 
   useEffect(() => {
-    // Check if consent has already been given
-    const hasConsent = cookieConsentManager.hasConsentBeenGiven();
-    setIsVisible(!hasConsent);
-
     // Listen for custom events to show/hide banner
-    const handleShowBanner = () => setIsVisible(true);
-    const handleConsentChanged = () => setIsVisible(false);
-    const handleConsentCleared = () => setIsVisible(true);
+    const handleShowBanner = () => setIsVisible(true)
+    const handleConsentChanged = () => setIsVisible(false)
+    const handleConsentCleared = () => setIsVisible(true)
 
-    window.addEventListener('showConsentBanner', handleShowBanner);
-    window.addEventListener('consentChanged', handleConsentChanged);
-    window.addEventListener('consentCleared', handleConsentCleared);
+    window.addEventListener('showConsentBanner', handleShowBanner)
+    window.addEventListener('consentChanged', handleConsentChanged)
+    window.addEventListener('consentCleared', handleConsentCleared)
 
     return () => {
-      window.removeEventListener('showConsentBanner', handleShowBanner);
-      window.removeEventListener('consentChanged', handleConsentChanged);
-      window.removeEventListener('consentCleared', handleConsentCleared);
-    };
-  }, []);
+      window.removeEventListener('showConsentBanner', handleShowBanner)
+      window.removeEventListener('consentChanged', handleConsentChanged)
+      window.removeEventListener('consentCleared', handleConsentCleared)
+    }
+  }, [])
 
   const handleAcceptAll = () => {
-    cookieConsentManager.acceptAll();
-    setIsVisible(false);
-  };
+    cookieConsentManager.acceptAll()
+    setIsVisible(false)
+  }
 
   const handleAcceptNecessary = () => {
-    cookieConsentManager.acceptNecessaryOnly();
-    setIsVisible(false);
-  };
+    cookieConsentManager.acceptNecessaryOnly()
+    setIsVisible(false)
+  }
 
   const handleClose = () => {
     // Closing without accepting means only necessary cookies
-    cookieConsentManager.acceptNecessaryOnly();
-    setIsVisible(false);
-  };
+    cookieConsentManager.acceptNecessaryOnly()
+    setIsVisible(false)
+  }
 
   if (!isVisible) {
-    return null;
+    return null
   }
 
   return (
@@ -67,15 +66,10 @@ export function CookieConsentBanner() {
               <Cookie className="size-6 text-primary" weight="duotone" />
             </div>
             <div className="flex-1 space-y-2">
-              <h3 className="text-sm font-semibold text-foreground">
-                Cookie Preferences
-              </h3>
-              <p
-                id="cookie-consent-description"
-                className="text-sm text-muted-foreground"
-              >
-                We use cookies to enhance your experience, analyze site traffic,
-                and personalize content. You can choose which cookies to accept.
+              <h3 className="text-sm font-semibold text-foreground">Cookie Preferences</h3>
+              <p id="cookie-consent-description" className="text-sm text-muted-foreground">
+                We use cookies to enhance your experience, analyze site traffic, and personalize
+                content. You can choose which cookies to accept.
               </p>
 
               {/* Details Section */}
@@ -86,26 +80,20 @@ export function CookieConsentBanner() {
                       Necessary Cookies (Always Active)
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Required for the website to function properly. These
-                      cannot be disabled.
+                      Required for the website to function properly. These cannot be disabled.
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs font-medium text-foreground">
-                      Analytics Cookies
-                    </p>
+                    <p className="text-xs font-medium text-foreground">Analytics Cookies</p>
                     <p className="text-xs text-muted-foreground">
-                      Help us understand how visitors interact with our website
-                      to improve user experience.
+                      Help us understand how visitors interact with our website to improve user
+                      experience.
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs font-medium text-foreground">
-                      Marketing Cookies
-                    </p>
+                    <p className="text-xs font-medium text-foreground">Marketing Cookies</p>
                     <p className="text-xs text-muted-foreground">
-                      Used to deliver personalized advertisements and track
-                      campaign effectiveness.
+                      Used to deliver personalized advertisements and track campaign effectiveness.
                     </p>
                   </div>
                 </div>
@@ -151,5 +139,5 @@ export function CookieConsentBanner() {
         </div>
       </div>
     </div>
-  );
+  )
 }

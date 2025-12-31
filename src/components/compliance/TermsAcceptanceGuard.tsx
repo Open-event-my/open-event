@@ -1,33 +1,31 @@
 /**
  * Terms Acceptance Guard
- * 
+ *
  * Wraps protected routes and shows terms dialog if user hasn't accepted current version.
  */
 
-import { useState, useEffect } from 'react';
-import { useTermsAcceptance } from '@/hooks/useTermsAcceptance';
-import { TermsAcceptanceDialog } from './TermsAcceptanceDialog';
+import { useState } from 'react'
+import { useTermsAcceptance } from '@/hooks/useTermsAcceptance'
+import { TermsAcceptanceDialog } from './TermsAcceptanceDialog'
 
 interface TermsAcceptanceGuardProps {
-  children: React.ReactNode;
+  children: React.ReactNode
 }
 
 export function TermsAcceptanceGuard({ children }: TermsAcceptanceGuardProps) {
-  const { needsAcceptance, currentVersion, isLoading } = useTermsAcceptance();
-  const [showDialog, setShowDialog] = useState(false);
+  const { needsAcceptance, currentVersion, isLoading } = useTermsAcceptance()
 
-  useEffect(() => {
-    if (!isLoading && needsAcceptance) {
-      setShowDialog(true);
-    }
-  }, [needsAcceptance, isLoading]);
+  // Derive dialog visibility from needsAcceptance state
+  // Use a separate dismissed state to track if user has interacted
+  const [dismissed, setDismissed] = useState(false)
+  const showDialog = !isLoading && needsAcceptance && !dismissed
 
   const handleAccept = () => {
-    setShowDialog(false);
-  };
+    setDismissed(true)
+  }
 
   if (isLoading) {
-    return null; // Or a loading spinner
+    return null // Or a loading spinner
   }
 
   return (
@@ -40,5 +38,5 @@ export function TermsAcceptanceGuard({ children }: TermsAcceptanceGuardProps) {
         canClose={false}
       />
     </>
-  );
+  )
 }

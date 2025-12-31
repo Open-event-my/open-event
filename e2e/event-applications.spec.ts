@@ -24,11 +24,11 @@ const TEST_PASSWORD = 'TestPass123!'
  */
 async function login(page: import('@playwright/test').Page) {
   await page.goto('/sign-in')
-  
+
   // Wait for sign-in page to be fully loaded
   await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {})
   await expect(page.getByText(/sign in/i).first()).toBeVisible({ timeout: 10000 })
-  
+
   // Wait a bit for form to be ready
   await page.waitForTimeout(500)
 
@@ -81,7 +81,10 @@ async function navigateToEventApplications(
   await page.waitForTimeout(2000)
 
   // Click first event card
-  const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+  const eventCard = page
+    .locator('.rounded-lg.border')
+    .filter({ has: page.locator('h3') })
+    .first()
 
   if (await eventCard.isVisible().catch(() => false)) {
     await eventCard.click()
@@ -91,16 +94,21 @@ async function navigateToEventApplications(
     // Extract event ID and validate it
     const url = page.url()
     const extractedEventId = url.split('/').pop() || ''
-    
+
     // Validate eventId is not "new", "edit", or other invalid values
-    if (!extractedEventId || extractedEventId === 'new' || extractedEventId === 'edit' || !/^[a-z0-9]+$/.test(extractedEventId)) {
+    if (
+      !extractedEventId ||
+      extractedEventId === 'new' ||
+      extractedEventId === 'edit' ||
+      !/^[a-z0-9]+$/.test(extractedEventId)
+    ) {
       throw new Error(`Invalid eventId extracted from URL: ${extractedEventId}. URL: ${url}`)
     }
-    
+
     await page.goto(`/dashboard/events/${extractedEventId}/applications`)
     await page.waitForURL(/\/dashboard\/events\/[a-z0-9]+\/applications/, { timeout: 10000 })
     await page.waitForTimeout(2000)
-    
+
     return extractedEventId
   }
 
@@ -109,7 +117,7 @@ async function navigateToEventApplications(
   await page.goto(`/dashboard/events/${createdEventId}/applications`)
   await page.waitForURL(/\/dashboard\/events\/[a-z0-9]+\/applications/, { timeout: 10000 })
   await page.waitForTimeout(2000)
-  
+
   return createdEventId
 }
 
@@ -125,7 +133,10 @@ async function createTestEvent(
   await page.waitForTimeout(1500)
 
   // Click manual form button
-  const manualButton = page.locator('button').filter({ hasText: /manual form/i }).first()
+  const manualButton = page
+    .locator('button')
+    .filter({ hasText: /manual form/i })
+    .first()
   await manualButton.click()
   await page.waitForTimeout(500)
 
@@ -137,15 +148,19 @@ async function createTestEvent(
   await page.getByLabel(/start date/i).fill(tomorrow.toISOString().split('T')[0])
 
   // Submit
-  await page.locator('button').filter({ hasText: /create event/i }).first().click()
+  await page
+    .locator('button')
+    .filter({ hasText: /create event/i })
+    .first()
+    .click()
   await page.waitForURL(/\/dashboard\/events\/[a-z0-9]+$/, { timeout: 15000 })
-  
+
   // Wait for page to fully load
   await page.waitForTimeout(2000)
 
   const url = page.url()
   const eventId = url.split('/').pop() || ''
-  
+
   // Validate eventId is not "new", "edit", or other invalid values
   if (!eventId || eventId === 'new' || eventId === 'edit' || !/^[a-z0-9]+$/.test(eventId)) {
     throw new Error(`Invalid eventId extracted after creating event: ${eventId}. URL: ${url}`)
@@ -165,7 +180,7 @@ test.describe('Event Applications (Organizer View)', () => {
   test.describe('View Incoming Vendor Applications', () => {
     test('should navigate to applications page for an event', async ({ page }) => {
       await navigateToEventApplications(page)
-      
+
       // Should be on applications page
       await expect(page).toHaveURL(/\/dashboard\/events\/[a-z0-9]+\/applications/)
     })
@@ -187,36 +202,46 @@ test.describe('Event Applications (Organizer View)', () => {
       // Check for error state - check immediately using count() (catches errors already present)
       const errorHeading = page.getByRole('heading', { name: /something went wrong/i })
       const errorText = page.getByText(/something went wrong|encountered an error/i)
-      
+
       // Check if error is already present
       const errorHeadingCount = await errorHeading.count()
       const errorTextCount = await errorText.count()
-      
+
       if (errorHeadingCount > 0 || errorTextCount > 0) {
         // Try to extract the actual error message from error details
         let errorMessage = 'Unknown error'
         try {
           // Try to find and expand error details section
-          const errorDetails = page.locator('details').filter({ hasText: /error details|debug info/i })
-          if (await errorDetails.count() > 0) {
+          const errorDetails = page
+            .locator('details')
+            .filter({ hasText: /error details|debug info/i })
+          if ((await errorDetails.count()) > 0) {
             await errorDetails.first().click()
             await page.waitForTimeout(500)
             const errorPre = errorDetails.locator('pre').first()
-            if (await errorPre.count() > 0) {
-              errorMessage = await errorPre.textContent() || 'Unknown error'
+            if ((await errorPre.count()) > 0) {
+              errorMessage = (await errorPre.textContent()) || 'Unknown error'
             }
           }
         } catch {
           // If we can't extract error details, use generic message
         }
-        
-        throw new Error(`Page is showing an error state instead of applications page. The page may have failed to load. Error: ${errorMessage}`)
+
+        throw new Error(
+          `Page is showing an error state instead of applications page. The page may have failed to load. Error: ${errorMessage}`
+        )
       }
 
       // Also check page content (most reliable method)
       const pageContent = await page.textContent('body').catch(() => '')
-      if (pageContent && (pageContent.toLowerCase().includes('something went wrong') || pageContent.toLowerCase().includes('encountered an error'))) {
-        throw new Error('Page is showing an error state instead of applications page. The page may have failed to load.')
+      if (
+        pageContent &&
+        (pageContent.toLowerCase().includes('something went wrong') ||
+          pageContent.toLowerCase().includes('encountered an error'))
+      ) {
+        throw new Error(
+          'Page is showing an error state instead of applications page. The page may have failed to load.'
+        )
       }
 
       // If no error found, check for applications heading
@@ -261,7 +286,7 @@ test.describe('Event Applications (Organizer View)', () => {
 
         if ((await vendorCards.count()) > 0) {
           const firstCard = vendorCards.first()
-          
+
           // Should show applicant name
           const applicantName = firstCard.locator('h3, .font-semibold').first()
           await expect(applicantName).toBeVisible()
@@ -371,7 +396,7 @@ test.describe('Event Applications (Organizer View)', () => {
 
         if ((await sponsorCards.count()) > 0) {
           const firstCard = sponsorCards.first()
-          
+
           // Should show applicant name
           const applicantName = firstCard.locator('h3, .font-semibold').first()
           await expect(applicantName).toBeVisible()
@@ -417,7 +442,7 @@ test.describe('Event Applications (Organizer View)', () => {
       await page.waitForTimeout(2000)
 
       // Look for budget amounts (dollar signs)
-      const budgetText = page.locator('text=/\$/')
+      const budgetText = page.locator('text=/\\$/')
 
       const count = await budgetText.count()
       // Budgets are optional
@@ -436,10 +461,12 @@ test.describe('Event Applications (Organizer View)', () => {
       // Check for error state first
       const errorState = page.getByText(/something went wrong|error loading/i)
       const hasError = await errorState.isVisible().catch(() => false)
-      
+
       if (hasError) {
         // If error exists, fail with a clearer message
-        throw new Error('Page is showing an error state instead of applications page. The page may have failed to load.')
+        throw new Error(
+          'Page is showing an error state instead of applications page. The page may have failed to load.'
+        )
       }
 
       // Should show status filter tabs
@@ -538,10 +565,12 @@ test.describe('Event Applications (Organizer View)', () => {
       const errorText = page.getByText(/something went wrong|error loading/i)
       const hasErrorHeading = await errorHeading.isVisible().catch(() => false)
       const hasErrorText = await errorText.isVisible().catch(() => false)
-      
+
       if (hasErrorHeading || hasErrorText) {
         // If error exists, fail with a clearer message
-        throw new Error('Page is showing an error state instead of applications page. The page may have failed to load.')
+        throw new Error(
+          'Page is showing an error state instead of applications page. The page may have failed to load.'
+        )
       }
 
       // Pending tab should be active
@@ -742,7 +771,7 @@ test.describe('Event Applications (Organizer View)', () => {
       await page.waitForTimeout(2000)
 
       const searchInput = page.getByPlaceholder(/search applications/i)
-      
+
       // Search for something
       await searchInput.fill('test')
       await page.waitForTimeout(1000)
@@ -801,7 +830,7 @@ test.describe('Event Applications (Organizer View)', () => {
 
         // Should show success toast or application status changes
         const successToast = page.getByText(/application accepted/i)
-        const toastVisible = await successToast.isVisible().catch(() => false)
+        await successToast.isVisible().catch(() => false)
 
         // Test passes if toast appears or if we can't find it (may be too fast)
         expect(true).toBeTruthy()
@@ -825,7 +854,7 @@ test.describe('Event Applications (Organizer View)', () => {
 
         // Look for success toast
         const successToast = page.getByText(/application accepted|accepted/i)
-        const toastVisible = await successToast.isVisible().catch(() => false)
+        await successToast.isVisible().catch(() => false)
 
         // Toast may appear briefly, so test passes if we tried to accept
         expect(true).toBeTruthy()
@@ -961,7 +990,10 @@ test.describe('Event Applications (Organizer View)', () => {
 
         // Should show success toast or modal closes
         const successToast = page.getByText(/application rejected|rejected/i)
-        const modalClosed = !(await page.getByText(/reject application/i).isVisible().catch(() => false))
+        const modalClosed = !(await page
+          .getByText(/reject application/i)
+          .isVisible()
+          .catch(() => false))
 
         expect((await successToast.isVisible().catch(() => false)) || modalClosed).toBeTruthy()
       }
@@ -1052,7 +1084,10 @@ test.describe('Event Applications (Organizer View)', () => {
         await page.waitForTimeout(500)
 
         // Modal should be closed
-        const modalClosed = !(await page.getByText(/application details/i).isVisible().catch(() => false))
+        const modalClosed = !(await page
+          .getByText(/application details/i)
+          .isVisible()
+          .catch(() => false))
         expect(modalClosed).toBeTruthy()
       }
     })
@@ -1096,7 +1131,7 @@ test.describe('Event Applications (Organizer View)', () => {
 
         // Should show success toast or status changes
         const successToast = page.getByText(/under review|marked/i)
-        const toastVisible = await successToast.isVisible().catch(() => false)
+        await successToast.isVisible().catch(() => false)
 
         // Test passes if we tried to mark as under review
         expect(true).toBeTruthy()
@@ -1145,7 +1180,7 @@ test.describe('Event Applications (Organizer View)', () => {
 
     test('should show loading state while fetching applications', async ({ page }) => {
       await navigateToEventApplications(page)
-      
+
       // Reload to catch loading state
       await page.reload()
       await page.waitForTimeout(500)
@@ -1170,8 +1205,15 @@ test.describe('Event Applications (Organizer View)', () => {
       const isEmptyAfter = await emptyState.isVisible().catch(() => false)
 
       // Test passes if we see any valid state (including error, which indicates the page tried to load)
-      expect(isLoading || isLoadingAfter || hasContent || hasContentAfter || isEmpty || isEmptyAfter || hasError).toBeTruthy()
+      expect(
+        isLoading ||
+          isLoadingAfter ||
+          hasContent ||
+          hasContentAfter ||
+          isEmpty ||
+          isEmptyAfter ||
+          hasError
+      ).toBeTruthy()
     })
   })
 })
-

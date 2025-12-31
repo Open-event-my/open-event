@@ -1,15 +1,16 @@
 /**
  * Audit Logger Service
- * 
+ *
  * Comprehensive audit logging for compliance and security.
  * Tracks all data operations and admin actions with full context.
- * 
+ *
  * Requirements: 3.5, 3.10
  */
 
 import { v } from 'convex/values'
 import { mutation, internalMutation } from '../../_generated/server'
-import type { Id } from '../../_generated/dataModel'
+import type { ActionCtx } from '../../_generated/server'
+import type { Id, Doc } from '../../_generated/dataModel'
 import { internal } from '../../_generated/api'
 
 // ============================================================================
@@ -67,21 +68,18 @@ export interface AdminAuditEntry extends AuditEntry {
 
 /**
  * AuditLogger - Service for creating audit trail entries
- * 
+ *
  * This class provides methods to log all data operations and admin actions
  * with full context for compliance and security auditing.
  */
 export class AuditLogger {
   /**
    * Log a standard audit entry
-   * 
+   *
    * @param entry - The audit entry to log
    * @returns Promise that resolves when the entry is logged
    */
-  static async log(
-    ctx: any,
-    entry: Omit<AuditEntry, 'timestamp'>
-  ): Promise<void> {
+  static async log(ctx: ActionCtx, entry: Omit<AuditEntry, 'timestamp'>): Promise<void> {
     await ctx.runMutation(internal.lib.compliance.auditLog.logInternal, {
       userId: entry.userId,
       action: entry.action,
@@ -95,12 +93,12 @@ export class AuditLogger {
 
   /**
    * Log an admin action with enhanced detail
-   * 
+   *
    * @param entry - The admin audit entry to log
    * @returns Promise that resolves when the entry is logged
    */
   static async logAdminAction(
-    ctx: any,
+    ctx: ActionCtx,
     entry: Omit<AdminAuditEntry, 'timestamp'>
   ): Promise<void> {
     await ctx.runMutation(internal.lib.compliance.auditLog.logAdminActionInternal, {
@@ -119,17 +117,17 @@ export class AuditLogger {
 
   /**
    * Query audit logs for a specific user
-   * 
+   *
    * @param ctx - Convex context
    * @param filters - Filter criteria
    * @param limit - Maximum number of entries to return
    * @returns Array of audit log entries
    */
   static async query(
-    ctx: any,
+    ctx: ActionCtx,
     filters: Partial<AuditEntry>,
     limit: number = 100
-  ): Promise<any[]> {
+  ): Promise<Doc<'auditLogs'>[]> {
     // Use the existing auditLog queries
     if (filters.userId) {
       return ctx.runQuery(internal.auditLog.getByUser, {
@@ -214,12 +212,9 @@ export const logAdminActionInternal = internalMutation({
     changes: v.optional(v.any()),
     adminRole: v.optional(v.string()),
     impactedUsers: v.optional(v.array(v.string())),
-    severity: v.optional(v.union(
-      v.literal('low'),
-      v.literal('medium'),
-      v.literal('high'),
-      v.literal('critical')
-    )),
+    severity: v.optional(
+      v.union(v.literal('low'), v.literal('medium'), v.literal('high'), v.literal('critical'))
+    ),
   },
   handler: async (ctx, args) => {
     // Convert userId string to Id<'users'> if it's a valid ID
@@ -303,12 +298,9 @@ export const logAdminActionPublic = mutation({
     resourceId: v.string(),
     changes: v.optional(v.any()),
     impactedUsers: v.optional(v.array(v.string())),
-    severity: v.optional(v.union(
-      v.literal('low'),
-      v.literal('medium'),
-      v.literal('high'),
-      v.literal('critical')
-    )),
+    severity: v.optional(
+      v.union(v.literal('low'), v.literal('medium'), v.literal('high'), v.literal('critical'))
+    ),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity()

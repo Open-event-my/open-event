@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { useQuery } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import { cn } from '@/lib/utils'
@@ -71,10 +71,18 @@ export function AdminAuditLogs() {
   const [timeRange, setTimeRange] = useState(24)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string | null>(null)
+  // Store a stable timestamp that only updates when timeRange changes
+  const [queryTimestamp, setQueryTimestamp] = useState(() => Date.now())
 
-  // Memoize startDate to prevent infinite re-renders
-  // Date.now() would change on every render, causing query args to change and triggering a loop
-  const startDate = useMemo(() => Date.now() - timeRange * 60 * 60 * 1000, [timeRange])
+  // Update timestamp when timeRange changes
+  const handleTimeRangeChange = (newRange: number) => {
+    setTimeRange(newRange)
+    // eslint-disable-next-line react-hooks/purity -- Date.now() is intentionally called in event handler
+    setQueryTimestamp(Date.now())
+  }
+
+  // Calculate startDate from the stable timestamp
+  const startDate = queryTimestamp - timeRange * 60 * 60 * 1000
 
   const stats = useQuery(api.auditLog.getStats, { hoursBack: timeRange })
   const logs = useQuery(api.auditLog.listLogs, {
@@ -124,7 +132,10 @@ export function AdminAuditLogs() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             {TIME_RANGES.map((range) => (
-              <DropdownMenuItem key={range.value} onClick={() => setTimeRange(range.value)}>
+              <DropdownMenuItem
+                key={range.value}
+                onClick={() => handleTimeRangeChange(range.value)}
+              >
                 {range.label}
               </DropdownMenuItem>
             ))}
@@ -233,7 +244,9 @@ export function AdminAuditLogs() {
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="gap-2">
               <Funnel size={16} />
-              {statusFilter ? STATUS_CONFIG[statusFilter as keyof typeof STATUS_CONFIG]?.label : 'All Status'}
+              {statusFilter
+                ? STATUS_CONFIG[statusFilter as keyof typeof STATUS_CONFIG]?.label
+                : 'All Status'}
               <CaretDown size={14} />
             </Button>
           </DropdownMenuTrigger>

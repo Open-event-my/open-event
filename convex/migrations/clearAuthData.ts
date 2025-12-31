@@ -48,7 +48,7 @@ export const clearAllAuthData = internalMutation({
         await ctx.db.delete(account._id)
         results.authAccounts++
       }
-    } catch (e) {
+    } catch {
       // Table might not exist yet
     }
 
@@ -58,7 +58,7 @@ export const clearAllAuthData = internalMutation({
         await ctx.db.delete(session._id)
         results.authSessions++
       }
-    } catch (e) {
+    } catch {
       // Table might not exist yet
     }
 
@@ -68,7 +68,7 @@ export const clearAllAuthData = internalMutation({
         await ctx.db.delete(token._id)
         results.authRefreshTokens++
       }
-    } catch (e) {
+    } catch {
       // Table might not exist yet
     }
 
@@ -78,7 +78,7 @@ export const clearAllAuthData = internalMutation({
         await ctx.db.delete(code._id)
         results.authVerificationCodes++
       }
-    } catch (e) {
+    } catch {
       // Table might not exist yet
     }
 
@@ -88,7 +88,7 @@ export const clearAllAuthData = internalMutation({
         await ctx.db.delete(verifier._id)
         results.authVerifiers++
       }
-    } catch (e) {
+    } catch {
       // Table might not exist yet
     }
 
@@ -99,7 +99,7 @@ export const clearAllAuthData = internalMutation({
         await ctx.db.delete(profile._id)
         results.organizerProfiles++
       }
-    } catch (e) {
+    } catch {
       // Table might not exist
     }
 
@@ -110,7 +110,7 @@ export const clearAllAuthData = internalMutation({
         await ctx.db.delete(token._id)
         results.verificationTokens++
       }
-    } catch (e) {
+    } catch {
       // Table might not exist
     }
 

@@ -50,7 +50,10 @@ async function createTestEvent(
   await page.waitForTimeout(1500)
 
   // Click manual form button
-  const manualButton = page.locator('button').filter({ hasText: /manual form/i }).first()
+  const manualButton = page
+    .locator('button')
+    .filter({ hasText: /manual form/i })
+    .first()
   await manualButton.click()
   await page.waitForTimeout(500)
 
@@ -62,7 +65,11 @@ async function createTestEvent(
   await page.getByLabel(/start date/i).fill(tomorrow.toISOString().split('T')[0])
 
   // Submit
-  await page.locator('button').filter({ hasText: /create event/i }).first().click()
+  await page
+    .locator('button')
+    .filter({ hasText: /create event/i })
+    .first()
+    .click()
   await page.waitForURL(/\/dashboard\/events\/[a-z0-9]+$/, { timeout: 15000 })
 
   const url = page.url()
@@ -112,14 +119,17 @@ test.describe('Vendor Management', () => {
 
     test('should display category filter buttons', async ({ page }) => {
       // Should show "All" button
-      await expect(
-        page.locator('button').filter({ hasText: /^all$/i }).first()
-      ).toBeVisible({ timeout: 5000 })
+      await expect(page.locator('button').filter({ hasText: /^all$/i }).first()).toBeVisible({
+        timeout: 5000,
+      })
 
       // Check for common categories
       const categories = ['Catering', 'Photography', 'Decoration']
       for (const category of categories) {
-        const categoryButton = page.locator('button').filter({ hasText: new RegExp(category, 'i') }).first()
+        const categoryButton = page
+          .locator('button')
+          .filter({ hasText: new RegExp(category, 'i') })
+          .first()
         // Some categories may or may not be present depending on data
         if (await categoryButton.isVisible().catch(() => false)) {
           await expect(categoryButton).toBeVisible()
@@ -144,8 +154,10 @@ test.describe('Vendor Management', () => {
       await page.reload()
 
       // Look for loading skeleton or vendor content
-      const skeleton = page.locator('.animate-pulse').first()
-      const content = page.locator('.rounded-xl.border').filter({ has: page.locator('h3') }).first()
+      const content = page
+        .locator('.rounded-xl.border')
+        .filter({ has: page.locator('h3') })
+        .first()
       const emptyState = page.getByText(/vendor marketplace coming soon/i)
 
       // Should eventually show either content or empty state
@@ -182,7 +194,10 @@ test.describe('Vendor Management', () => {
       await page.waitForTimeout(2000)
 
       // Click on Catering category if visible
-      const cateringButton = page.locator('button').filter({ hasText: /catering/i }).first()
+      const cateringButton = page
+        .locator('button')
+        .filter({ hasText: /catering/i })
+        .first()
 
       if (await cateringButton.isVisible().catch(() => false)) {
         await cateringButton.click()
@@ -239,7 +254,10 @@ test.describe('Vendor Management', () => {
       await page.waitForTimeout(2000)
 
       // Click on a category first
-      const photographyButton = page.locator('button').filter({ hasText: /photography/i }).first()
+      const photographyButton = page
+        .locator('button')
+        .filter({ hasText: /photography/i })
+        .first()
 
       if (await photographyButton.isVisible().catch(() => false)) {
         await photographyButton.click()
@@ -326,7 +344,10 @@ test.describe('Vendor Management', () => {
 
       if ((await vendorCards.count()) > 0) {
         const firstCard = vendorCards.first()
-        const inquireButton = firstCard.locator('button').filter({ hasText: /inquire/i }).first()
+        const inquireButton = firstCard
+          .locator('button')
+          .filter({ hasText: /inquire/i })
+          .first()
         await expect(inquireButton).toBeVisible()
       }
     })
@@ -356,7 +377,10 @@ test.describe('Vendor Management', () => {
 
       if ((await vendorCards.count()) > 0) {
         const firstCard = vendorCards.first()
-        const inquireButton = firstCard.locator('button').filter({ hasText: /inquire/i }).first()
+        const inquireButton = firstCard
+          .locator('button')
+          .filter({ hasText: /inquire/i })
+          .first()
 
         await inquireButton.click()
         await page.waitForTimeout(500)
@@ -374,7 +398,10 @@ test.describe('Vendor Management', () => {
       if ((await vendorCards.count()) > 0) {
         const firstCard = vendorCards.first()
         const vendorName = await firstCard.locator('h3').first().textContent()
-        const inquireButton = firstCard.locator('button').filter({ hasText: /inquire/i }).first()
+        const inquireButton = firstCard
+          .locator('button')
+          .filter({ hasText: /inquire/i })
+          .first()
 
         await inquireButton.click()
         await page.waitForTimeout(500)
@@ -393,7 +420,10 @@ test.describe('Vendor Management', () => {
 
       if ((await vendorCards.count()) > 0) {
         const firstCard = vendorCards.first()
-        const inquireButton = firstCard.locator('button').filter({ hasText: /inquire/i }).first()
+        const inquireButton = firstCard
+          .locator('button')
+          .filter({ hasText: /inquire/i })
+          .first()
 
         await inquireButton.click()
         await page.waitForTimeout(500)
@@ -416,7 +446,10 @@ test.describe('Vendor Management', () => {
 
       if ((await vendorCards.count()) > 0) {
         const firstCard = vendorCards.first()
-        const inquireButton = firstCard.locator('button').filter({ hasText: /inquire/i }).first()
+        const inquireButton = firstCard
+          .locator('button')
+          .filter({ hasText: /inquire/i })
+          .first()
 
         await inquireButton.click()
         await page.waitForTimeout(500)
@@ -436,7 +469,10 @@ test.describe('Vendor Management', () => {
 
       if ((await vendorCards.count()) > 0) {
         const firstCard = vendorCards.first()
-        const inquireButton = firstCard.locator('button').filter({ hasText: /inquire/i }).first()
+        const inquireButton = firstCard
+          .locator('button')
+          .filter({ hasText: /inquire/i })
+          .first()
 
         await inquireButton.click()
         await page.waitForTimeout(500)
@@ -454,7 +490,10 @@ test.describe('Vendor Management', () => {
 
       if ((await vendorCards.count()) > 0) {
         const firstCard = vendorCards.first()
-        const inquireButton = firstCard.locator('button').filter({ hasText: /inquire/i }).first()
+        const inquireButton = firstCard
+          .locator('button')
+          .filter({ hasText: /inquire/i })
+          .first()
 
         await inquireButton.click()
         await page.waitForTimeout(500)
@@ -477,7 +516,10 @@ test.describe('Vendor Management', () => {
 
       if ((await vendorCards.count()) > 0) {
         const firstCard = vendorCards.first()
-        const inquireButton = firstCard.locator('button').filter({ hasText: /inquire/i }).first()
+        const inquireButton = firstCard
+          .locator('button')
+          .filter({ hasText: /inquire/i })
+          .first()
 
         await inquireButton.click()
         await page.waitForTimeout(500)
@@ -518,7 +560,10 @@ test.describe('Vendor Management', () => {
 
       if ((await vendorCards.count()) > 0) {
         const firstCard = vendorCards.first()
-        const inquireButton = firstCard.locator('button').filter({ hasText: /inquire/i }).first()
+        const inquireButton = firstCard
+          .locator('button')
+          .filter({ hasText: /inquire/i })
+          .first()
 
         await inquireButton.click()
         await page.waitForTimeout(500)
@@ -538,7 +583,9 @@ test.describe('Vendor Management', () => {
         }
 
         // Fill message
-        await page.locator('textarea').fill('Hi, I am interested in your services for my upcoming event.')
+        await page
+          .locator('textarea')
+          .fill('Hi, I am interested in your services for my upcoming event.')
         await page.waitForTimeout(300)
 
         // Send inquiry
@@ -549,7 +596,10 @@ test.describe('Vendor Management', () => {
         await page.waitForTimeout(2000)
 
         const successToast = page.getByText(/inquiry sent successfully/i)
-        const dialogClosed = !(await page.getByRole('dialog').isVisible().catch(() => false))
+        const dialogClosed = !(await page
+          .getByRole('dialog')
+          .isVisible()
+          .catch(() => false))
 
         expect((await successToast.isVisible().catch(() => false)) || dialogClosed).toBeTruthy()
       }
@@ -566,7 +616,10 @@ test.describe('Vendor Management', () => {
       await page.waitForTimeout(2000)
 
       // Click first event
-      const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+      const eventCard = page
+        .locator('.rounded-lg.border')
+        .filter({ has: page.locator('h3') })
+        .first()
 
       if (await eventCard.isVisible().catch(() => false)) {
         await eventCard.click()
@@ -584,7 +637,10 @@ test.describe('Vendor Management', () => {
       await page.waitForTimeout(2000)
 
       // Click first event
-      const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+      const eventCard = page
+        .locator('.rounded-lg.border')
+        .filter({ has: page.locator('h3') })
+        .first()
 
       if (await eventCard.isVisible().catch(() => false)) {
         await eventCard.click()
@@ -603,7 +659,10 @@ test.describe('Vendor Management', () => {
       await page.waitForTimeout(2000)
 
       // Click first event
-      const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+      const eventCard = page
+        .locator('.rounded-lg.border')
+        .filter({ has: page.locator('h3') })
+        .first()
 
       if (await eventCard.isVisible().catch(() => false)) {
         await eventCard.click()
@@ -634,7 +693,10 @@ test.describe('Vendor Management', () => {
       await page.waitForTimeout(2000)
 
       // Click first event
-      const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+      const eventCard = page
+        .locator('.rounded-lg.border')
+        .filter({ has: page.locator('h3') })
+        .first()
 
       if (await eventCard.isVisible().catch(() => false)) {
         await eventCard.click()
@@ -660,7 +722,10 @@ test.describe('Vendor Management', () => {
       await page.goto('/dashboard/events')
       await page.waitForTimeout(2000)
 
-      const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+      const eventCard = page
+        .locator('.rounded-lg.border')
+        .filter({ has: page.locator('h3') })
+        .first()
 
       if (await eventCard.isVisible().catch(() => false)) {
         await eventCard.click()
@@ -682,7 +747,10 @@ test.describe('Vendor Management', () => {
       await page.goto('/dashboard/events')
       await page.waitForTimeout(2000)
 
-      const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+      const eventCard = page
+        .locator('.rounded-lg.border')
+        .filter({ has: page.locator('h3') })
+        .first()
 
       if (await eventCard.isVisible().catch(() => false)) {
         await eventCard.click()
@@ -738,7 +806,10 @@ test.describe('Vendor Management', () => {
       await page.goto('/dashboard/events')
       await page.waitForTimeout(2000)
 
-      const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+      const eventCard = page
+        .locator('.rounded-lg.border')
+        .filter({ has: page.locator('h3') })
+        .first()
 
       if (await eventCard.isVisible().catch(() => false)) {
         await eventCard.click()

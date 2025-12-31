@@ -30,7 +30,7 @@ const mockDisconnect = vi.fn()
 
 class MockIntersectionObserver {
   constructor(_callback: IntersectionObserverCallback) {
-    // Store callback for potential use
+    void _callback // Intentionally unused - mock implementation
   }
   observe = mockObserve
   disconnect = mockDisconnect
@@ -49,7 +49,7 @@ beforeEach(() => {
     toDataURL: vi.fn().mockReturnValue('data:image/webp;base64,'),
     getContext: vi.fn(),
   }
-  
+
   vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
     if (tagName === 'canvas') {
       return mockCanvas as unknown as HTMLCanvasElement
@@ -374,12 +374,9 @@ describe('Image Optimization - Property Tests', () => {
     describe('Configuration Constants', () => {
       it('should have valid supported formats', () => {
         fc.assert(
-          fc.property(
-            fc.constantFrom(...IMAGE_OPTIMIZATION_CONFIG.supportedFormats),
-            (format) => {
-              expect(['jpg', 'jpeg', 'png']).toContain(format)
-            }
-          ),
+          fc.property(fc.constantFrom(...IMAGE_OPTIMIZATION_CONFIG.supportedFormats), (format) => {
+            expect(['jpg', 'jpeg', 'png']).toContain(format)
+          }),
           { numRuns: 100 }
         )
       })
@@ -404,7 +401,12 @@ describe('Image Optimization - Property Tests', () => {
               const webpSrc = `/custom/${customWebp}.webp`
 
               const { container } = render(
-                <OptimizedImage src={src} webpSrc={webpSrc} alt={`Custom webp ${filename}`} priority />
+                <OptimizedImage
+                  src={src}
+                  webpSrc={webpSrc}
+                  alt={`Custom webp ${filename}`}
+                  priority
+                />
               )
 
               const source = container.querySelector('source[type="image/webp"]')

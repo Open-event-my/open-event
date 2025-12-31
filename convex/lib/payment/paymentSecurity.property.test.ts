@@ -10,8 +10,8 @@
  * Property 49: Fraud Detection Alerts
  */
 
-import { describe, it, expect } from 'vitest';
-import * as fc from 'fast-check';
+import { describe, it, expect } from 'vitest'
+import * as fc from 'fast-check'
 import {
   containsCreditCardData,
   isValidStripeToken,
@@ -37,9 +37,7 @@ import {
   type FraudCheckInput,
   type PaymentFailureType,
   type PaymentOperation,
-  type IdempotencyRecord,
-  type IdempotencyCheckResult,
-} from './paymentSecurity';
+} from './paymentSecurity'
 
 describe('Payment Security Property Tests', () => {
   /**
@@ -50,50 +48,54 @@ describe('Payment Security Property Tests', () => {
   describe('Property 43: No Credit Card Storage', () => {
     // Generate valid credit card numbers using Luhn algorithm
     const generateValidCardNumber = (prefix: string, length: number): string => {
-      let number = prefix;
+      let number = prefix
       while (number.length < length - 1) {
-        number += Math.floor(Math.random() * 10).toString();
+        number += Math.floor(Math.random() * 10).toString()
       }
       // Calculate Luhn check digit
-      let sum = 0;
-      let isEven = false;
+      let sum = 0
+      let isEven = false
       for (let i = number.length - 1; i >= 0; i--) {
-        let digit = parseInt(number[i], 10);
+        let digit = parseInt(number[i], 10)
         if (isEven) {
-          digit *= 2;
-          if (digit > 9) digit -= 9;
+          digit *= 2
+          if (digit > 9) digit -= 9
         }
-        sum += digit;
-        isEven = !isEven;
+        sum += digit
+        isEven = !isEven
       }
-      const checkDigit = (10 - (sum % 10)) % 10;
-      return number + checkDigit.toString();
-    };
+      const checkDigit = (10 - (sum % 10)) % 10
+      return number + checkDigit.toString()
+    }
 
     // Arbitrary for credit card-like numbers
     const creditCardArb = fc.oneof(
       // Visa (starts with 4, 16 digits)
       fc.constant(generateValidCardNumber('4', 16)),
       // Mastercard (starts with 51-55, 16 digits)
-      fc.integer({ min: 51, max: 55 }).map(prefix => generateValidCardNumber(prefix.toString(), 16)),
+      fc
+        .integer({ min: 51, max: 55 })
+        .map((prefix) => generateValidCardNumber(prefix.toString(), 16)),
       // Amex (starts with 34 or 37, 15 digits)
-      fc.constantFrom('34', '37').map(prefix => generateValidCardNumber(prefix, 15)),
+      fc.constantFrom('34', '37').map((prefix) => generateValidCardNumber(prefix, 15)),
       // Random 16-digit number using array
-      fc.array(fc.integer({ min: 0, max: 9 }), { minLength: 16, maxLength: 16 }).map(arr => arr.join('')),
-    );
+      fc
+        .array(fc.integer({ min: 0, max: 9 }), { minLength: 16, maxLength: 16 })
+        .map((arr) => arr.join(''))
+    )
 
     it('should detect credit card numbers in strings', () => {
       fc.assert(
         fc.property(creditCardArb, (cardNumber) => {
           // Card numbers that match common patterns should be detected
-          const result = containsCreditCardData(cardNumber);
+          const result = containsCreditCardData(cardNumber)
           // We expect detection for valid-looking card numbers
           // Some random 16-digit numbers may not match patterns, which is fine
-          return typeof result === 'boolean';
+          return typeof result === 'boolean'
         }),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should detect credit card numbers with formatting', () => {
       fc.assert(
@@ -102,15 +104,15 @@ describe('Payment Security Property Tests', () => {
           fc.constantFrom(' ', '-'),
           (cardNumber, separator) => {
             // Format card number with separators (spaces or dashes)
-            const formatted = cardNumber.match(/.{1,4}/g)?.join(separator) || cardNumber;
-            const result = containsCreditCardData(formatted);
+            const formatted = cardNumber.match(/.{1,4}/g)?.join(separator) || cardNumber
+            const result = containsCreditCardData(formatted)
             // Should detect card numbers even with formatting
-            return result === true;
+            return result === true
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should detect credit card data in nested objects', () => {
       fc.assert(
@@ -124,34 +126,29 @@ describe('Payment Security Property Tests', () => {
                   [key]: cardNumber,
                 },
               },
-            };
-            return containsCreditCardData(nestedData) === true;
+            }
+            return containsCreditCardData(nestedData) === true
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should detect sensitive field names regardless of value', () => {
       fc.assert(
         fc.property(
-          fc.constantFrom(...[
-            'cardNumber',
-            'card_number',
-            'creditCard',
-            'cvv',
-            'cvc',
-            'securityCode',
-          ]),
+          fc.constantFrom(
+            ...['cardNumber', 'card_number', 'creditCard', 'cvv', 'cvc', 'securityCode']
+          ),
           fc.string({ minLength: 1, maxLength: 10 }),
           (fieldName, value) => {
-            const data = { [fieldName]: value };
-            return containsCreditCardData(data) === true;
+            const data = { [fieldName]: value }
+            return containsCreditCardData(data) === true
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should NOT flag valid Stripe tokens as credit card data', () => {
       fc.assert(
@@ -162,58 +159,54 @@ describe('Payment Security Property Tests', () => {
             'cus_ABC123XYZ',
             'pm_card_visa',
             'ch_1234567890',
-            're_1234567890',
+            're_1234567890'
           ),
           (stripeToken) => {
             const data = {
               stripePaymentIntentId: stripeToken,
               amount: 1000,
               currency: 'usd',
-            };
-            return containsCreditCardData(data) === false;
+            }
+            return containsCreditCardData(data) === false
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should validate payment data rejects credit card storage', () => {
       fc.assert(
-        fc.property(
-          fc.constant(generateValidCardNumber('4', 16)),
-          (cardNumber) => {
-            const data = {
-              orderId: 'order_123',
-              cardData: cardNumber,
-            };
-            const result = validatePaymentDataForStorage(data);
-            return result.isValid === false && 
-                   result.errors.some(e => e.includes('credit card'));
+        fc.property(fc.constant(generateValidCardNumber('4', 16)), (cardNumber) => {
+          const data = {
+            orderId: 'order_123',
+            cardData: cardNumber,
           }
-        ),
+          const result = validatePaymentDataForStorage(data)
+          return result.isValid === false && result.errors.some((e) => e.includes('credit card'))
+        }),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should validate payment data accepts Stripe tokens only', () => {
       fc.assert(
         fc.property(
           fc.constantFrom('pi_', 'cs_', 'cus_', 'pm_', 'ch_'),
-          fc.string({ minLength: 10, maxLength: 24 }).map(s => s.replace(/[^a-zA-Z0-9]/g, 'x')),
+          fc.string({ minLength: 10, maxLength: 24 }).map((s) => s.replace(/[^a-zA-Z0-9]/g, 'x')),
           (prefix, suffix) => {
             const data = {
               stripePaymentIntentId: `${prefix}${suffix}`,
               stripeSessionId: `cs_${suffix}`,
               amount: 1000,
-            };
-            const result = validatePaymentDataForStorage(data);
-            return result.isValid === true;
+            }
+            const result = validatePaymentDataForStorage(data)
+            return result.isValid === true
           }
         ),
         { numRuns: 100 }
-      );
-    });
-  });
+      )
+    })
+  })
 
   /**
    * Property 45: Payment Failure Handling
@@ -236,8 +229,8 @@ describe('Payment Security Property Tests', () => {
       'processing_error',
       'card_not_supported',
       'authentication_required',
-      'rate_limit',
-    );
+      'rate_limit'
+    )
 
     // Arbitrary for decline codes
     const declineCodeArb = fc.constantFrom(
@@ -254,8 +247,8 @@ describe('Payment Security Property Tests', () => {
       'security_violation',
       'service_not_allowed',
       'transaction_not_allowed',
-      'withdrawal_count_limit_exceeded',
-    );
+      'withdrawal_count_limit_exceeded'
+    )
 
     // Arbitrary for payment failure types
     const failureTypeArb: fc.Arbitrary<PaymentFailureType> = fc.constantFrom(
@@ -267,8 +260,8 @@ describe('Payment Security Property Tests', () => {
       'authentication_required',
       'rate_limit',
       'network_error',
-      'unknown',
-    );
+      'unknown'
+    )
 
     it('should never create an order when payment fails', () => {
       fc.assert(
@@ -282,17 +275,17 @@ describe('Payment Security Property Tests', () => {
               code: errorCode,
               decline_code: declineCode,
               message: errorMessage,
-            };
-            
-            const result = handlePaymentFailure(error);
-            
+            }
+
+            const result = handlePaymentFailure(error)
+
             // Property: shouldCreateOrder must always be false for failures
-            return result.shouldCreateOrder === false;
+            return result.shouldCreateOrder === false
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should always return failed=true for payment errors', () => {
       fc.assert(
@@ -303,17 +296,17 @@ describe('Payment Security Property Tests', () => {
             const error = {
               code: errorCode,
               message: errorMessage,
-            };
-            
-            const result = handlePaymentFailure(error);
-            
+            }
+
+            const result = handlePaymentFailure(error)
+
             // Property: failed must always be true
-            return result.failed === true;
+            return result.failed === true
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should provide user-friendly messages without technical details', () => {
       fc.assert(
@@ -327,21 +320,23 @@ describe('Payment Security Property Tests', () => {
               code: errorCode,
               message: `Error at line 42: ${technicalMessage} at /path/to/file.js:123:45`,
               stack: 'Error\n    at Object.<anonymous> (/path/to/file.js:123:45)',
-            };
-            
-            const result = handlePaymentFailure(error);
-            
+            }
+
+            const result = handlePaymentFailure(error)
+
             // Property: userMessage should not contain technical details
-            const hasStackTrace = result.userMessage.includes('at ') && result.userMessage.includes(':');
-            const hasFilePath = result.userMessage.includes('/path/') || result.userMessage.includes('.js');
-            const hasLineNumber = /:\d+:\d+/.test(result.userMessage);
-            
-            return !hasStackTrace && !hasFilePath && !hasLineNumber;
+            const hasStackTrace =
+              result.userMessage.includes('at ') && result.userMessage.includes(':')
+            const hasFilePath =
+              result.userMessage.includes('/path/') || result.userMessage.includes('.js')
+            const hasLineNumber = /:\d+:\d+/.test(result.userMessage)
+
+            return !hasStackTrace && !hasFilePath && !hasLineNumber
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should always provide recovery suggestions', () => {
       fc.assert(
@@ -352,140 +347,127 @@ describe('Payment Security Property Tests', () => {
             const error = {
               code: errorCode,
               message: errorMessage,
-            };
-            
-            const result = handlePaymentFailure(error);
-            
+            }
+
+            const result = handlePaymentFailure(error)
+
             // Property: suggestions array must exist and have at least one item
-            return Array.isArray(result.suggestions) && result.suggestions.length > 0;
+            return Array.isArray(result.suggestions) && result.suggestions.length > 0
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should correctly identify retryable vs permanent failures', () => {
       fc.assert(
-        fc.property(
-          failureTypeArb,
-          (failureType) => {
-            // Create error that maps to specific failure type
-            const errorCodeMap: Record<PaymentFailureType, string> = {
-              card_declined: 'card_declined',
-              insufficient_funds: 'insufficient_funds',
-              expired_card: 'expired_card',
-              invalid_card: 'incorrect_cvc',
-              processing_error: 'processing_error',
-              authentication_required: 'authentication_required',
-              rate_limit: 'rate_limit',
-              network_error: 'network_error',
-              unknown: 'unknown_error',
-            };
-            
-            const error = {
-              code: errorCodeMap[failureType],
-              message: `Test error for ${failureType}`,
-            };
-            
-            // For network errors, we need to trigger via message
-            if (failureType === 'network_error') {
-              error.message = 'Network connection timeout';
-            }
-            
-            const result = handlePaymentFailure(error);
-            
-            // Retryable failures
-            const retryableTypes: PaymentFailureType[] = ['processing_error', 'network_error', 'rate_limit'];
-            const expectedRetryable = retryableTypes.includes(failureType);
-            
-            // Property: isRetryable should match expected based on failure type
-            return result.isRetryable === expectedRetryable || result.failureType !== failureType;
+        fc.property(failureTypeArb, (failureType) => {
+          // Create error that maps to specific failure type
+          const errorCodeMap: Record<PaymentFailureType, string> = {
+            card_declined: 'card_declined',
+            insufficient_funds: 'insufficient_funds',
+            expired_card: 'expired_card',
+            invalid_card: 'incorrect_cvc',
+            processing_error: 'processing_error',
+            authentication_required: 'authentication_required',
+            rate_limit: 'rate_limit',
+            network_error: 'network_error',
+            unknown: 'unknown_error',
           }
-        ),
+
+          const error = {
+            code: errorCodeMap[failureType],
+            message: `Test error for ${failureType}`,
+          }
+
+          // For network errors, we need to trigger via message
+          if (failureType === 'network_error') {
+            error.message = 'Network connection timeout'
+          }
+
+          const result = handlePaymentFailure(error)
+
+          // Retryable failures
+          const retryableTypes: PaymentFailureType[] = [
+            'processing_error',
+            'network_error',
+            'rate_limit',
+          ]
+          const expectedRetryable = retryableTypes.includes(failureType)
+
+          // Property: isRetryable should match expected based on failure type
+          return result.isRetryable === expectedRetryable || result.failureType !== failureType
+        }),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should handle null/undefined errors gracefully', () => {
       fc.assert(
-        fc.property(
-          fc.constantFrom(null, undefined, '', {}),
-          (error) => {
-            const result = handlePaymentFailure(error);
-            
-            // Property: should return valid result even for null/undefined
-            return (
-              result.failed === true &&
-              result.shouldCreateOrder === false &&
-              typeof result.userMessage === 'string' &&
-              result.userMessage.length > 0 &&
-              Array.isArray(result.suggestions)
-            );
-          }
-        ),
+        fc.property(fc.constantFrom(null, undefined, '', {}), (error) => {
+          const result = handlePaymentFailure(error)
+
+          // Property: should return valid result even for null/undefined
+          return (
+            result.failed === true &&
+            result.shouldCreateOrder === false &&
+            typeof result.userMessage === 'string' &&
+            result.userMessage.length > 0 &&
+            Array.isArray(result.suggestions)
+          )
+        }),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should handle Error instances correctly', () => {
       fc.assert(
-        fc.property(
-          fc.string({ minLength: 5, maxLength: 100 }),
-          (errorMessage) => {
-            const error = new Error(errorMessage);
-            
-            const result = handlePaymentFailure(error);
-            
-            // Property: should handle Error instances
-            return (
-              result.failed === true &&
-              result.shouldCreateOrder === false &&
-              typeof result.userMessage === 'string'
-            );
-          }
-        ),
+        fc.property(fc.string({ minLength: 5, maxLength: 100 }), (errorMessage) => {
+          const error = new Error(errorMessage)
+
+          const result = handlePaymentFailure(error)
+
+          // Property: should handle Error instances
+          return (
+            result.failed === true &&
+            result.shouldCreateOrder === false &&
+            typeof result.userMessage === 'string'
+          )
+        }),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should correctly identify permanent failures', () => {
       fc.assert(
         fc.property(
-          fc.constantFrom(
-            'card_declined',
-            'insufficient_funds',
-            'expired_card',
-            'incorrect_cvc',
-          ),
+          fc.constantFrom('card_declined', 'insufficient_funds', 'expired_card', 'incorrect_cvc'),
           (errorCode) => {
-            const error = { code: errorCode };
-            
-            const isPermanent = isPaymentPermanentlyFailed(error);
-            
+            const error = { code: errorCode }
+
+            const isPermanent = isPaymentPermanentlyFailed(error)
+
             // Property: these error codes should be permanent failures
-            return isPermanent === true;
+            return isPermanent === true
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should not mark retryable errors as permanent', () => {
       fc.assert(
-        fc.property(
-          fc.constantFrom('processing_error', 'rate_limit'),
-          (errorCode) => {
-            const error = { code: errorCode };
-            
-            const isPermanent = isPaymentPermanentlyFailed(error);
-            
-            // Property: retryable errors should not be permanent
-            return isPermanent === false;
-          }
-        ),
+        fc.property(fc.constantFrom('processing_error', 'rate_limit'), (errorCode) => {
+          const error = { code: errorCode }
+
+          const isPermanent = isPaymentPermanentlyFailed(error)
+
+          // Property: retryable errors should not be permanent
+          return isPermanent === false
+        }),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should create appropriate HTTP status codes for failure responses', () => {
       fc.assert(
@@ -500,10 +482,10 @@ describe('Payment Security Property Tests', () => {
               suggestions: ['Try again'],
               shouldCreateOrder: false,
               isRetryable: false,
-            };
-            
-            const response = createPaymentFailureResponse(result);
-            
+            }
+
+            const response = createPaymentFailureResponse(result)
+
             // Property: status codes should be appropriate for failure type
             const expectedStatuses: Record<PaymentFailureType, number> = {
               card_declined: 402,
@@ -515,14 +497,14 @@ describe('Payment Security Property Tests', () => {
               rate_limit: 429,
               network_error: 503,
               unknown: 500,
-            };
-            
-            return response.status === expectedStatuses[failureType];
+            }
+
+            return response.status === expectedStatuses[failureType]
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should include error message and suggestions in failure response', () => {
       fc.assert(
@@ -538,22 +520,22 @@ describe('Payment Security Property Tests', () => {
               suggestions,
               shouldCreateOrder: false,
               isRetryable: failureType === 'processing_error',
-            };
-            
-            const response = createPaymentFailureResponse(result);
-            
+            }
+
+            const response = createPaymentFailureResponse(result)
+
             // Property: response body should contain error info
             return (
               response.body.error === userMessage &&
               Array.isArray(response.body.suggestions) &&
               response.body.failureType === failureType &&
               typeof response.body.isRetryable === 'boolean'
-            );
+            )
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should always return valid result structure', () => {
       fc.assert(
@@ -570,11 +552,11 @@ describe('Payment Security Property Tests', () => {
             fc.string({ minLength: 0, maxLength: 200 }),
             fc.constant(new Error('Test error')),
             fc.constant(null),
-            fc.constant(undefined),
+            fc.constant(undefined)
           ),
           (error) => {
-            const result = handlePaymentFailure(error);
-            
+            const result = handlePaymentFailure(error)
+
             // Property: result should always have valid structure
             return (
               typeof result.failed === 'boolean' &&
@@ -583,13 +565,13 @@ describe('Payment Security Property Tests', () => {
               Array.isArray(result.suggestions) &&
               typeof result.shouldCreateOrder === 'boolean' &&
               typeof result.isRetryable === 'boolean'
-            );
+            )
           }
         ),
         { numRuns: 100 }
-      );
-    });
-  });
+      )
+    })
+  })
 
   /**
    * Property 46: Payment Idempotency
@@ -598,29 +580,30 @@ describe('Payment Security Property Tests', () => {
    */
   describe('Property 46: Payment Idempotency', () => {
     // Arbitrary for payment operations
-    const operationArb: fc.Arbitrary<PaymentOperation> = fc.constantFrom('checkout', 'refund', 'capture');
-    
+    const operationArb: fc.Arbitrary<PaymentOperation> = fc.constantFrom(
+      'checkout',
+      'refund',
+      'capture'
+    )
+
     // Arbitrary for order IDs (alphanumeric strings)
-    const orderIdArb = fc.string({ minLength: 5, maxLength: 30 }).map(s => s.replace(/[^a-zA-Z0-9]/g, 'x'));
-    
+    const orderIdArb = fc
+      .string({ minLength: 5, maxLength: 30 })
+      .map((s) => s.replace(/[^a-zA-Z0-9]/g, 'x'))
+
     // Arbitrary for timestamps
-    const timestampArb = fc.integer({ min: 1000000000000, max: 2000000000000 });
+    const timestampArb = fc.integer({ min: 1000000000000, max: 2000000000000 })
 
     it('should generate consistent idempotency keys for same inputs', () => {
       fc.assert(
-        fc.property(
-          orderIdArb,
-          operationArb,
-          timestampArb,
-          (orderId, operation, timestamp) => {
-            const key1 = generateIdempotencyKey(orderId, operation, timestamp);
-            const key2 = generateIdempotencyKey(orderId, operation, timestamp);
-            return key1 === key2;
-          }
-        ),
+        fc.property(orderIdArb, operationArb, timestampArb, (orderId, operation, timestamp) => {
+          const key1 = generateIdempotencyKey(orderId, operation, timestamp)
+          const key2 = generateIdempotencyKey(orderId, operation, timestamp)
+          return key1 === key2
+        }),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should generate different keys for different orders', () => {
       fc.assert(
@@ -630,50 +613,41 @@ describe('Payment Security Property Tests', () => {
           operationArb,
           timestampArb,
           (orderId1, orderId2, operation, timestamp) => {
-            fc.pre(orderId1 !== orderId2);
-            const key1 = generateIdempotencyKey(orderId1, operation, timestamp);
-            const key2 = generateIdempotencyKey(orderId2, operation, timestamp);
-            return key1 !== key2;
+            fc.pre(orderId1 !== orderId2)
+            const key1 = generateIdempotencyKey(orderId1, operation, timestamp)
+            const key2 = generateIdempotencyKey(orderId2, operation, timestamp)
+            return key1 !== key2
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should generate different keys for different operations', () => {
       fc.assert(
-        fc.property(
-          orderIdArb,
-          timestampArb,
-          (orderId, timestamp) => {
-            const checkoutKey = generateIdempotencyKey(orderId, 'checkout', timestamp);
-            const refundKey = generateIdempotencyKey(orderId, 'refund', timestamp);
-            const captureKey = generateIdempotencyKey(orderId, 'capture', timestamp);
-            return checkoutKey !== refundKey && refundKey !== captureKey && checkoutKey !== captureKey;
-          }
-        ),
+        fc.property(orderIdArb, timestampArb, (orderId, timestamp) => {
+          const checkoutKey = generateIdempotencyKey(orderId, 'checkout', timestamp)
+          const refundKey = generateIdempotencyKey(orderId, 'refund', timestamp)
+          const captureKey = generateIdempotencyKey(orderId, 'capture', timestamp)
+          return checkoutKey !== refundKey && refundKey !== captureKey && checkoutKey !== captureKey
+        }),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should allow retries within same minute window', () => {
       fc.assert(
-        fc.property(
-          orderIdArb,
-          operationArb,
-          timestampArb,
-          (orderId, operation, baseTimestamp) => {
-            // Round base to start of minute, then add offset within that minute
-            const minuteStart = Math.floor(baseTimestamp / 60000) * 60000;
-            const offset = Math.floor(Math.random() * 59999); // Random offset within minute
-            const key1 = generateIdempotencyKey(orderId, operation, minuteStart);
-            const key2 = generateIdempotencyKey(orderId, operation, minuteStart + offset);
-            return key1 === key2;
-          }
-        ),
+        fc.property(orderIdArb, operationArb, timestampArb, (orderId, operation, baseTimestamp) => {
+          // Round base to start of minute, then add offset within that minute
+          const minuteStart = Math.floor(baseTimestamp / 60000) * 60000
+          const offset = Math.floor(Math.random() * 59999) // Random offset within minute
+          const key1 = generateIdempotencyKey(orderId, operation, minuteStart)
+          const key2 = generateIdempotencyKey(orderId, operation, minuteStart + offset)
+          return key1 === key2
+        }),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should generate unique Stripe idempotency keys for each request', () => {
       fc.assert(
@@ -684,89 +658,73 @@ describe('Payment Security Property Tests', () => {
           fc.integer({ min: 1, max: 1000 }),
           (orderId, operation, timestamp, offset) => {
             // Stripe keys should be unique for different timestamps
-            const key1 = generateStripeIdempotencyKey(orderId, operation, timestamp);
-            const key2 = generateStripeIdempotencyKey(orderId, operation, timestamp + offset);
-            return key1 !== key2;
+            const key1 = generateStripeIdempotencyKey(orderId, operation, timestamp)
+            const key2 = generateStripeIdempotencyKey(orderId, operation, timestamp + offset)
+            return key1 !== key2
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should create valid idempotency records', () => {
       fc.assert(
-        fc.property(
-          orderIdArb,
-          operationArb,
-          timestampArb,
-          (orderId, operation, timestamp) => {
-            const record = createIdempotencyRecord(orderId, operation, timestamp);
-            
-            return (
-              record.orderId === orderId &&
-              record.operation === operation &&
-              record.status === 'pending' &&
-              record.createdAt === timestamp &&
-              record.expiresAt === timestamp + 24 * 60 * 60 * 1000 &&
-              typeof record.idempotencyKey === 'string' &&
-              typeof record.stripeIdempotencyKey === 'string'
-            );
-          }
-        ),
+        fc.property(orderIdArb, operationArb, timestampArb, (orderId, operation, timestamp) => {
+          const record = createIdempotencyRecord(orderId, operation, timestamp)
+
+          return (
+            record.orderId === orderId &&
+            record.operation === operation &&
+            record.status === 'pending' &&
+            record.createdAt === timestamp &&
+            record.expiresAt === timestamp + 24 * 60 * 60 * 1000 &&
+            typeof record.idempotencyKey === 'string' &&
+            typeof record.stripeIdempotencyKey === 'string'
+          )
+        }),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should detect duplicate requests with existing records', () => {
       fc.assert(
-        fc.property(
-          orderIdArb,
-          operationArb,
-          timestampArb,
-          (orderId, operation, timestamp) => {
-            const existingRecord = createIdempotencyRecord(orderId, operation, timestamp);
-            const checkResult = checkIdempotencyRecord(existingRecord, orderId, operation, timestamp);
-            
-            return checkResult.isDuplicate === true;
-          }
-        ),
+        fc.property(orderIdArb, operationArb, timestampArb, (orderId, operation, timestamp) => {
+          const existingRecord = createIdempotencyRecord(orderId, operation, timestamp)
+          const checkResult = checkIdempotencyRecord(existingRecord, orderId, operation, timestamp)
+
+          return checkResult.isDuplicate === true
+        }),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should not detect duplicate for null records', () => {
       fc.assert(
-        fc.property(
-          orderIdArb,
-          operationArb,
-          timestampArb,
-          (orderId, operation, timestamp) => {
-            const checkResult = checkIdempotencyRecord(null, orderId, operation, timestamp);
-            
-            return checkResult.isDuplicate === false;
-          }
-        ),
+        fc.property(orderIdArb, operationArb, timestampArb, (orderId, operation, timestamp) => {
+          const checkResult = checkIdempotencyRecord(null, orderId, operation, timestamp)
+
+          return checkResult.isDuplicate === false
+        }),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should not detect duplicate for expired records', () => {
       fc.assert(
-        fc.property(
-          orderIdArb,
-          operationArb,
-          timestampArb,
-          (orderId, operation, timestamp) => {
-            // Create a record that expired 1 hour ago
-            const expiredRecord = createIdempotencyRecord(orderId, operation, timestamp - 25 * 60 * 60 * 1000);
-            const checkResult = checkIdempotencyRecord(expiredRecord, orderId, operation, timestamp);
-            
-            return checkResult.isDuplicate === false;
-          }
-        ),
+        fc.property(orderIdArb, operationArb, timestampArb, (orderId, operation, timestamp) => {
+          // Create a record that expired 1 hour ago
+          const expiredRecord = createIdempotencyRecord(
+            orderId,
+            operation,
+            timestamp - 25 * 60 * 60 * 1000
+          )
+          const checkResult = checkIdempotencyRecord(expiredRecord, orderId, operation, timestamp)
+
+          return checkResult.isDuplicate === false
+        }),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should return cached result for completed duplicate requests', () => {
       fc.assert(
@@ -779,21 +737,26 @@ describe('Payment Security Property Tests', () => {
             url: fc.webUrl(),
           }),
           (orderId, operation, timestamp, result) => {
-            const record = createIdempotencyRecord(orderId, operation, timestamp);
-            const completedRecord = completeIdempotencyRecord(record, 'completed', result);
-            const checkResult = checkIdempotencyRecord(completedRecord, orderId, operation, timestamp);
-            
+            const record = createIdempotencyRecord(orderId, operation, timestamp)
+            const completedRecord = completeIdempotencyRecord(record, 'completed', result)
+            const checkResult = checkIdempotencyRecord(
+              completedRecord,
+              orderId,
+              operation,
+              timestamp
+            )
+
             return (
               checkResult.isDuplicate === true &&
               checkResult.existingStatus === 'completed' &&
               checkResult.cachedResult !== undefined &&
               JSON.stringify(checkResult.cachedResult) === JSON.stringify(result)
-            );
+            )
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should return error message for failed duplicate requests', () => {
       fc.assert(
@@ -803,35 +766,35 @@ describe('Payment Security Property Tests', () => {
           timestampArb,
           fc.string({ minLength: 5, maxLength: 100 }),
           (orderId, operation, timestamp, errorMessage) => {
-            const record = createIdempotencyRecord(orderId, operation, timestamp);
-            const failedRecord = completeIdempotencyRecord(record, 'failed', undefined, errorMessage);
-            const checkResult = checkIdempotencyRecord(failedRecord, orderId, operation, timestamp);
-            
+            const record = createIdempotencyRecord(orderId, operation, timestamp)
+            const failedRecord = completeIdempotencyRecord(
+              record,
+              'failed',
+              undefined,
+              errorMessage
+            )
+            const checkResult = checkIdempotencyRecord(failedRecord, orderId, operation, timestamp)
+
             return (
               checkResult.isDuplicate === true &&
               checkResult.existingStatus === 'failed' &&
               checkResult.errorMessage === errorMessage
-            );
+            )
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should validate idempotency key format', () => {
       fc.assert(
-        fc.property(
-          orderIdArb,
-          operationArb,
-          timestampArb,
-          (orderId, operation, timestamp) => {
-            const key = generateIdempotencyKey(orderId, operation, timestamp);
-            return isValidIdempotencyKey(key) === true;
-          }
-        ),
+        fc.property(orderIdArb, operationArb, timestampArb, (orderId, operation, timestamp) => {
+          const key = generateIdempotencyKey(orderId, operation, timestamp)
+          return isValidIdempotencyKey(key) === true
+        }),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should reject invalid idempotency key formats', () => {
       fc.assert(
@@ -840,117 +803,89 @@ describe('Payment Security Property Tests', () => {
             fc.constant(''),
             fc.constant('invalid'),
             fc.constant('no_timestamp'),
-            fc.string({ minLength: 1, maxLength: 10 }).filter(s => !s.includes('_')),
+            fc.string({ minLength: 1, maxLength: 10 }).filter((s) => !s.includes('_'))
           ),
           (invalidKey) => {
-            return isValidIdempotencyKey(invalidKey) === false;
+            return isValidIdempotencyKey(invalidKey) === false
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should parse valid idempotency keys correctly', () => {
       fc.assert(
-        fc.property(
-          orderIdArb,
-          operationArb,
-          timestampArb,
-          (orderId, operation, timestamp) => {
-            const key = generateIdempotencyKey(orderId, operation, timestamp);
-            const parsed = parseIdempotencyKey(key);
-            
-            if (!parsed) return false;
-            
-            // The timestamp is rounded to the nearest minute
-            const roundedTimestamp = Math.floor(timestamp / 60000) * 60000;
-            
-            return (
-              parsed.operation === operation &&
-              parsed.timestamp === roundedTimestamp
-            );
-          }
-        ),
+        fc.property(orderIdArb, operationArb, timestampArb, (orderId, operation, timestamp) => {
+          const key = generateIdempotencyKey(orderId, operation, timestamp)
+          const parsed = parseIdempotencyKey(key)
+
+          if (!parsed) return false
+
+          // The timestamp is rounded to the nearest minute
+          const roundedTimestamp = Math.floor(timestamp / 60000) * 60000
+
+          return parsed.operation === operation && parsed.timestamp === roundedTimestamp
+        }),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should determine retry eligibility correctly for pending operations', () => {
       fc.assert(
-        fc.property(
-          orderIdArb,
-          operationArb,
-          timestampArb,
-          (orderId, operation, timestamp) => {
-            const record = createIdempotencyRecord(orderId, operation, timestamp);
-            const checkResult = checkIdempotencyRecord(record, orderId, operation, timestamp);
-            const retryResult = shouldRetryPaymentOperation(checkResult);
-            
-            // Pending operations should not be retried
-            return retryResult.shouldRetry === false;
-          }
-        ),
+        fc.property(orderIdArb, operationArb, timestampArb, (orderId, operation, timestamp) => {
+          const record = createIdempotencyRecord(orderId, operation, timestamp)
+          const checkResult = checkIdempotencyRecord(record, orderId, operation, timestamp)
+          const retryResult = shouldRetryPaymentOperation(checkResult)
+
+          // Pending operations should not be retried
+          return retryResult.shouldRetry === false
+        }),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should determine retry eligibility correctly for completed operations', () => {
       fc.assert(
-        fc.property(
-          orderIdArb,
-          operationArb,
-          timestampArb,
-          (orderId, operation, timestamp) => {
-            const record = createIdempotencyRecord(orderId, operation, timestamp);
-            const completedRecord = completeIdempotencyRecord(record, 'completed', { success: true });
-            const checkResult = checkIdempotencyRecord(completedRecord, orderId, operation, timestamp);
-            const retryResult = shouldRetryPaymentOperation(checkResult);
-            
-            // Completed operations should not be retried
-            return retryResult.shouldRetry === false;
-          }
-        ),
+        fc.property(orderIdArb, operationArb, timestampArb, (orderId, operation, timestamp) => {
+          const record = createIdempotencyRecord(orderId, operation, timestamp)
+          const completedRecord = completeIdempotencyRecord(record, 'completed', { success: true })
+          const checkResult = checkIdempotencyRecord(completedRecord, orderId, operation, timestamp)
+          const retryResult = shouldRetryPaymentOperation(checkResult)
+
+          // Completed operations should not be retried
+          return retryResult.shouldRetry === false
+        }),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should allow retry for failed operations', () => {
       fc.assert(
-        fc.property(
-          orderIdArb,
-          operationArb,
-          timestampArb,
-          (orderId, operation, timestamp) => {
-            const record = createIdempotencyRecord(orderId, operation, timestamp);
-            const failedRecord = completeIdempotencyRecord(record, 'failed', undefined, 'Test error');
-            const checkResult = checkIdempotencyRecord(failedRecord, orderId, operation, timestamp);
-            const retryResult = shouldRetryPaymentOperation(checkResult);
-            
-            // Failed operations should be retryable
-            return retryResult.shouldRetry === true;
-          }
-        ),
+        fc.property(orderIdArb, operationArb, timestampArb, (orderId, operation, timestamp) => {
+          const record = createIdempotencyRecord(orderId, operation, timestamp)
+          const failedRecord = completeIdempotencyRecord(record, 'failed', undefined, 'Test error')
+          const checkResult = checkIdempotencyRecord(failedRecord, orderId, operation, timestamp)
+          const retryResult = shouldRetryPaymentOperation(checkResult)
+
+          // Failed operations should be retryable
+          return retryResult.shouldRetry === true
+        }),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should allow new requests (non-duplicates) to proceed', () => {
       fc.assert(
-        fc.property(
-          orderIdArb,
-          operationArb,
-          timestampArb,
-          (orderId, operation, timestamp) => {
-            const checkResult = checkIdempotencyRecord(null, orderId, operation, timestamp);
-            const retryResult = shouldRetryPaymentOperation(checkResult);
-            
-            // New requests should proceed
-            return retryResult.shouldRetry === true;
-          }
-        ),
+        fc.property(orderIdArb, operationArb, timestampArb, (orderId, operation, timestamp) => {
+          const checkResult = checkIdempotencyRecord(null, orderId, operation, timestamp)
+          const retryResult = shouldRetryPaymentOperation(checkResult)
+
+          // New requests should proceed
+          return retryResult.shouldRetry === true
+        }),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should complete idempotency records with proper timestamps', () => {
       fc.assert(
@@ -961,44 +896,39 @@ describe('Payment Security Property Tests', () => {
           fc.integer({ min: 1000000000000, max: Date.now() - 1000 }),
           fc.constantFrom('completed', 'failed') as fc.Arbitrary<'completed' | 'failed'>,
           (orderId, operation, timestamp, status) => {
-            const record = createIdempotencyRecord(orderId, operation, timestamp);
-            const completedRecord = completeIdempotencyRecord(record, status);
-            
+            const record = createIdempotencyRecord(orderId, operation, timestamp)
+            const completedRecord = completeIdempotencyRecord(record, status)
+
             return (
               completedRecord.status === status &&
               completedRecord.completedAt !== undefined &&
               completedRecord.completedAt >= timestamp
-            );
+            )
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should preserve original record data when completing', () => {
       fc.assert(
-        fc.property(
-          orderIdArb,
-          operationArb,
-          timestampArb,
-          (orderId, operation, timestamp) => {
-            const record = createIdempotencyRecord(orderId, operation, timestamp);
-            const completedRecord = completeIdempotencyRecord(record, 'completed', { success: true });
-            
-            return (
-              completedRecord.orderId === record.orderId &&
-              completedRecord.operation === record.operation &&
-              completedRecord.idempotencyKey === record.idempotencyKey &&
-              completedRecord.stripeIdempotencyKey === record.stripeIdempotencyKey &&
-              completedRecord.createdAt === record.createdAt &&
-              completedRecord.expiresAt === record.expiresAt
-            );
-          }
-        ),
+        fc.property(orderIdArb, operationArb, timestampArb, (orderId, operation, timestamp) => {
+          const record = createIdempotencyRecord(orderId, operation, timestamp)
+          const completedRecord = completeIdempotencyRecord(record, 'completed', { success: true })
+
+          return (
+            completedRecord.orderId === record.orderId &&
+            completedRecord.operation === record.operation &&
+            completedRecord.idempotencyKey === record.idempotencyKey &&
+            completedRecord.stripeIdempotencyKey === record.stripeIdempotencyKey &&
+            completedRecord.createdAt === record.createdAt &&
+            completedRecord.expiresAt === record.expiresAt
+          )
+        }),
         { numRuns: 100 }
-      );
-    });
-  });
+      )
+    })
+  })
 
   /**
    * Property 48: Server-Side Payment Validation
@@ -1013,14 +943,13 @@ describe('Payment Security Property Tests', () => {
           fc.integer({ min: 1, max: 1000000 }),
           fc.constantFrom('usd', 'eur', 'gbp'),
           (requestedAmount, expectedAmount, currency) => {
-            const result = validatePaymentAmount(requestedAmount, expectedAmount, currency);
-            return result.isValid === false && 
-                   result.errors.some(e => e.includes('positive'));
+            const result = validatePaymentAmount(requestedAmount, expectedAmount, currency)
+            return result.isValid === false && result.errors.some((e) => e.includes('positive'))
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should reject zero payment amounts', () => {
       fc.assert(
@@ -1028,13 +957,13 @@ describe('Payment Security Property Tests', () => {
           fc.integer({ min: 1, max: 1000000 }),
           fc.constantFrom('usd', 'eur', 'gbp'),
           (expectedAmount, currency) => {
-            const result = validatePaymentAmount(0, expectedAmount, currency);
-            return result.isValid === false;
+            const result = validatePaymentAmount(0, expectedAmount, currency)
+            return result.isValid === false
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should reject mismatched payment amounts', () => {
       fc.assert(
@@ -1044,15 +973,14 @@ describe('Payment Security Property Tests', () => {
           fc.constantFrom('usd', 'eur', 'gbp'),
           (requestedAmount, expectedAmount, currency) => {
             // Ensure amounts differ by more than tolerance
-            fc.pre(Math.abs(requestedAmount - expectedAmount) > 1);
-            const result = validatePaymentAmount(requestedAmount, expectedAmount, currency);
-            return result.isValid === false && 
-                   result.errors.some(e => e.includes('mismatch'));
+            fc.pre(Math.abs(requestedAmount - expectedAmount) > 1)
+            const result = validatePaymentAmount(requestedAmount, expectedAmount, currency)
+            return result.isValid === false && result.errors.some((e) => e.includes('mismatch'))
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should accept matching payment amounts within tolerance', () => {
       fc.assert(
@@ -1061,13 +989,13 @@ describe('Payment Security Property Tests', () => {
           fc.integer({ min: -1, max: 1 }), // Within 1 cent tolerance
           fc.constantFrom('usd', 'eur', 'gbp'),
           (amount, tolerance, currency) => {
-            const result = validatePaymentAmount(amount + tolerance, amount, currency);
-            return result.isValid === true;
+            const result = validatePaymentAmount(amount + tolerance, amount, currency)
+            return result.isValid === true
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should warn on large payment amounts', () => {
       fc.assert(
@@ -1075,14 +1003,13 @@ describe('Payment Security Property Tests', () => {
           fc.integer({ min: 1000001, max: 10000000 }), // Over $10,000
           fc.constantFrom('usd', 'eur', 'gbp'),
           (amount, currency) => {
-            const result = validatePaymentAmount(amount, amount, currency);
-            return result.isValid === true && 
-                   result.warnings.some(w => w.includes('Large'));
+            const result = validatePaymentAmount(amount, amount, currency)
+            return result.isValid === true && result.warnings.some((w) => w.includes('Large'))
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should warn on unusual currencies', () => {
       fc.assert(
@@ -1090,14 +1017,14 @@ describe('Payment Security Property Tests', () => {
           fc.integer({ min: 100, max: 10000 }),
           fc.constantFrom('xyz', 'abc', 'foo'),
           (amount, currency) => {
-            const result = validatePaymentAmount(amount, amount, currency);
-            return result.warnings.some(w => w.includes('Unusual currency'));
+            const result = validatePaymentAmount(amount, amount, currency)
+            return result.warnings.some((w) => w.includes('Unusual currency'))
           }
         ),
         { numRuns: 100 }
-      );
-    });
-  });
+      )
+    })
+  })
 
   /**
    * Property 49: Fraud Detection Alerts
@@ -1114,7 +1041,7 @@ describe('Payment Security Property Tests', () => {
       previousOrderCount: fc.option(fc.integer({ min: 0, max: 100 }), { nil: undefined }),
       previousTotalSpent: fc.option(fc.integer({ min: 0, max: 10000000 }), { nil: undefined }),
       timeSinceLastOrder: fc.option(fc.integer({ min: 0, max: 86400000 }), { nil: undefined }),
-    });
+    })
 
     it('should flag large transactions as suspicious', () => {
       fc.assert(
@@ -1126,14 +1053,15 @@ describe('Payment Security Property Tests', () => {
               amount,
               currency: 'usd',
               buyerEmail: email,
-            });
-            return result.riskScore >= 30 && 
-                   result.reasons.some(r => r.includes('Large transaction'));
+            })
+            return (
+              result.riskScore >= 30 && result.reasons.some((r) => r.includes('Large transaction'))
+            )
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should flag rapid successive orders', () => {
       fc.assert(
@@ -1147,14 +1075,15 @@ describe('Payment Security Property Tests', () => {
               currency: 'usd',
               buyerEmail: email,
               timeSinceLastOrder,
-            });
-            return result.riskScore >= 40 && 
-                   result.reasons.some(r => r.includes('Multiple orders'));
+            })
+            return (
+              result.riskScore >= 40 && result.reasons.some((r) => r.includes('Multiple orders'))
+            )
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should flag first-time buyers with large purchases', () => {
       fc.assert(
@@ -1167,37 +1096,35 @@ describe('Payment Security Property Tests', () => {
               currency: 'usd',
               buyerEmail: email,
               previousOrderCount: 0,
-            });
-            return result.riskScore >= 25 && 
-                   result.reasons.some(r => r.includes('First-time buyer'));
+            })
+            return (
+              result.riskScore >= 25 && result.reasons.some((r) => r.includes('First-time buyer'))
+            )
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should flag suspicious email patterns', () => {
       fc.assert(
         fc.property(
           fc.integer({ min: 100, max: 10000 }),
-          fc.constantFrom(
-            'test+spam@example.com',
-            'a1234@tempmail.com',
-            'x9@guerrillamail.com',
-          ),
+          fc.constantFrom('test+spam@example.com', 'a1234@tempmail.com', 'x9@guerrillamail.com'),
           (amount, email) => {
             const result = checkForFraud({
               amount,
               currency: 'usd',
               buyerEmail: email,
-            });
-            return result.riskScore >= 20 && 
-                   result.reasons.some(r => r.includes('Suspicious email'));
+            })
+            return (
+              result.riskScore >= 20 && result.reasons.some((r) => r.includes('Suspicious email'))
+            )
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should trigger alert for high-risk transactions', () => {
       fc.assert(
@@ -1211,20 +1138,20 @@ describe('Payment Security Property Tests', () => {
               buyerEmail: 'test+spam@tempmail.com', // Suspicious email
               timeSinceLastOrder,
               previousOrderCount: 0, // First time buyer
-            });
+            })
             // Combined risk factors should trigger alert
-            return result.shouldAlert === true && result.riskScore >= 70;
+            return result.shouldAlert === true && result.riskScore >= 70
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should not flag normal transactions', () => {
       fc.assert(
         fc.property(
           fc.integer({ min: 1000, max: 50000 }), // Normal amount ($10-$500)
-          fc.emailAddress().filter(e => !e.includes('+') && !e.includes('tempmail')),
+          fc.emailAddress().filter((e) => !e.includes('+') && !e.includes('tempmail')),
           fc.integer({ min: 3600000, max: 86400000 }), // 1-24 hours since last order
           fc.integer({ min: 1, max: 10 }), // Has previous orders
           (amount, email, timeSinceLastOrder, previousOrderCount) => {
@@ -1235,30 +1162,30 @@ describe('Payment Security Property Tests', () => {
               timeSinceLastOrder,
               previousOrderCount,
               previousTotalSpent: amount * previousOrderCount, // Similar spending pattern
-            });
-            return result.isSuspicious === false && result.shouldAlert === false;
+            })
+            return result.isSuspicious === false && result.shouldAlert === false
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should always return valid fraud check result structure', () => {
       fc.assert(
         fc.property(fraudCheckInputArb, (input) => {
-          const result = checkForFraud(input);
+          const result = checkForFraud(input)
           return (
             typeof result.isSuspicious === 'boolean' &&
             typeof result.riskScore === 'number' &&
             result.riskScore >= 0 &&
             Array.isArray(result.reasons) &&
             typeof result.shouldAlert === 'boolean'
-          );
+          )
         }),
         { numRuns: 100 }
-      );
-    });
-  });
+      )
+    })
+  })
 
   /**
    * Stripe Token Validation
@@ -1268,36 +1195,41 @@ describe('Payment Security Property Tests', () => {
       fc.assert(
         fc.property(
           fc.constantFrom('pi_', 'cs_', 'cus_', 'pm_', 'ch_', 're_', 'tok_', 'src_', 'sub_', 'in_'),
-          fc.string({ minLength: 10, maxLength: 30 }).map(s => s.replace(/[^a-zA-Z0-9]/g, 'x')),
+          fc.string({ minLength: 10, maxLength: 30 }).map((s) => s.replace(/[^a-zA-Z0-9]/g, 'x')),
           (prefix, suffix) => {
-            return isValidStripeToken(`${prefix}${suffix}`) === true;
+            return isValidStripeToken(`${prefix}${suffix}`) === true
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should reject invalid token prefixes', () => {
       fc.assert(
         fc.property(
-          fc.string({ minLength: 2, maxLength: 5 }).filter(s => 
-            !['pi_', 'cs_', 'cus_', 'pm_', 'ch_', 're_', 'tok_', 'src_', 'sub_', 'in_'].some(p => s.startsWith(p))
-          ),
-          fc.string({ minLength: 10, maxLength: 30 }).map(s => s.replace(/[^a-zA-Z0-9]/g, 'x')),
+          fc
+            .string({ minLength: 2, maxLength: 5 })
+            .filter(
+              (s) =>
+                !['pi_', 'cs_', 'cus_', 'pm_', 'ch_', 're_', 'tok_', 'src_', 'sub_', 'in_'].some(
+                  (p) => s.startsWith(p)
+                )
+            ),
+          fc.string({ minLength: 10, maxLength: 30 }).map((s) => s.replace(/[^a-zA-Z0-9]/g, 'x')),
           (prefix, suffix) => {
-            return isValidStripeToken(`${prefix}${suffix}`) === false;
+            return isValidStripeToken(`${prefix}${suffix}`) === false
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should reject empty or null values', () => {
-      expect(isValidStripeToken('')).toBe(false);
-      expect(isValidStripeToken(null as unknown as string)).toBe(false);
-      expect(isValidStripeToken(undefined as unknown as string)).toBe(false);
-    });
-  });
+      expect(isValidStripeToken('')).toBe(false)
+      expect(isValidStripeToken(null as unknown as string)).toBe(false)
+      expect(isValidStripeToken(undefined as unknown as string)).toBe(false)
+    })
+  })
 
   /**
    * Property 44: Webhook Signature Verification
@@ -1308,12 +1240,13 @@ describe('Payment Security Property Tests', () => {
   describe('Property 44: Webhook Signature Verification', () => {
     // Generate valid-looking Stripe signature format
     const generateValidSignatureFormat = (timestamp: number, signature: string): string => {
-      return `t=${timestamp},v1=${signature}`;
-    };
+      return `t=${timestamp},v1=${signature}`
+    }
 
     // Generate random hex string for signature
-    const hexStringArb = fc.string({ minLength: 64, maxLength: 64 })
-      .map(s => s.replace(/[^a-f0-9]/gi, 'a').toLowerCase());
+    const hexStringArb = fc
+      .string({ minLength: 64, maxLength: 64 })
+      .map((s) => s.replace(/[^a-f0-9]/gi, 'a').toLowerCase())
 
     it('should reject webhooks with missing payload', () => {
       fc.assert(
@@ -1321,14 +1254,13 @@ describe('Payment Security Property Tests', () => {
           fc.string({ minLength: 10, maxLength: 100 }),
           fc.string({ minLength: 10, maxLength: 100 }),
           (signature, secret) => {
-            const result = verifyWebhookSignature('', signature, secret);
-            return result.isValid === false && 
-                   result.errorType === 'missing_payload';
+            const result = verifyWebhookSignature('', signature, secret)
+            return result.isValid === false && result.errorType === 'missing_payload'
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should reject webhooks with missing signature', () => {
       fc.assert(
@@ -1336,14 +1268,13 @@ describe('Payment Security Property Tests', () => {
           fc.string({ minLength: 10, maxLength: 1000 }),
           fc.string({ minLength: 10, maxLength: 100 }),
           (payload, secret) => {
-            const result = verifyWebhookSignature(payload, '', secret);
-            return result.isValid === false && 
-                   result.errorType === 'missing_signature';
+            const result = verifyWebhookSignature(payload, '', secret)
+            return result.isValid === false && result.errorType === 'missing_signature'
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should reject webhooks with missing secret', () => {
       fc.assert(
@@ -1351,14 +1282,13 @@ describe('Payment Security Property Tests', () => {
           fc.string({ minLength: 10, maxLength: 1000 }),
           fc.string({ minLength: 10, maxLength: 100 }),
           (payload, signature) => {
-            const result = verifyWebhookSignature(payload, signature, '');
-            return result.isValid === false && 
-                   result.errorType === 'missing_secret';
+            const result = verifyWebhookSignature(payload, signature, '')
+            return result.isValid === false && result.errorType === 'missing_secret'
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should reject webhooks with invalid signature format', () => {
       fc.assert(
@@ -1366,19 +1296,21 @@ describe('Payment Security Property Tests', () => {
           fc.string({ minLength: 10, maxLength: 1000 }),
           // Generate invalid signature formats (missing t= or v1=)
           fc.oneof(
-            fc.string({ minLength: 5, maxLength: 50 }).filter(s => !s.includes('t=') || !s.includes('v1=')),
+            fc
+              .string({ minLength: 5, maxLength: 50 })
+              .filter((s) => !s.includes('t=') || !s.includes('v1=')),
             fc.constant('invalid'),
-            fc.constant('t=abc,v1=xyz'), // Invalid timestamp format
+            fc.constant('t=abc,v1=xyz') // Invalid timestamp format
           ),
           fc.string({ minLength: 10, maxLength: 100 }),
           (payload, invalidSignature, secret) => {
-            const result = verifyWebhookSignature(payload, invalidSignature, secret);
-            return result.isValid === false;
+            const result = verifyWebhookSignature(payload, invalidSignature, secret)
+            return result.isValid === false
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should validate signature format correctly', () => {
       fc.assert(
@@ -1386,13 +1318,13 @@ describe('Payment Security Property Tests', () => {
           fc.integer({ min: 1000000000, max: 2000000000 }),
           hexStringArb,
           (timestamp, sig) => {
-            const validSignature = generateValidSignatureFormat(timestamp, sig);
-            return isValidSignatureFormat(validSignature) === true;
+            const validSignature = generateValidSignatureFormat(timestamp, sig)
+            return isValidSignatureFormat(validSignature) === true
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should reject invalid signature formats', () => {
       fc.assert(
@@ -1401,15 +1333,17 @@ describe('Payment Security Property Tests', () => {
             fc.constant(''),
             fc.constant('invalid'),
             fc.constant('t=notanumber,v1=abc'),
-            fc.string({ minLength: 1, maxLength: 20 }).filter(s => !s.includes('t=') || !s.includes('v1=')),
+            fc
+              .string({ minLength: 1, maxLength: 20 })
+              .filter((s) => !s.includes('t=') || !s.includes('v1='))
           ),
           (invalidSig) => {
-            return isValidSignatureFormat(invalidSig) === false;
+            return isValidSignatureFormat(invalidSig) === false
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should extract timestamp from valid signatures', () => {
       fc.assert(
@@ -1417,74 +1351,78 @@ describe('Payment Security Property Tests', () => {
           fc.integer({ min: 1000000000, max: 2000000000 }),
           hexStringArb,
           (timestamp, sig) => {
-            const signature = generateValidSignatureFormat(timestamp, sig);
-            const extracted = extractSignatureTimestamp(signature);
-            return extracted === timestamp;
+            const signature = generateValidSignatureFormat(timestamp, sig)
+            const extracted = extractSignatureTimestamp(signature)
+            return extracted === timestamp
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should return null for signatures without timestamp', () => {
       fc.assert(
         fc.property(
-          fc.oneof(
-            fc.constant(''),
-            fc.constant('v1=abc123'),
-            fc.constant('invalid'),
-          ),
+          fc.oneof(fc.constant(''), fc.constant('v1=abc123'), fc.constant('invalid')),
           (invalidSig) => {
-            return extractSignatureTimestamp(invalidSig) === null;
+            return extractSignatureTimestamp(invalidSig) === null
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should validate timestamps within tolerance window', () => {
       fc.assert(
         fc.property(
           fc.integer({ min: -299, max: 299 }), // Within 5 minute tolerance
           (offsetSeconds) => {
-            const now = Math.floor(Date.now() / 1000);
-            const timestamp = now + offsetSeconds;
-            return isTimestampValid(timestamp, 300) === true;
+            const now = Math.floor(Date.now() / 1000)
+            const timestamp = now + offsetSeconds
+            return isTimestampValid(timestamp, 300) === true
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should reject timestamps outside tolerance window', () => {
       fc.assert(
         fc.property(
           fc.oneof(
-            fc.integer({ min: 301, max: 10000 }),  // Future beyond tolerance
-            fc.integer({ min: -10000, max: -301 }), // Past beyond tolerance
+            fc.integer({ min: 301, max: 10000 }), // Future beyond tolerance
+            fc.integer({ min: -10000, max: -301 }) // Past beyond tolerance
           ),
           (offsetSeconds) => {
-            const now = Math.floor(Date.now() / 1000);
-            const timestamp = now + offsetSeconds;
-            return isTimestampValid(timestamp, 300) === false;
+            const now = Math.floor(Date.now() / 1000)
+            const timestamp = now + offsetSeconds
+            return isTimestampValid(timestamp, 300) === false
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should create appropriate error responses for different error types', () => {
       fc.assert(
         fc.property(
           fc.constantFrom(
             'missing_payload',
-            'missing_signature', 
+            'missing_signature',
             'missing_secret',
             'invalid_signature',
             'expired_timestamp',
             'invalid_payload',
-            'unknown_error',
-          ) as fc.Arbitrary<'missing_payload' | 'missing_signature' | 'missing_secret' | 'invalid_signature' | 'expired_timestamp' | 'invalid_payload' | 'unknown_error'>,
+            'unknown_error'
+          ) as fc.Arbitrary<
+            | 'missing_payload'
+            | 'missing_signature'
+            | 'missing_secret'
+            | 'invalid_signature'
+            | 'expired_timestamp'
+            | 'invalid_payload'
+            | 'unknown_error'
+          >,
           fc.string({ minLength: 5, maxLength: 100 }),
           (errorType, errorMessage) => {
             const result = {
@@ -1492,9 +1430,9 @@ describe('Payment Security Property Tests', () => {
               event: null,
               error: errorMessage,
               errorType,
-            };
-            const response = createWebhookErrorResponse(result);
-            
+            }
+            const response = createWebhookErrorResponse(result)
+
             // Verify status codes are appropriate
             const expectedStatuses: Record<string, number> = {
               missing_payload: 400,
@@ -1504,16 +1442,18 @@ describe('Payment Security Property Tests', () => {
               expired_timestamp: 401,
               invalid_payload: 400,
               unknown_error: 500,
-            };
-            
-            return response.status === expectedStatuses[errorType] &&
-                   response.body.error === errorMessage &&
-                   response.body.errorType === errorType;
+            }
+
+            return (
+              response.status === expectedStatuses[errorType] &&
+              response.body.error === errorMessage &&
+              response.body.errorType === errorType
+            )
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should reject tampered payloads (signature mismatch)', () => {
       fc.assert(
@@ -1524,19 +1464,19 @@ describe('Payment Security Property Tests', () => {
           fc.string({ minLength: 20, maxLength: 50 }),
           (payload, timestamp, sig, secret) => {
             // Create a signature that doesn't match the payload
-            const signature = generateValidSignatureFormat(timestamp, sig);
-            const payloadStr = typeof payload === 'string' ? payload : JSON.stringify(payload);
-            
-            const result = verifyWebhookSignature(payloadStr, signature, `whsec_${secret}`);
-            
+            const signature = generateValidSignatureFormat(timestamp, sig)
+            const payloadStr = typeof payload === 'string' ? payload : JSON.stringify(payload)
+
+            const result = verifyWebhookSignature(payloadStr, signature, `whsec_${secret}`)
+
             // Should fail because signature doesn't match payload
             // (unless by extreme coincidence the random signature matches)
-            return result.isValid === false || result.event !== null;
+            return result.isValid === false || result.event !== null
           }
         ),
         { numRuns: 100 }
-      );
-    });
+      )
+    })
 
     it('should always return a valid result structure', () => {
       fc.assert(
@@ -1545,22 +1485,18 @@ describe('Payment Security Property Tests', () => {
           fc.option(fc.string({ minLength: 0, maxLength: 200 }), { nil: '' }),
           fc.option(fc.string({ minLength: 0, maxLength: 100 }), { nil: '' }),
           (payload, signature, secret) => {
-            const result = verifyWebhookSignature(
-              payload || '',
-              signature || '',
-              secret || ''
-            );
-            
+            const result = verifyWebhookSignature(payload || '', signature || '', secret || '')
+
             return (
               typeof result.isValid === 'boolean' &&
               (result.event === null || typeof result.event === 'object') &&
               (result.error === undefined || typeof result.error === 'string') &&
               (result.errorType === undefined || typeof result.errorType === 'string')
-            );
+            )
           }
         ),
         { numRuns: 100 }
-      );
-    });
-  });
-});
+      )
+    })
+  })
+})

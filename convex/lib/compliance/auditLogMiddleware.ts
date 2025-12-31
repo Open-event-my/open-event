@@ -1,16 +1,16 @@
 /**
  * Audit Logging Middleware
- * 
+ *
  * Provides middleware to automatically log all mutation operations.
  * Wraps mutations to capture audit trail information.
- * 
+ *
  * Requirements: 3.5, 3.10
  */
 
 import { mutation } from '../../_generated/server'
 import type { MutationCtx } from '../../_generated/server'
 import { internal } from '../../_generated/api'
-import type { Id } from '../../_generated/dataModel'
+import type { Id, TableNames } from '../../_generated/dataModel'
 
 // ============================================================================
 // Types
@@ -29,11 +29,11 @@ export interface AuditLogOptions {
 
 /**
  * Wrap a mutation with automatic audit logging
- * 
+ *
  * @param options - Audit logging options
  * @param handler - The mutation handler function
  * @returns Wrapped mutation with audit logging
- * 
+ *
  * @example
  * ```typescript
  * export const updateEvent = withAuditLog(
@@ -46,49 +46,55 @@ export interface AuditLogOptions {
  * );
  * ```
  */
-export function withAuditLog<Args extends Record<string, any>, Output>(
+export function withAuditLog<Args extends Record<string, unknown>, Output>(
   options: AuditLogOptions,
   handler: (ctx: MutationCtx, args: Args) => Promise<Output>
 ) {
   return async (ctx: MutationCtx, args: Args): Promise<Output> => {
     // Skip audit if explicitly disabled
     if (options.skipAudit) {
-      return handler(ctx, args);
+      return handler(ctx, args)
     }
 
     // Get user identity
-    const identity = await ctx.auth.getUserIdentity();
-    
+    const identity = await ctx.auth.getUserIdentity()
+
     // Capture before state if needed
-    let beforeState: any = undefined;
+    let beforeState: Record<string, unknown> | null = undefined as unknown as Record<
+      string,
+      unknown
+    > | null
     if (options.captureChanges && options.action === 'update' && 'id' in args) {
       try {
-        beforeState = await ctx.db.get(args.id as Id<any>);
+        beforeState = await ctx.db.get(args.id as Id<TableNames>)
       } catch {
         // Ignore errors getting before state
       }
     }
 
     // Execute the mutation
-    const result = await handler(ctx, args);
+    const result = await handler(ctx, args)
 
     // Capture after state if needed
-    let afterState: any = undefined;
-    let changes: Record<string, { old: unknown; new: unknown }> | undefined;
-    
+    let afterState: Record<string, unknown> | null = undefined as unknown as Record<
+      string,
+      unknown
+    > | null
+    let changes: Record<string, { old: unknown; new: unknown }> | undefined
+
     if (options.captureChanges && options.action === 'update' && 'id' in args) {
       try {
-        afterState = await ctx.db.get(args.id as Id<any>);
-        
+        afterState = await ctx.db.get(args.id as Id<TableNames>)
+
         // Calculate changes
         if (beforeState && afterState) {
-          changes = {};
+          changes = {}
           for (const key of Object.keys(afterState)) {
             if (key !== '_id' && key !== '_creationTime' && beforeState[key] !== afterState[key]) {
               changes[key] = {
                 old: beforeState[key],
                 new: afterState[key],
-              };
+              }
             }
           }
         }
@@ -98,13 +104,13 @@ export function withAuditLog<Args extends Record<string, any>, Output>(
     }
 
     // Determine resource ID
-    let resourceId: string | undefined;
+    let resourceId: string | undefined
     if ('id' in args) {
-      resourceId = args.id as string;
+      resourceId = args.id as string
     } else if (typeof result === 'object' && result !== null && 'id' in result) {
-      resourceId = (result as any).id;
+      resourceId = (result as { id: string }).id
     } else if (typeof result === 'string') {
-      resourceId = result;
+      resourceId = result
     }
 
     // Log the audit entry
@@ -116,24 +122,24 @@ export function withAuditLog<Args extends Record<string, any>, Output>(
           resource: options.resource,
           resourceId: resourceId || 'unknown',
           changes,
-        });
+        })
       } catch (error) {
         // Don't fail the mutation if audit logging fails
-        console.error('Failed to log audit entry:', error);
+        console.error('Failed to log audit entry:', error)
       }
     }
 
-    return result;
-  };
+    return result
+  }
 }
 
 /**
  * Wrap an admin mutation with enhanced audit logging
- * 
+ *
  * @param options - Audit logging options
  * @param handler - The mutation handler function
  * @returns Wrapped mutation with enhanced admin audit logging
- * 
+ *
  * @example
  * ```typescript
  * export const suspendUser = withAdminAuditLog(
@@ -146,7 +152,7 @@ export function withAuditLog<Args extends Record<string, any>, Output>(
  * );
  * ```
  */
-export function withAdminAuditLog<Args extends Record<string, any>, Output>(
+export function withAdminAuditLog<Args extends Record<string, unknown>, Output>(
   options: AuditLogOptions & {
     severity?: 'low' | 'medium' | 'high' | 'critical'
     getImpactedUsers?: (args: Args) => string[]
@@ -155,50 +161,56 @@ export function withAdminAuditLog<Args extends Record<string, any>, Output>(
 ) {
   return async (ctx: MutationCtx, args: Args): Promise<Output> => {
     // Get user identity
-    const identity = await ctx.auth.getUserIdentity();
+    const identity = await ctx.auth.getUserIdentity()
     if (!identity) {
-      throw new Error('Authentication required');
+      throw new Error('Authentication required')
     }
 
     // Get user to check role
     const user = await ctx.db
       .query('users')
       .withIndex('email', (q) => q.eq('email', identity.email!))
-      .first();
+      .first()
 
     if (!user || (user.role !== 'admin' && user.role !== 'superadmin')) {
-      throw new Error('Admin access required');
+      throw new Error('Admin access required')
     }
 
     // Capture before state if needed
-    let beforeState: any = undefined;
+    let beforeState: Record<string, unknown> | null = undefined as unknown as Record<
+      string,
+      unknown
+    > | null
     if (options.captureChanges && options.action === 'update' && 'id' in args) {
       try {
-        beforeState = await ctx.db.get(args.id as Id<any>);
+        beforeState = await ctx.db.get(args.id as Id<TableNames>)
       } catch {
         // Ignore errors
       }
     }
 
     // Execute the mutation
-    const result = await handler(ctx, args);
+    const result = await handler(ctx, args)
 
     // Capture after state and calculate changes
-    let afterState: any = undefined;
-    let changes: Record<string, { old: unknown; new: unknown }> | undefined;
-    
+    let afterState: Record<string, unknown> | null = undefined as unknown as Record<
+      string,
+      unknown
+    > | null
+    let changes: Record<string, { old: unknown; new: unknown }> | undefined
+
     if (options.captureChanges && options.action === 'update' && 'id' in args) {
       try {
-        afterState = await ctx.db.get(args.id as Id<any>);
-        
+        afterState = await ctx.db.get(args.id as Id<TableNames>)
+
         if (beforeState && afterState) {
-          changes = {};
+          changes = {}
           for (const key of Object.keys(afterState)) {
             if (key !== '_id' && key !== '_creationTime' && beforeState[key] !== afterState[key]) {
               changes[key] = {
                 old: beforeState[key],
                 new: afterState[key],
-              };
+              }
             }
           }
         }
@@ -208,19 +220,19 @@ export function withAdminAuditLog<Args extends Record<string, any>, Output>(
     }
 
     // Determine resource ID
-    let resourceId: string | undefined;
+    let resourceId: string | undefined
     if ('id' in args) {
-      resourceId = args.id as string;
+      resourceId = args.id as string
     } else if ('userId' in args) {
-      resourceId = args.userId as string;
+      resourceId = args.userId as string
     } else if (typeof result === 'object' && result !== null && 'id' in result) {
-      resourceId = (result as any).id;
+      resourceId = (result as { id: string }).id
     } else if (typeof result === 'string') {
-      resourceId = result;
+      resourceId = result
     }
 
     // Get impacted users if function provided
-    const impactedUsers = options.getImpactedUsers ? options.getImpactedUsers(args) : undefined;
+    const impactedUsers = options.getImpactedUsers ? options.getImpactedUsers(args) : undefined
 
     // Log the admin action
     try {
@@ -233,21 +245,21 @@ export function withAdminAuditLog<Args extends Record<string, any>, Output>(
         adminRole: user.role,
         impactedUsers,
         severity: options.severity,
-      });
+      })
     } catch (error) {
       // Don't fail the mutation if audit logging fails
-      console.error('Failed to log admin audit entry:', error);
+      console.error('Failed to log admin audit entry:', error)
     }
 
-    return result;
-  };
+    return result
+  }
 }
 
 /**
  * Helper to create an audited mutation
- * 
+ *
  * This is a convenience wrapper that combines mutation definition with audit logging.
- * 
+ *
  * @example
  * ```typescript
  * export const updateEvent = auditedMutation({
@@ -263,26 +275,26 @@ export function withAdminAuditLog<Args extends Record<string, any>, Output>(
  * });
  * ```
  */
-export function auditedMutation<Args extends Record<string, any>, Output>(config: {
+export function auditedMutation<Args extends Record<string, unknown>, Output>(config: {
   audit: AuditLogOptions
-  args: any
+  args: Record<string, unknown>
   handler: (ctx: MutationCtx, args: Args) => Promise<Output>
 }) {
   return mutation({
     args: config.args,
     handler: withAuditLog(config.audit, config.handler),
-  });
+  })
 }
 
 /**
  * Helper to create an audited admin mutation
- * 
+ *
  * @example
  * ```typescript
  * export const suspendUser = auditedAdminMutation({
- *   audit: { 
- *     action: 'admin_action', 
- *     resource: 'user', 
+ *   audit: {
+ *     action: 'admin_action',
+ *     resource: 'user',
  *     severity: 'high',
  *     getImpactedUsers: (args) => [args.userId]
  *   },
@@ -291,25 +303,25 @@ export function auditedMutation<Args extends Record<string, any>, Output>(config
  *     reason: v.string(),
  *   },
  *   handler: async (ctx, args) => {
- *     await ctx.db.patch(args.userId, { 
+ *     await ctx.db.patch(args.userId, {
  *       status: 'suspended',
- *       suspendedReason: args.reason 
+ *       suspendedReason: args.reason
  *     });
  *     return { success: true };
  *   },
  * });
  * ```
  */
-export function auditedAdminMutation<Args extends Record<string, any>, Output>(config: {
+export function auditedAdminMutation<Args extends Record<string, unknown>, Output>(config: {
   audit: AuditLogOptions & {
     severity?: 'low' | 'medium' | 'high' | 'critical'
     getImpactedUsers?: (args: Args) => string[]
   }
-  args: any
+  args: Record<string, unknown>
   handler: (ctx: MutationCtx, args: Args) => Promise<Output>
 }) {
   return mutation({
     args: config.args,
     handler: withAdminAuditLog(config.audit, config.handler),
-  });
+  })
 }

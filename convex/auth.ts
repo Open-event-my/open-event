@@ -61,7 +61,15 @@ async function getInheritedRole(
 const jwtPrivateKey = process.env.JWT_PRIVATE_KEY
 const convexAuthPrivateKey = process.env.CONVEX_AUTH_PRIVATE_KEY
 const jwks = process.env.JWKS
-const jwksParsed = jwks ? (() => { try { return JSON.parse(jwks); } catch { return null; } })() : null
+const jwksParsed = jwks
+  ? (() => {
+      try {
+        return JSON.parse(jwks)
+      } catch {
+        return null
+      }
+    })()
+  : null
 const jwtKeyTrimmed = jwtPrivateKey?.trim()
 const hasBeginMarker = jwtPrivateKey?.includes('-----BEGIN PRIVATE KEY-----') || false
 const hasEndMarker = jwtPrivateKey?.includes('-----END PRIVATE KEY-----') || false
@@ -71,72 +79,86 @@ const hasNewlines = jwtPrivateKey?.includes('\n') || false
 const hasCarriageReturn = jwtPrivateKey?.includes('\r') || false
 const lineCount = jwtPrivateKey?.split(/\r?\n/).length || 0
 const firstLine = jwtPrivateKey?.split(/\r?\n/)[0] || 'null'
-const lastLine = jwtPrivateKey?.split(/\r?\n/).filter(l => l.trim()).pop() || 'null'
+const lastLine =
+  jwtPrivateKey
+    ?.split(/\r?\n/)
+    .filter((l) => l.trim())
+    .pop() || 'null'
 
-console.log('[DEBUG-AUTH] JWT key env check:', JSON.stringify({
-  location: 'convex/auth.ts:9',
-  message: 'JWT key env check',
-  data: {
-    hasJwtPrivateKey: !!jwtPrivateKey,
-    jwtKeyLength: jwtPrivateKey?.length || 0,
-    jwtKeyTrimmedLength: jwtKeyTrimmed?.length || 0,
-    jwtKeyFirst100: jwtPrivateKey?.substring(0, 100) || 'null',
-    jwtKeyLast100: jwtPrivateKey?.substring(Math.max(0, (jwtPrivateKey?.length || 0) - 100)) || 'null',
-    firstLine,
-    lastLine,
-    hasBeginMarker,
-    hasEndMarker,
-    startsWithBegin,
-    endsWithEnd,
-    hasNewlines,
-    hasCarriageReturn,
-    lineCount,
-    isProperlyFormatted: hasBeginMarker && hasEndMarker && startsWithBegin && endsWithEnd,
-    hasConvexAuthPrivateKey: !!convexAuthPrivateKey,
-    convexAuthKeyLength: convexAuthPrivateKey?.length || 0,
-    hasJwks: !!jwks,
-    jwksLength: jwks?.length || 0,
-    jwksIsValidJson: !!jwksParsed,
-    jwksHasKeys: jwksParsed && typeof jwksParsed === 'object' && 'keys' in jwksParsed,
-    hasSiteUrl: !!process.env.SITE_URL,
-    siteUrl: process.env.SITE_URL,
-  },
-  timestamp: Date.now(),
-  sessionId: 'debug-session',
-  runId: 'pre-init',
-  hypothesisId: 'A',
-}))
+console.log(
+  '[DEBUG-AUTH] JWT key env check:',
+  JSON.stringify({
+    location: 'convex/auth.ts:9',
+    message: 'JWT key env check',
+    data: {
+      hasJwtPrivateKey: !!jwtPrivateKey,
+      jwtKeyLength: jwtPrivateKey?.length || 0,
+      jwtKeyTrimmedLength: jwtKeyTrimmed?.length || 0,
+      jwtKeyFirst100: jwtPrivateKey?.substring(0, 100) || 'null',
+      jwtKeyLast100:
+        jwtPrivateKey?.substring(Math.max(0, (jwtPrivateKey?.length || 0) - 100)) || 'null',
+      firstLine,
+      lastLine,
+      hasBeginMarker,
+      hasEndMarker,
+      startsWithBegin,
+      endsWithEnd,
+      hasNewlines,
+      hasCarriageReturn,
+      lineCount,
+      isProperlyFormatted: hasBeginMarker && hasEndMarker && startsWithBegin && endsWithEnd,
+      hasConvexAuthPrivateKey: !!convexAuthPrivateKey,
+      convexAuthKeyLength: convexAuthPrivateKey?.length || 0,
+      hasJwks: !!jwks,
+      jwksLength: jwks?.length || 0,
+      jwksIsValidJson: !!jwksParsed,
+      jwksHasKeys: jwksParsed && typeof jwksParsed === 'object' && 'keys' in jwksParsed,
+      hasSiteUrl: !!process.env.SITE_URL,
+      siteUrl: process.env.SITE_URL,
+    },
+    timestamp: Date.now(),
+    sessionId: 'debug-session',
+    runId: 'pre-init',
+    hypothesisId: 'A',
+  })
+)
 // #endregion
 
 // #region agent log
 // Debug: Before convexAuth initialization
-console.log('[DEBUG-AUTH] Before convexAuth init:', JSON.stringify({
-  location: 'convex/auth.ts:15',
-  message: 'Before convexAuth init',
-  data: { siteUrl: SITE_URL },
-  timestamp: Date.now(),
-  sessionId: 'debug-session',
-  runId: 'pre-init',
-  hypothesisId: 'B',
-}))
+console.log(
+  '[DEBUG-AUTH] Before convexAuth init:',
+  JSON.stringify({
+    location: 'convex/auth.ts:15',
+    message: 'Before convexAuth init',
+    data: { siteUrl: SITE_URL },
+    timestamp: Date.now(),
+    sessionId: 'debug-session',
+    runId: 'pre-init',
+    hypothesisId: 'B',
+  })
+)
 // #endregion
 
 let authInstance: ReturnType<typeof convexAuth>
 try {
   // #region agent log
-  console.log('[DEBUG-AUTH] About to create convexAuth instance with callbacks:', JSON.stringify({
-    location: 'convex/auth.ts:67',
-    message: 'Before convexAuth call',
-    data: {
-      hasPasswordProvider: !!Password,
-      hasGoogleProvider: !!Google,
-      callbackKeys: ['redirect', 'afterUserCreatedOrUpdated'],
-    },
-    timestamp: Date.now(),
-    sessionId: 'debug-session',
-    runId: 'pre-init',
-    hypothesisId: 'D',
-  }))
+  console.log(
+    '[DEBUG-AUTH] About to create convexAuth instance with callbacks:',
+    JSON.stringify({
+      location: 'convex/auth.ts:67',
+      message: 'Before convexAuth call',
+      data: {
+        hasPasswordProvider: !!Password,
+        hasGoogleProvider: !!Google,
+        callbackKeys: ['redirect', 'afterUserCreatedOrUpdated'],
+      },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      runId: 'pre-init',
+      hypothesisId: 'D',
+    })
+  )
   // #endregion
 
   const callbacks = {
@@ -171,21 +193,24 @@ try {
       // #region agent log
       // Log immediately at function entry - before any operations
       try {
-        console.log('[DEBUG-AUTH] afterUserCreatedOrUpdated CALLED - entry point:', JSON.stringify({
-          location: 'convex/auth.ts:88',
-          message: 'afterUserCreatedOrUpdated entry - FIRST LOG',
-          data: {
-            argsType: typeof args,
-            argsKeys: Object.keys(args),
-            userId: args.userId.toString(),
-            existingUserId: args.existingUserId?.toString() ?? 'null',
-            type: args.type,
-          },
-          timestamp: Date.now(),
-          sessionId: 'debug-session',
-          runId: 'auth-callback',
-          hypothesisId: 'H1',
-        }))
+        console.log(
+          '[DEBUG-AUTH] afterUserCreatedOrUpdated CALLED - entry point:',
+          JSON.stringify({
+            location: 'convex/auth.ts:88',
+            message: 'afterUserCreatedOrUpdated entry - FIRST LOG',
+            data: {
+              argsType: typeof args,
+              argsKeys: Object.keys(args),
+              userId: args.userId.toString(),
+              existingUserId: args.existingUserId?.toString() ?? 'null',
+              type: args.type,
+            },
+            timestamp: Date.now(),
+            sessionId: 'debug-session',
+            runId: 'auth-callback',
+            hypothesisId: 'H1',
+          })
+        )
       } catch (logError) {
         console.error('[DEBUG-AUTH] Failed to log entry:', logError)
       }
@@ -196,54 +221,63 @@ try {
 
       try {
         // #region agent log
-        console.log('[DEBUG-AUTH] afterUserCreatedOrUpdated args check:', JSON.stringify({
-          location: 'convex/auth.ts:105',
-          message: 'afterUserCreatedOrUpdated args check',
-          data: {
-            argsKeys: Object.keys(args),
-            userIdValue: args.userId.toString(),
-            existingUserIdValue: args.existingUserId?.toString() ?? 'null',
-            type: args.type,
-          },
-          timestamp: Date.now(),
-          sessionId: 'debug-session',
-          runId: 'auth-callback',
-          hypothesisId: 'H2',
-        }))
+        console.log(
+          '[DEBUG-AUTH] afterUserCreatedOrUpdated args check:',
+          JSON.stringify({
+            location: 'convex/auth.ts:105',
+            message: 'afterUserCreatedOrUpdated args check',
+            data: {
+              argsKeys: Object.keys(args),
+              userIdValue: args.userId.toString(),
+              existingUserIdValue: args.existingUserId?.toString() ?? 'null',
+              type: args.type,
+            },
+            timestamp: Date.now(),
+            sessionId: 'debug-session',
+            runId: 'auth-callback',
+            hypothesisId: 'H2',
+          })
+        )
         // #endregion
 
         // #region agent log
-        console.log('[DEBUG-AUTH] afterUserCreatedOrUpdated extracted args:', JSON.stringify({
-          location: 'convex/auth.ts:130',
-          message: 'afterUserCreatedOrUpdated args extracted',
-          data: {
-            userId: userId.toString(),
-            existingUserId: existingUserId?.toString() ?? 'null',
-          },
-          timestamp: Date.now(),
-          sessionId: 'debug-session',
-          runId: 'auth-callback',
-          hypothesisId: 'I',
-        }))
-        // #endregion
-
-        // Guard: userId must be present (should always be true, but keeping for safety)
-        if (!userId) {
-          console.error('[AUTH] ERROR: userId is null or undefined in afterUserCreatedOrUpdated')
-          // #region agent log
-          console.error('[DEBUG-AUTH] afterUserCreatedOrUpdated missing userId:', JSON.stringify({
-            location: 'convex/auth.ts:150',
-            message: 'afterUserCreatedOrUpdated missing userId',
+        console.log(
+          '[DEBUG-AUTH] afterUserCreatedOrUpdated extracted args:',
+          JSON.stringify({
+            location: 'convex/auth.ts:130',
+            message: 'afterUserCreatedOrUpdated args extracted',
             data: {
-              args: Object.keys(args),
               userId: userId.toString(),
               existingUserId: existingUserId?.toString() ?? 'null',
             },
             timestamp: Date.now(),
             sessionId: 'debug-session',
             runId: 'auth-callback',
-            hypothesisId: 'J',
-          }))
+            hypothesisId: 'I',
+          })
+        )
+        // #endregion
+
+        // Guard: userId must be present (should always be true, but keeping for safety)
+        if (!userId) {
+          console.error('[AUTH] ERROR: userId is null or undefined in afterUserCreatedOrUpdated')
+          // #region agent log
+          console.error(
+            '[DEBUG-AUTH] afterUserCreatedOrUpdated missing userId:',
+            JSON.stringify({
+              location: 'convex/auth.ts:150',
+              message: 'afterUserCreatedOrUpdated missing userId',
+              data: {
+                args: Object.keys(args),
+                userId: userId.toString(),
+                existingUserId: existingUserId?.toString() ?? 'null',
+              },
+              timestamp: Date.now(),
+              sessionId: 'debug-session',
+              runId: 'auth-callback',
+              hypothesisId: 'J',
+            })
+          )
           // #endregion
           // Don't throw - let Convex Auth handle it, but log the issue
           return
@@ -252,19 +286,22 @@ try {
         // Verify user exists
         const user = await ctx.db.get(userId)
         // #region agent log
-        console.log('[DEBUG-AUTH] User lookup result:', JSON.stringify({
-          location: 'convex/auth.ts:173',
-          message: 'User lookup after afterUserCreatedOrUpdated',
-          data: {
-            found: !!user,
-            userId: userId.toString(),
-            userHasId: user?._id ? user._id.toString() : 'null',
-          },
-          timestamp: Date.now(),
-          sessionId: 'debug-session',
-          runId: 'auth-callback',
-          hypothesisId: 'K',
-        }))
+        console.log(
+          '[DEBUG-AUTH] User lookup result:',
+          JSON.stringify({
+            location: 'convex/auth.ts:173',
+            message: 'User lookup after afterUserCreatedOrUpdated',
+            data: {
+              found: !!user,
+              userId: userId.toString(),
+              userHasId: user?._id ? user._id.toString() : 'null',
+            },
+            timestamp: Date.now(),
+            sessionId: 'debug-session',
+            runId: 'auth-callback',
+            hypothesisId: 'K',
+          })
+        )
         // #endregion
 
         if (!user) {
@@ -274,28 +311,34 @@ try {
           if (!existingUserId) {
             // New user - Convex Auth should have created it, but it's missing
             // Let's create it with the userId from Convex Auth
-            console.log('[AUTH] User not found - Convex Auth should have created it. Creating now:', userId.toString())
+            console.log(
+              '[AUTH] User not found - Convex Auth should have created it. Creating now:',
+              userId.toString()
+            )
             // #region agent log
-            console.log('[DEBUG-AUTH] User missing - creating in users table:', JSON.stringify({
-              location: 'convex/auth.ts:216',
-              message: 'User missing - creating',
-              data: {
-                userId: userId.toString(),
-                existingUserId: existingUserId?.toString() ?? 'null',
-              },
-              timestamp: Date.now(),
-              sessionId: 'debug-session',
-              runId: 'auth-callback',
-              hypothesisId: 'L',
-            }))
+            console.log(
+              '[DEBUG-AUTH] User missing - creating in users table:',
+              JSON.stringify({
+                location: 'convex/auth.ts:216',
+                message: 'User missing - creating',
+                data: {
+                  userId: userId.toString(),
+                  existingUserId: existingUserId?.toString() ?? 'null',
+                },
+                timestamp: Date.now(),
+                sessionId: 'debug-session',
+                runId: 'auth-callback',
+                hypothesisId: 'L',
+              })
+            )
             // #endregion
-            
+
             // Get email/name from authAccount
             const authAccount = await ctx.db
               .query('authAccounts')
-              .filter((q: any) => q.eq(q.field('userId'), userId))
+              .filter((q) => q.eq(q.field('userId'), userId))
               .first()
-            
+
             if (!authAccount) {
               console.error('[AUTH] ERROR: authAccount not found for userId:', userId.toString())
               throw new Error(`authAccount not found for userId: ${userId.toString()}`)
@@ -318,24 +361,32 @@ try {
                 name: args.profile.name as string | undefined,
               })
               console.log('[AUTH] Successfully patched user with role:', inheritedRole)
-            } catch (patchError: any) {
+            } catch (patchError) {
               // Patch failed - user doesn't exist
               // This means Convex Auth didn't create it, which is unexpected
-              console.error('[AUTH] CRITICAL: User does not exist and cannot be patched:', patchError.message)
+              const errorMessage =
+                patchError instanceof Error ? patchError.message : String(patchError)
+              console.error(
+                '[AUTH] CRITICAL: User does not exist and cannot be patched:',
+                errorMessage
+              )
               // #region agent log
-              console.error('[DEBUG-AUTH] User creation failed:', JSON.stringify({
-                location: 'convex/auth.ts:250',
-                message: 'User creation failed - patch error',
-                data: {
-                  userId: userId.toString(),
-                  patchError: patchError.message,
-                  authAccountExists: !!authAccount,
-                },
-                timestamp: Date.now(),
-                sessionId: 'debug-session',
-                runId: 'auth-callback',
-                hypothesisId: 'N',
-              }))
+              console.error(
+                '[DEBUG-AUTH] User creation failed:',
+                JSON.stringify({
+                  location: 'convex/auth.ts:250',
+                  message: 'User creation failed - patch error',
+                  data: {
+                    userId: userId.toString(),
+                    patchError: patchError.message,
+                    authAccountExists: !!authAccount,
+                  },
+                  timestamp: Date.now(),
+                  sessionId: 'debug-session',
+                  runId: 'auth-callback',
+                  hypothesisId: 'N',
+                })
+              )
               // #endregion
               // Don't throw - let Convex Auth handle it, but log the critical error
               return
@@ -343,18 +394,21 @@ try {
           } else {
             console.error('[AUTH] ERROR: User not found for existing userId:', userId.toString())
             // #region agent log
-            console.error('[DEBUG-AUTH] User not found in afterUserCreatedOrUpdated:', JSON.stringify({
-              location: 'convex/auth.ts:230',
-              message: 'User not found error for existing user',
-              data: {
-                userId: userId.toString(),
-                existingUserId: existingUserId?.toString() ?? 'null',
-              },
-              timestamp: Date.now(),
-              sessionId: 'debug-session',
-              runId: 'auth-callback',
-              hypothesisId: 'L',
-            }))
+            console.error(
+              '[DEBUG-AUTH] User not found in afterUserCreatedOrUpdated:',
+              JSON.stringify({
+                location: 'convex/auth.ts:230',
+                message: 'User not found error for existing user',
+                data: {
+                  userId: userId.toString(),
+                  existingUserId: existingUserId?.toString() ?? 'null',
+                },
+                timestamp: Date.now(),
+                sessionId: 'debug-session',
+                runId: 'auth-callback',
+                hypothesisId: 'L',
+              })
+            )
             // #endregion
             return
           }
@@ -370,7 +424,7 @@ try {
               createdAt: Date.now(),
             })
             console.log('[AUTH] Successfully set role')
-            
+
             // Log signup/login for new user
             await ctx.runMutation(internal.auditLog.log, {
               userId,
@@ -391,7 +445,7 @@ try {
               updatedAt: Date.now(),
             })
             console.log('[AUTH] Successfully updated timestamp')
-            
+
             // Log login for existing user
             await ctx.runMutation(internal.auditLog.log, {
               userId,
@@ -415,20 +469,23 @@ try {
           existingUserId: existingUserId?.toString() ?? 'null',
         })
         // #region agent log
-        console.error('[DEBUG-AUTH] afterUserCreatedOrUpdated error:', JSON.stringify({
-          location: 'convex/auth.ts:175',
-          message: 'afterUserCreatedOrUpdated exception',
-          data: {
-            error: error instanceof Error ? error.message : String(error),
-            errorName: error instanceof Error ? error.name : 'unknown',
-            userId: userId.toString(),
-            existingUserId: existingUserId?.toString() ?? 'null',
-          },
-          timestamp: Date.now(),
-          sessionId: 'debug-session',
-          runId: 'auth-callback',
-          hypothesisId: 'M',
-        }))
+        console.error(
+          '[DEBUG-AUTH] afterUserCreatedOrUpdated error:',
+          JSON.stringify({
+            location: 'convex/auth.ts:175',
+            message: 'afterUserCreatedOrUpdated exception',
+            data: {
+              error: error instanceof Error ? error.message : String(error),
+              errorName: error instanceof Error ? error.name : 'unknown',
+              userId: userId.toString(),
+              existingUserId: existingUserId?.toString() ?? 'null',
+            },
+            timestamp: Date.now(),
+            sessionId: 'debug-session',
+            runId: 'auth-callback',
+            hypothesisId: 'M',
+          })
+        )
         // #endregion
         // Don't throw - let Convex Auth handle the flow
         // Throwing here might cause the null _id error
@@ -438,42 +495,52 @@ try {
   }
 
   // #region agent log
-  console.log('[DEBUG-AUTH] Callbacks object created:', JSON.stringify({
-    location: 'convex/auth.ts:332',
-    message: 'Callbacks object verification',
-    data: {
-      hasRedirect: typeof callbacks.redirect === 'function',
-      hasAfterUserCreatedOrUpdated: typeof callbacks.afterUserCreatedOrUpdated === 'function',
-      callbackNames: Object.keys(callbacks),
-      afterUserCreatedOrUpdatedType: typeof callbacks.afterUserCreatedOrUpdated,
-      afterUserCreatedOrUpdatedIsAsync: callbacks.afterUserCreatedOrUpdated.constructor.name === 'AsyncFunction',
-    },
-    timestamp: Date.now(),
-    sessionId: 'debug-session',
-    runId: 'pre-init',
-    hypothesisId: 'E',
-  }))
+  console.log(
+    '[DEBUG-AUTH] Callbacks object created:',
+    JSON.stringify({
+      location: 'convex/auth.ts:332',
+      message: 'Callbacks object verification',
+      data: {
+        hasRedirect: typeof callbacks.redirect === 'function',
+        hasAfterUserCreatedOrUpdated: typeof callbacks.afterUserCreatedOrUpdated === 'function',
+        callbackNames: Object.keys(callbacks),
+        afterUserCreatedOrUpdatedType: typeof callbacks.afterUserCreatedOrUpdated,
+        afterUserCreatedOrUpdatedIsAsync:
+          callbacks.afterUserCreatedOrUpdated.constructor.name === 'AsyncFunction',
+      },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      runId: 'pre-init',
+      hypothesisId: 'E',
+    })
+  )
   // #endregion
 
   // Wrap the callback to ensure it's called and log when it's invoked
   const originalCallback = callbacks.afterUserCreatedOrUpdated
-  const wrappedCallback = async (ctx: MutationCtx, args: Parameters<typeof originalCallback>[1]) => {
+  const wrappedCallback = async (
+    ctx: MutationCtx,
+    args: Parameters<typeof originalCallback>[1]
+  ) => {
     // #region agent log
-    console.log('[DEBUG-AUTH] WRAPPED CALLBACK INVOKED:', JSON.stringify({
-      location: 'convex/auth.ts:350',
-      message: 'Wrapped callback invoked - this proves Convex Auth is calling it',
-      data: {
-        userId: args.userId.toString(),
-        existingUserId: args.existingUserId?.toString() ?? 'null',
-        type: args.type,
-      },
-      timestamp: Date.now(),
-      sessionId: 'debug-session',
-      runId: 'auth-callback-wrapper',
-      hypothesisId: 'F',
-    }))
+    console.log(
+      '[DEBUG-AUTH] WRAPPED CALLBACK INVOKED:',
+      JSON.stringify({
+        location: 'convex/auth.ts:350',
+        message: 'Wrapped callback invoked - this proves Convex Auth is calling it',
+        data: {
+          userId: args.userId.toString(),
+          existingUserId: args.existingUserId?.toString() ?? 'null',
+          type: args.type,
+        },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'auth-callback-wrapper',
+        hypothesisId: 'F',
+      })
+    )
     // #endregion
-    
+
     try {
       return await originalCallback(ctx, args)
     } catch (error) {
@@ -496,37 +563,43 @@ try {
   })
   // #region agent log
   // Debug: After convexAuth initialization (success)
-  console.log('[DEBUG-AUTH] convexAuth init success:', JSON.stringify({
-    location: 'convex/auth.ts:78',
-    message: 'convexAuth init success',
-    data: {
-      hasAuth: !!authInstance.auth,
-      hasSignIn: !!authInstance.signIn,
-      hasStore: !!authInstance.store,
-    },
-    timestamp: Date.now(),
-    sessionId: 'debug-session',
-    runId: 'pre-init',
-    hypothesisId: 'C',
-  }))
+  console.log(
+    '[DEBUG-AUTH] convexAuth init success:',
+    JSON.stringify({
+      location: 'convex/auth.ts:78',
+      message: 'convexAuth init success',
+      data: {
+        hasAuth: !!authInstance.auth,
+        hasSignIn: !!authInstance.signIn,
+        hasStore: !!authInstance.store,
+      },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      runId: 'pre-init',
+      hypothesisId: 'C',
+    })
+  )
   // #endregion
 } catch (error) {
   // #region agent log
   // Debug: Error during convexAuth initialization
-  console.error('[DEBUG-AUTH] convexAuth init error:', JSON.stringify({
-    location: 'convex/auth.ts:82',
-    message: 'convexAuth init error',
-    data: {
-      error: error instanceof Error ? error.message : String(error),
-      errorName: error instanceof Error ? error.name : 'unknown',
-      hasJwtKey: !!jwtPrivateKey,
-      hasConvexAuthKey: !!convexAuthPrivateKey,
-    },
-    timestamp: Date.now(),
-    sessionId: 'debug-session',
-    runId: 'pre-init',
-    hypothesisId: 'D',
-  }))
+  console.error(
+    '[DEBUG-AUTH] convexAuth init error:',
+    JSON.stringify({
+      location: 'convex/auth.ts:82',
+      message: 'convexAuth init error',
+      data: {
+        error: error instanceof Error ? error.message : String(error),
+        errorName: error instanceof Error ? error.name : 'unknown',
+        hasJwtKey: !!jwtPrivateKey,
+        hasConvexAuthKey: !!convexAuthPrivateKey,
+      },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      runId: 'pre-init',
+      hypothesisId: 'D',
+    })
+  )
   // #endregion
   throw error
 }

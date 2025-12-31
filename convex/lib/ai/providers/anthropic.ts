@@ -178,9 +178,7 @@ export class AnthropicProvider implements AIProvider {
 
         if (!response.ok) {
           await response.json().catch(() => ({}))
-          const error = new Error(
-            `Anthropic API error: ${response.status} ${response.statusText}`
-          )
+          const error = new Error(`Anthropic API error: ${response.status} ${response.statusText}`)
 
           // Don't retry on auth errors
           if (response.status === 401 || response.status === 403) {
@@ -239,7 +237,7 @@ export class AnthropicProvider implements AIProvider {
             try {
               const event = JSON.parse(data) as AnthropicStreamEvent
               yield event
-            } catch (e) {
+            } catch {
               // Skip invalid JSON
               continue
             }
@@ -273,7 +271,13 @@ export class AnthropicProvider implements AIProvider {
       }
 
       if (msg.role === 'assistant' && msg.toolCalls) {
-        const content: Array<{ type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }> = []
+        const content: Array<{
+          type: string
+          text?: string
+          id?: string
+          name?: string
+          input?: Record<string, unknown>
+        }> = []
 
         // Add text content if present
         if (msg.content) {

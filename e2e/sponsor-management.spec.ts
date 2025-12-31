@@ -21,11 +21,11 @@ const TEST_PASSWORD = 'TestPass123!'
  */
 async function loginAndGoToSponsors(page: import('@playwright/test').Page) {
   await page.goto('/sign-in')
-  
+
   // Wait for sign-in page to be fully loaded
   await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {})
   await expect(page.getByText(/sign in/i).first()).toBeVisible({ timeout: 10000 })
-  
+
   // Wait a bit for form to be ready
   await page.waitForTimeout(500)
 
@@ -59,7 +59,7 @@ async function loginAndGoToSponsors(page: import('@playwright/test').Page) {
 
   // Wait for the page to be stable before navigating (let React Router finish)
   await page.waitForLoadState('domcontentloaded', { timeout: 10000 }).catch(() => {})
-  
+
   // Small delay to ensure React Router has settled
   await page.waitForTimeout(500)
 
@@ -89,7 +89,10 @@ async function createTestEvent(
   await page.waitForTimeout(1500)
 
   // Click manual form button
-  const manualButton = page.locator('button').filter({ hasText: /manual form/i }).first()
+  const manualButton = page
+    .locator('button')
+    .filter({ hasText: /manual form/i })
+    .first()
   await manualButton.click()
   await page.waitForTimeout(500)
 
@@ -101,7 +104,11 @@ async function createTestEvent(
   await page.getByLabel(/start date/i).fill(tomorrow.toISOString().split('T')[0])
 
   // Submit
-  await page.locator('button').filter({ hasText: /create event/i }).first().click()
+  await page
+    .locator('button')
+    .filter({ hasText: /create event/i })
+    .first()
+    .click()
   await page.waitForURL(/\/dashboard\/events\/[a-z0-9]+$/, { timeout: 15000 })
 
   const url = page.url()
@@ -142,7 +149,10 @@ test.describe('Sponsor Management', () => {
       const isEmpty = await emptyState.isVisible().catch(() => false)
 
       // Also check for loading state
-      const isLoading = await page.locator('.animate-pulse').isVisible().catch(() => false)
+      const isLoading = await page
+        .locator('.animate-pulse')
+        .isVisible()
+        .catch(() => false)
 
       expect(hasSponsors || isEmpty || isLoading).toBeTruthy()
     })
@@ -154,14 +164,17 @@ test.describe('Sponsor Management', () => {
 
     test('should display industry filter buttons', async ({ page }) => {
       // Should show "All" button
-      await expect(
-        page.locator('button').filter({ hasText: /^all$/i }).first()
-      ).toBeVisible({ timeout: 5000 })
+      await expect(page.locator('button').filter({ hasText: /^all$/i }).first()).toBeVisible({
+        timeout: 5000,
+      })
 
       // Check for common industries
       const industries = ['Technology', 'Finance', 'Healthcare', 'Education', 'Media', 'Retail']
       for (const industry of industries) {
-        const industryButton = page.locator('button').filter({ hasText: new RegExp(industry, 'i') }).first()
+        const industryButton = page
+          .locator('button')
+          .filter({ hasText: new RegExp(industry, 'i') })
+          .first()
         // Some industries may or may not be present depending on data
         if (await industryButton.isVisible().catch(() => false)) {
           await expect(industryButton).toBeVisible()
@@ -184,25 +197,28 @@ test.describe('Sponsor Management', () => {
     test('should display loading skeleton while fetching', async ({ page }) => {
       // Refresh page to catch loading state
       await page.reload()
-      
+
       // Wait briefly to catch any loading state (may be very fast)
       await page.waitForTimeout(300)
 
       // Look for loading skeleton, sponsor content, or empty state
       const skeleton = page.locator('.animate-pulse').first()
-      const content = page.locator('.rounded-xl.border').filter({ has: page.locator('h3') }).first()
+      const content = page
+        .locator('.rounded-xl.border')
+        .filter({ has: page.locator('h3') })
+        .first()
       const emptyState = page.getByText(/sponsor discovery coming soon|no sponsors found/i)
 
       // Check for loading state immediately (it may be very brief)
       const isLoading = await skeleton.isVisible().catch(() => false)
-      
+
       // Wait for content to load (whether we saw loading or not)
       await page.waitForTimeout(2000)
 
       // Check all possible states
       const hasContent = await content.isVisible().catch(() => false)
       const isEmpty = await emptyState.isVisible().catch(() => false)
-      
+
       // Test passes if we see any valid state
       // Loading state is optional (may be too fast to catch) - that's okay
       // What matters is that the page eventually shows content or empty state
@@ -236,7 +252,10 @@ test.describe('Sponsor Management', () => {
       await page.waitForTimeout(2000)
 
       // Click on Technology industry if visible
-      const technologyButton = page.locator('button').filter({ hasText: /technology/i }).first()
+      const technologyButton = page
+        .locator('button')
+        .filter({ hasText: /technology/i })
+        .first()
 
       if (await technologyButton.isVisible().catch(() => false)) {
         await technologyButton.click()
@@ -293,7 +312,10 @@ test.describe('Sponsor Management', () => {
       await page.waitForTimeout(2000)
 
       // Click on an industry first
-      const financeButton = page.locator('button').filter({ hasText: /finance/i }).first()
+      const financeButton = page
+        .locator('button')
+        .filter({ hasText: /finance/i })
+        .first()
 
       if (await financeButton.isVisible().catch(() => false)) {
         await financeButton.click()
@@ -353,7 +375,6 @@ test.describe('Sponsor Management', () => {
       if ((await sponsorCards.count()) > 0) {
         const firstCard = sponsorCards.first()
         // Description is optional, but if present should be visible
-        const description = firstCard.locator('.text-sm.text-muted-foreground').first()
         // Just verify card structure exists
         await expect(firstCard).toBeVisible()
       }
@@ -437,7 +458,10 @@ test.describe('Sponsor Management', () => {
 
       if ((await sponsorCards.count()) > 0) {
         const firstCard = sponsorCards.first()
-        const inquireButton = firstCard.locator('button').filter({ hasText: /inquire/i }).first()
+        const inquireButton = firstCard
+          .locator('button')
+          .filter({ hasText: /inquire/i })
+          .first()
         await expect(inquireButton).toBeVisible()
       }
     })
@@ -454,7 +478,10 @@ test.describe('Sponsor Management', () => {
 
       if ((await sponsorCards.count()) > 0) {
         const firstCard = sponsorCards.first()
-        const inquireButton = firstCard.locator('button').filter({ hasText: /inquire/i }).first()
+        const inquireButton = firstCard
+          .locator('button')
+          .filter({ hasText: /inquire/i })
+          .first()
 
         // Wait for button to be visible and enabled
         await inquireButton.waitFor({ state: 'visible', timeout: 5000 })
@@ -475,7 +502,10 @@ test.describe('Sponsor Management', () => {
       if ((await sponsorCards.count()) > 0) {
         const firstCard = sponsorCards.first()
         const sponsorName = await firstCard.locator('h3').first().textContent()
-        const inquireButton = firstCard.locator('button').filter({ hasText: /inquire/i }).first()
+        const inquireButton = firstCard
+          .locator('button')
+          .filter({ hasText: /inquire/i })
+          .first()
 
         await inquireButton.click()
         await page.waitForTimeout(500)
@@ -494,7 +524,10 @@ test.describe('Sponsor Management', () => {
 
       if ((await sponsorCards.count()) > 0) {
         const firstCard = sponsorCards.first()
-        const inquireButton = firstCard.locator('button').filter({ hasText: /inquire/i }).first()
+        const inquireButton = firstCard
+          .locator('button')
+          .filter({ hasText: /inquire/i })
+          .first()
 
         // Wait for button to be visible and enabled
         await inquireButton.waitFor({ state: 'visible', timeout: 5000 })
@@ -523,7 +556,10 @@ test.describe('Sponsor Management', () => {
 
       if ((await sponsorCards.count()) > 0) {
         const firstCard = sponsorCards.first()
-        const inquireButton = firstCard.locator('button').filter({ hasText: /inquire/i }).first()
+        const inquireButton = firstCard
+          .locator('button')
+          .filter({ hasText: /inquire/i })
+          .first()
 
         await inquireButton.click()
         await page.waitForTimeout(500)
@@ -543,7 +579,10 @@ test.describe('Sponsor Management', () => {
 
       if ((await sponsorCards.count()) > 0) {
         const firstCard = sponsorCards.first()
-        const inquireButton = firstCard.locator('button').filter({ hasText: /inquire/i }).first()
+        const inquireButton = firstCard
+          .locator('button')
+          .filter({ hasText: /inquire/i })
+          .first()
 
         await inquireButton.click()
         await page.waitForTimeout(500)
@@ -561,7 +600,10 @@ test.describe('Sponsor Management', () => {
 
       if ((await sponsorCards.count()) > 0) {
         const firstCard = sponsorCards.first()
-        const inquireButton = firstCard.locator('button').filter({ hasText: /inquire/i }).first()
+        const inquireButton = firstCard
+          .locator('button')
+          .filter({ hasText: /inquire/i })
+          .first()
 
         await inquireButton.click()
         await page.waitForTimeout(500)
@@ -584,7 +626,10 @@ test.describe('Sponsor Management', () => {
 
       if ((await sponsorCards.count()) > 0) {
         const firstCard = sponsorCards.first()
-        const inquireButton = firstCard.locator('button').filter({ hasText: /inquire/i }).first()
+        const inquireButton = firstCard
+          .locator('button')
+          .filter({ hasText: /inquire/i })
+          .first()
 
         await inquireButton.click()
         await page.waitForTimeout(500)
@@ -625,7 +670,10 @@ test.describe('Sponsor Management', () => {
 
       if ((await sponsorCards.count()) > 0) {
         const firstCard = sponsorCards.first()
-        const inquireButton = firstCard.locator('button').filter({ hasText: /inquire/i }).first()
+        const inquireButton = firstCard
+          .locator('button')
+          .filter({ hasText: /inquire/i })
+          .first()
 
         await inquireButton.click()
         await page.waitForTimeout(500)
@@ -645,7 +693,11 @@ test.describe('Sponsor Management', () => {
         }
 
         // Fill message
-        await page.locator('textarea').fill('Hi, I am interested in a potential sponsorship opportunity for our upcoming event.')
+        await page
+          .locator('textarea')
+          .fill(
+            'Hi, I am interested in a potential sponsorship opportunity for our upcoming event.'
+          )
         await page.waitForTimeout(300)
 
         // Send inquiry
@@ -656,7 +708,10 @@ test.describe('Sponsor Management', () => {
         await page.waitForTimeout(2000)
 
         const successToast = page.getByText(/inquiry sent successfully/i)
-        const dialogClosed = !(await page.getByRole('dialog').isVisible().catch(() => false))
+        const dialogClosed = !(await page
+          .getByRole('dialog')
+          .isVisible()
+          .catch(() => false))
 
         expect((await successToast.isVisible().catch(() => false)) || dialogClosed).toBeTruthy()
       }
@@ -673,7 +728,10 @@ test.describe('Sponsor Management', () => {
       await page.waitForTimeout(2000)
 
       // Click first event
-      const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+      const eventCard = page
+        .locator('.rounded-lg.border')
+        .filter({ has: page.locator('h3') })
+        .first()
 
       if (await eventCard.isVisible().catch(() => false)) {
         await eventCard.click()
@@ -691,7 +749,10 @@ test.describe('Sponsor Management', () => {
       await page.waitForTimeout(2000)
 
       // Click first event
-      const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+      const eventCard = page
+        .locator('.rounded-lg.border')
+        .filter({ has: page.locator('h3') })
+        .first()
 
       if (await eventCard.isVisible().catch(() => false)) {
         await eventCard.click()
@@ -710,7 +771,10 @@ test.describe('Sponsor Management', () => {
       await page.waitForTimeout(2000)
 
       // Click first event
-      const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+      const eventCard = page
+        .locator('.rounded-lg.border')
+        .filter({ has: page.locator('h3') })
+        .first()
 
       if (await eventCard.isVisible().catch(() => false)) {
         await eventCard.click()
@@ -736,7 +800,10 @@ test.describe('Sponsor Management', () => {
       await page.waitForTimeout(2000)
 
       // Click first event
-      const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+      const eventCard = page
+        .locator('.rounded-lg.border')
+        .filter({ has: page.locator('h3') })
+        .first()
 
       if (await eventCard.isVisible().catch(() => false)) {
         await eventCard.click()
@@ -763,7 +830,10 @@ test.describe('Sponsor Management', () => {
       await page.waitForTimeout(2000)
 
       // Click first event
-      const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+      const eventCard = page
+        .locator('.rounded-lg.border')
+        .filter({ has: page.locator('h3') })
+        .first()
 
       if (await eventCard.isVisible().catch(() => false)) {
         await eventCard.click()
@@ -787,7 +857,10 @@ test.describe('Sponsor Management', () => {
       await page.waitForTimeout(2000)
 
       // Click first event
-      const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+      const eventCard = page
+        .locator('.rounded-lg.border')
+        .filter({ has: page.locator('h3') })
+        .first()
 
       if (await eventCard.isVisible().catch(() => false)) {
         await eventCard.click()
@@ -811,7 +884,10 @@ test.describe('Sponsor Management', () => {
       await page.waitForTimeout(2000)
 
       // Click first event
-      const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+      const eventCard = page
+        .locator('.rounded-lg.border')
+        .filter({ has: page.locator('h3') })
+        .first()
 
       if (await eventCard.isVisible().catch(() => false)) {
         await eventCard.click()
@@ -837,7 +913,10 @@ test.describe('Sponsor Management', () => {
       await page.goto('/dashboard/events')
       await page.waitForTimeout(2000)
 
-      const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+      const eventCard = page
+        .locator('.rounded-lg.border')
+        .filter({ has: page.locator('h3') })
+        .first()
 
       if (await eventCard.isVisible().catch(() => false)) {
         await eventCard.click()
@@ -859,7 +938,10 @@ test.describe('Sponsor Management', () => {
       await page.goto('/dashboard/events')
       await page.waitForTimeout(2000)
 
-      const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+      const eventCard = page
+        .locator('.rounded-lg.border')
+        .filter({ has: page.locator('h3') })
+        .first()
 
       if (await eventCard.isVisible().catch(() => false)) {
         await eventCard.click()
@@ -896,7 +978,10 @@ test.describe('Sponsor Management', () => {
       await page.goto('/dashboard/events')
       await page.waitForTimeout(2000)
 
-      const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+      const eventCard = page
+        .locator('.rounded-lg.border')
+        .filter({ has: page.locator('h3') })
+        .first()
 
       if (await eventCard.isVisible().catch(() => false)) {
         await eventCard.click()
@@ -938,7 +1023,10 @@ test.describe('Sponsor Management', () => {
       await page.goto('/dashboard/events')
       await page.waitForTimeout(2000)
 
-      const eventCard = page.locator('.rounded-lg.border').filter({ has: page.locator('h3') }).first()
+      const eventCard = page
+        .locator('.rounded-lg.border')
+        .filter({ has: page.locator('h3') })
+        .first()
 
       if (await eventCard.isVisible().catch(() => false)) {
         await eventCard.click()
@@ -956,4 +1044,3 @@ test.describe('Sponsor Management', () => {
     })
   })
 })
-
