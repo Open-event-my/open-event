@@ -1,6 +1,7 @@
 import { query } from '../_generated/server'
 import { getAuthUserId } from '@convex-dev/auth/server'
 import { getCurrentUser as getCurrentUserFromLib } from '../lib/auth'
+import { logger } from '../lib/monitoring/logger'
 
 /**
  * Get the current authenticated user.
@@ -14,38 +15,14 @@ import { getCurrentUser as getCurrentUserFromLib } from '../lib/auth'
 export const getCurrentUser = query({
   args: {},
   handler: async (ctx) => {
-    // #region agent log
-    console.log('[DEBUG-AUTH] getCurrentUser query called:', JSON.stringify({
-      location: 'convex/queries/auth.ts:16',
-      message: 'getCurrentUser query entry',
-      data: {
-        timestamp: Date.now(),
-      },
-      timestamp: Date.now(),
-      sessionId: 'debug-session',
-      runId: 'client-query',
-      hypothesisId: 'Q1',
-    }))
-    // #endregion
-    
+    // Removed debug logging that exposed sensitive data (Requirements 1.1, 2.2)
     const result = await getCurrentUserFromLib(ctx)
     
-    // #region agent log
-    console.log('[DEBUG-AUTH] getCurrentUser query result:', JSON.stringify({
-      location: 'convex/queries/auth.ts:25',
-      message: 'getCurrentUser query result',
-      data: {
-        hasUser: !!result,
-        userId: result?._id?.toString() ?? 'null',
-        userRole: result?.role ?? 'null',
-        userStatus: result?.status ?? 'null',
-      },
-      timestamp: Date.now(),
-      sessionId: 'debug-session',
-      runId: 'client-query',
-      hypothesisId: 'Q2',
-    }))
-    // #endregion
+    // Log with structured logger (no sensitive data)
+    logger.debug('getCurrentUser query executed', {
+      hasUser: !!result,
+      userRole: result?.role ?? 'null',
+    })
     
     return result
   },

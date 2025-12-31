@@ -140,7 +140,8 @@ export function AdminUsers() {
         }
   )
 
-  const admins = useQuery(api.admin.listAdmins)
+  // Only superadmins can list admins - skip query for regular admins
+  const admins = useQuery(api.admin.listAdmins, isSuperadmin ? {} : 'skip')
 
   const createAdmin = useMutation(api.admin.createAdmin)
   const removeAdmin = useMutation(api.admin.removeAdmin)

@@ -12,7 +12,18 @@
 import { v } from 'convex/values'
 import { action } from './_generated/server'
 import { api, internal } from './_generated/api'
+import { makeFunctionReference } from 'convex/server'
 import Stripe from 'stripe'
+import { logger } from './lib/monitoring/logger'
+import { PaymentAuditLogger } from './lib/payment/paymentAuditLog'
+import { validateCheckoutAmounts } from './lib/payment/paymentSecurity'
+
+// Create function references for paymentIdempotency functions
+// These will be properly typed after running `npx convex dev`
+const paymentIdempotency = {
+  checkAndCreate: makeFunctionReference<'mutation'>('paymentIdempotency:checkAndCreate'),
+  complete: makeFunctionReference<'mutation'>('paymentIdempotency:complete'),
+}
 
 // Platform fee percentage (configurable) - reserved for future use
 // const PLATFORM_FEE_PERCENT = 0.03 // 3%
@@ -74,6 +85,56 @@ export const createCheckoutSession = action({
       throw new Error(`Cannot checkout order with status: ${orderData.paymentStatus}`)
     }
 
+    // Check idempotency - prevent duplicate checkout sessions
+    const idempotencyCheck = await ctx.runMutation(
+      paymentIdempotency.checkAndCreate,
+      {
+        orderId: args.orderId,
+        operation: 'checkout',
+      }
+    )
+
+    if (idempotencyCheck.isDuplicate && idempotencyCheck.record) {
+      const record = idempotencyCheck.record
+      
+      // If previous operation completed successfully, return cached result
+      if (record.status === 'completed' && record.result) {
+        try {
+          const cachedResult = JSON.parse(record.result)
+          logger.info('Returning cached checkout session result', {
+            orderId: args.orderId,
+            idempotencyKey: record.idempotencyKey,
+          })
+          return cachedResult
+        } catch {
+          // Invalid cached result, continue with new session
+        }
+      }
+      
+      // If previous operation is still pending, check if session exists
+      if (record.status === 'pending' && orderData.stripeSessionId) {
+        try {
+          const existingSession = await stripe.checkout.sessions.retrieve(orderData.stripeSessionId)
+          if (existingSession.status === 'open' && existingSession.url) {
+            return {
+              sessionId: existingSession.id,
+              url: existingSession.url,
+            }
+          }
+        } catch {
+          // Session expired or invalid, continue with new session
+        }
+      }
+      
+      // If previous operation failed, allow retry
+      if (record.status === 'failed') {
+        logger.info('Previous checkout attempt failed, allowing retry', {
+          orderId: args.orderId,
+          previousError: record.errorMessage,
+        })
+      }
+    }
+
     // Check if session already exists and is valid
     if (orderData.stripeSessionId) {
       try {
@@ -133,7 +194,48 @@ export const createCheckoutSession = action({
       })
     }
 
-    // Create checkout session with enhanced options
+    // =========================================================================
+    // SERVER-SIDE PAYMENT VALIDATION
+    // Validates that amounts have not been tampered with client-side
+    // =========================================================================
+    
+    // Calculate total from line items (what we're sending to Stripe)
+    const lineItemsTotal = lineItems.reduce((sum, item) => {
+      return sum + (item.price_data?.unit_amount || 0) * (item.quantity || 1);
+    }, 0);
+    
+    // Validate checkout amounts match order total
+    const paymentValidation = validateCheckoutAmounts(
+      orderData.total,
+      lineItemsTotal,
+      orderData.currency
+    );
+    
+    if (!paymentValidation.isValid) {
+      logger.error('Server-side payment validation failed', undefined, {
+        orderId: args.orderId,
+        orderNumber: orderData.orderNumber,
+        orderTotal: orderData.total,
+        lineItemsTotal,
+        errors: paymentValidation.errors,
+      });
+      throw new Error(
+        'Payment validation failed: amounts do not match. ' +
+        'Please refresh and try again.'
+      );
+    }
+    
+    // Log warnings if any
+    if (paymentValidation.warnings.length > 0) {
+      logger.warn('Payment validation warnings', {
+        orderId: args.orderId,
+        orderNumber: orderData.orderNumber,
+        warnings: paymentValidation.warnings,
+      });
+    }
+
+    try {
+    // Create checkout session with enhanced options and idempotency key
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       payment_method_types: ['card'],
@@ -165,9 +267,32 @@ export const createCheckoutSession = action({
       stripeSessionId: session.id,
     })
 
-    return {
+    const result = {
       sessionId: session.id,
       url: session.url!,
+    }
+
+    // Mark idempotency record as completed with cached result
+    if (idempotencyCheck.record) {
+      await ctx.runMutation(paymentIdempotency.complete, {
+        idempotencyKey: idempotencyCheck.record.idempotencyKey,
+        status: 'completed',
+        result: JSON.stringify(result),
+      })
+    }
+
+    return result
+    } catch (error) {
+      // Mark idempotency record as failed
+      if (idempotencyCheck.record) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        await ctx.runMutation(paymentIdempotency.complete, {
+          idempotencyKey: idempotencyCheck.record.idempotencyKey,
+          status: 'failed',
+          errorMessage,
+        })
+      }
+      throw error
     }
   },
 })
@@ -183,7 +308,7 @@ export const handleWebhook = action({
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
 
     if (!webhookSecret) {
-      console.error('[Stripe Webhook] STRIPE_WEBHOOK_SECRET not configured')
+      logger.error('STRIPE_WEBHOOK_SECRET not configured')
       throw new Error('Webhook secret not configured')
     }
 
@@ -193,12 +318,15 @@ export const handleWebhook = action({
       event = stripe.webhooks.constructEvent(args.payload, args.signature, webhookSecret)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error'
-      console.error('[Stripe Webhook] Signature verification failed:', message)
+      logger.error('Stripe webhook signature verification failed', err, { message })
       throw new Error('Webhook signature verification failed')
     }
 
     // Log event for debugging
-    console.log(`[Stripe Webhook] Processing event: ${event.type} (${event.id})`)
+    logger.info('Processing Stripe webhook event', {
+      eventType: event.type,
+      eventId: event.id,
+    })
 
     // Check idempotency - prevent processing same event twice
     const existingEvent = await ctx.runQuery(internal.orders.getProcessedWebhook, {
@@ -206,7 +334,9 @@ export const handleWebhook = action({
     })
 
     if (existingEvent) {
-      console.log(`[Stripe Webhook] Event ${event.id} already processed, skipping`)
+      logger.info('Stripe webhook event already processed, skipping', {
+        eventId: event.id,
+      })
       return { received: true, status: 'duplicate' }
     }
 
@@ -222,9 +352,10 @@ export const handleWebhook = action({
       switch (event.type) {
         case 'checkout.session.completed': {
           const session = event.data.object as Stripe.Checkout.Session
-          console.log(
-            `[Stripe Webhook] Checkout completed for order: ${session.metadata?.orderNumber}`
-          )
+          logger.info('Stripe checkout completed', {
+            orderNumber: session.metadata?.orderNumber,
+            sessionId: session.id,
+          })
 
           await ctx.runMutation(internal.orders.updatePaymentStatus, {
             stripeSessionId: session.id,
@@ -233,14 +364,29 @@ export const handleWebhook = action({
             stripeCustomerId: session.customer as string | undefined,
             stripePaymentIntentId: session.payment_intent as string | undefined,
           })
+
+          // Log payment audit event
+          await PaymentAuditLogger.logCheckout(ctx, 'checkout_completed', {
+            orderId: session.metadata?.orderId || '',
+            orderNumber: session.metadata?.orderNumber || '',
+            amount: session.amount_total || 0,
+            currency: session.currency || 'usd',
+            buyerEmail: session.customer_email || undefined,
+            eventId: session.metadata?.eventId,
+            stripeEventId: event.id,
+            stripeSessionId: session.id,
+            stripePaymentIntentId: session.payment_intent as string | undefined,
+            paymentMethod: session.payment_method_types?.[0] || 'card',
+          })
           break
         }
 
         case 'checkout.session.expired': {
           const session = event.data.object as Stripe.Checkout.Session
-          console.log(
-            `[Stripe Webhook] Checkout expired for order: ${session.metadata?.orderNumber}`
-          )
+          logger.info('Stripe checkout expired', {
+            orderNumber: session.metadata?.orderNumber,
+            sessionId: session.id,
+          })
 
           await ctx.runMutation(internal.orders.updatePaymentStatus, {
             stripeSessionId: session.id,
@@ -251,16 +397,43 @@ export const handleWebhook = action({
           await ctx.runMutation(internal.orders.releaseTicketReservation, {
             stripeSessionId: session.id,
           })
+
+          // Log payment audit event
+          await PaymentAuditLogger.logCheckout(ctx, 'checkout_expired', {
+            orderId: session.metadata?.orderId || '',
+            orderNumber: session.metadata?.orderNumber || '',
+            amount: session.amount_total || 0,
+            currency: session.currency || 'usd',
+            buyerEmail: session.customer_email || undefined,
+            eventId: session.metadata?.eventId,
+            stripeEventId: event.id,
+            stripeSessionId: session.id,
+          })
           break
         }
 
         case 'payment_intent.payment_failed': {
           const paymentIntent = event.data.object as Stripe.PaymentIntent
-          console.log(`[Stripe Webhook] Payment failed: ${paymentIntent.id}`)
+          logger.warn('Stripe payment failed', {
+            paymentIntentId: paymentIntent.id,
+          })
 
           await ctx.runMutation(internal.orders.updatePaymentStatus, {
             stripePaymentIntentId: paymentIntent.id,
             paymentStatus: 'failed',
+          })
+
+          // Log payment audit event
+          await PaymentAuditLogger.logPayment(ctx, 'payment_failed', {
+            orderId: paymentIntent.metadata?.orderId || '',
+            orderNumber: paymentIntent.metadata?.orderNumber || '',
+            amount: paymentIntent.amount,
+            currency: paymentIntent.currency,
+            stripeEventId: event.id,
+            stripePaymentIntentId: paymentIntent.id,
+            paymentMethod: paymentIntent.payment_method_types?.[0] || 'card',
+            errorMessage: paymentIntent.last_payment_error?.message,
+            errorCode: paymentIntent.last_payment_error?.code,
           })
           break
         }
@@ -268,13 +441,28 @@ export const handleWebhook = action({
         case 'charge.refunded': {
           const charge = event.data.object as Stripe.Charge
           if (charge.payment_intent) {
-            console.log(
-              `[Stripe Webhook] Charge refunded for payment intent: ${charge.payment_intent}`
-            )
+            logger.info('Stripe charge refunded', {
+              paymentIntentId: charge.payment_intent,
+              chargeId: charge.id,
+            })
 
             await ctx.runMutation(internal.orders.updatePaymentStatus, {
               stripePaymentIntentId: charge.payment_intent as string,
               paymentStatus: 'refunded',
+            })
+
+            // Log payment audit event
+            await PaymentAuditLogger.logRefund(ctx, 'refund_completed', {
+              orderId: charge.metadata?.orderId || '',
+              orderNumber: charge.metadata?.orderNumber || '',
+              amount: charge.amount_refunded,
+              currency: charge.currency,
+              stripeEventId: event.id,
+              stripePaymentIntentId: charge.payment_intent as string,
+              stripeChargeId: charge.id,
+              paymentMethod: charge.payment_method_details?.type || 'card',
+              cardBrand: charge.payment_method_details?.card?.brand ?? undefined,
+              cardLast4: charge.payment_method_details?.card?.last4 ?? undefined,
             })
           }
           break
@@ -282,9 +470,22 @@ export const handleWebhook = action({
 
         case 'charge.dispute.created': {
           const dispute = event.data.object as Stripe.Dispute
-          console.warn(
-            `[Stripe Webhook] DISPUTE CREATED: ${dispute.id} for charge ${dispute.charge}`
-          )
+          logger.warn('Stripe dispute created', {
+            disputeId: dispute.id,
+            chargeId: dispute.charge,
+          })
+
+          // Log payment audit event for dispute
+          await PaymentAuditLogger.logDispute(ctx, 'dispute_created', {
+            orderId: dispute.metadata?.orderId || '',
+            orderNumber: dispute.metadata?.orderNumber || '',
+            amount: dispute.amount,
+            currency: dispute.currency,
+            stripeEventId: event.id,
+            stripeDisputeId: dispute.id,
+            stripeChargeId: typeof dispute.charge === 'string' ? dispute.charge : dispute.charge?.id,
+            disputeReason: dispute.reason || undefined,
+          })
 
           // TODO: Send alert to organizer, possibly freeze ticket
           break
@@ -292,20 +493,46 @@ export const handleWebhook = action({
 
         case 'charge.dispute.closed': {
           const dispute = event.data.object as Stripe.Dispute
-          console.log(
-            `[Stripe Webhook] Dispute closed: ${dispute.id} with status ${dispute.status}`
-          )
+          logger.info('Stripe dispute closed', {
+            disputeId: dispute.id,
+            status: dispute.status,
+          })
+
+          // Determine dispute outcome
+          const disputeEventType = dispute.status === 'won' ? 'dispute_won' : 
+                                   dispute.status === 'lost' ? 'dispute_lost' : 'dispute_closed';
+
+          // Log payment audit event for dispute closure
+          await PaymentAuditLogger.logDispute(ctx, disputeEventType, {
+            orderId: dispute.metadata?.orderId || '',
+            orderNumber: dispute.metadata?.orderNumber || '',
+            amount: dispute.amount,
+            currency: dispute.currency,
+            stripeEventId: event.id,
+            stripeDisputeId: dispute.id,
+            stripeChargeId: typeof dispute.charge === 'string' ? dispute.charge : dispute.charge?.id,
+            disputeReason: dispute.reason || undefined,
+            metadata: {
+              status: dispute.status,
+              outcome: dispute.status,
+            },
+          })
           break
         }
 
         default:
-          console.log(`[Stripe Webhook] Unhandled event type: ${event.type}`)
+          logger.debug('Unhandled Stripe webhook event type', {
+            eventType: event.type,
+          })
       }
 
       return { received: true, status: 'processed' }
     } catch (processingError) {
       const message = processingError instanceof Error ? processingError.message : 'Unknown error'
-      console.error(`[Stripe Webhook] Error processing ${event.type}:`, message)
+      logger.error('Error processing Stripe webhook', processingError, {
+        eventType: event.type,
+        message,
+      })
       throw new Error(`Webhook processing failed: ${message}`)
     }
   },
@@ -341,23 +568,73 @@ export const createRefund = action({
       throw new Error(`Cannot refund order with status: ${order.paymentStatus}`)
     }
 
+    // Check idempotency - prevent duplicate refunds
+    const idempotencyCheck = await ctx.runMutation(
+      paymentIdempotency.checkAndCreate,
+      {
+        orderId: args.orderId,
+        operation: 'refund',
+      }
+    )
+
+    if (idempotencyCheck.isDuplicate && idempotencyCheck.record) {
+      const record = idempotencyCheck.record
+      
+      // If previous refund completed successfully, return cached result
+      if (record.status === 'completed' && record.result) {
+        try {
+          const cachedResult = JSON.parse(record.result)
+          logger.info('Returning cached refund result (duplicate request)', {
+            orderId: args.orderId,
+            idempotencyKey: record.idempotencyKey,
+          })
+          return cachedResult
+        } catch {
+          // Invalid cached result, continue with new refund
+        }
+      }
+      
+      // If previous refund is still pending, throw error
+      if (record.status === 'pending') {
+        throw new Error('A refund operation is already in progress for this order')
+      }
+      
+      // If previous refund failed, allow retry
+      if (record.status === 'failed') {
+        logger.info('Previous refund attempt failed, allowing retry', {
+          orderId: args.orderId,
+          previousError: record.errorMessage,
+        })
+      }
+    }
+
     // Determine refund amount
     const refundAmount = args.amount || order.total
 
     try {
-      // Create refund in Stripe
-      const refund = await stripe.refunds.create({
-        payment_intent: order.stripePaymentIntentId,
-        amount: refundAmount,
-        reason: 'requested_by_customer',
-        metadata: {
-          orderId: args.orderId,
-          orderNumber: order.orderNumber,
-          refundReason: args.reason || 'Organizer requested refund',
+      // Create refund in Stripe with idempotency key
+      const refund = await stripe.refunds.create(
+        {
+          payment_intent: order.stripePaymentIntentId,
+          amount: refundAmount,
+          reason: 'requested_by_customer',
+          metadata: {
+            orderId: args.orderId,
+            orderNumber: order.orderNumber,
+            refundReason: args.reason || 'Organizer requested refund',
+          },
         },
-      })
+        {
+          idempotencyKey: idempotencyCheck.stripeIdempotencyKey,
+        }
+      )
 
-      console.log(`[Stripe Refund] Created refund ${refund.id} for order ${order.orderNumber}`)
+      logger.info('Stripe refund created', {
+        refundId: refund.id,
+        orderNumber: order.orderNumber,
+        amount: refundAmount,
+        idempotencyKey: idempotencyCheck.stripeIdempotencyKey,
+      })
 
       // Update order status in database
       const isFullRefund = refundAmount >= order.total
@@ -375,15 +652,69 @@ export const createRefund = action({
         isPartial: !isFullRefund,
       })
 
-      return {
+      const result = {
         success: true,
         refundId: refund.id,
         amount: refundAmount,
         isPartial: !isFullRefund,
       }
+
+      // Log payment audit event for refund
+      await PaymentAuditLogger.logRefund(
+        ctx,
+        isFullRefund ? 'refund_completed' : 'partial_refund_completed',
+        {
+          orderId: args.orderId,
+          orderNumber: order.orderNumber,
+          amount: refundAmount,
+          currency: order.currency,
+          buyerEmail: order.buyerEmail,
+          eventId: order.eventId,
+          stripeRefundId: refund.id,
+          stripePaymentIntentId: order.stripePaymentIntentId,
+          refundReason: args.reason || 'Organizer requested refund',
+        }
+      )
+
+      // Mark idempotency record as completed with cached result
+      if (idempotencyCheck.record) {
+        await ctx.runMutation(paymentIdempotency.complete, {
+          idempotencyKey: idempotencyCheck.record.idempotencyKey,
+          status: 'completed',
+          result: JSON.stringify(result),
+        })
+      }
+
+      return result
     } catch (stripeError) {
       const message = stripeError instanceof Error ? stripeError.message : 'Unknown Stripe error'
-      console.error(`[Stripe Refund] Failed for order ${order.orderNumber}:`, message)
+      
+      // Log payment audit event for failed refund
+      await PaymentAuditLogger.logRefund(ctx, 'refund_failed', {
+        orderId: args.orderId,
+        orderNumber: order.orderNumber,
+        amount: refundAmount,
+        currency: order.currency,
+        buyerEmail: order.buyerEmail,
+        eventId: order.eventId,
+        stripePaymentIntentId: order.stripePaymentIntentId,
+        refundReason: args.reason,
+        errorMessage: message,
+      })
+      
+      // Mark idempotency record as failed
+      if (idempotencyCheck.record) {
+        await ctx.runMutation(paymentIdempotency.complete, {
+          idempotencyKey: idempotencyCheck.record.idempotencyKey,
+          status: 'failed',
+          errorMessage: message,
+        })
+      }
+      
+      logger.error('Stripe refund failed', stripeError, {
+        orderNumber: order.orderNumber,
+        message,
+      })
       throw new Error(`Stripe refund failed: ${message}`)
     }
   },

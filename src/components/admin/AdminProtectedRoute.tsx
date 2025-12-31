@@ -42,10 +42,11 @@ export function AdminProtectedRoute({
   }
 
   // Not authenticated or user not found (null means query completed but no user)
-  if (!isAuthenticated || user === null) {
+  if (!isAuthenticated || user === null || user === undefined) {
     return <Navigate to="/sign-in" replace />
   }
 
+  // At this point, user is guaranteed to be defined
   // Check if user is suspended
   if (user.status === 'suspended') {
     return (

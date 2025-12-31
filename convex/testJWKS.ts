@@ -7,7 +7,7 @@ import { importPKCS8, importJWK, SignJWT, jwtVerify } from 'jose'
 
 export const testJWKS = mutation({
   args: {},
-  handler: async (ctx) => {
+  handler: async (_ctx) => {
     const jwtPrivateKey = process.env.JWT_PRIVATE_KEY
     const jwks = process.env.JWKS
 

@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from 'convex/react'
+import { useQuery, useMutation, useAction } from 'convex/react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../../../convex/_generated/api'
 import { usePWA } from '@/hooks/use-pwa'
@@ -22,6 +22,12 @@ import {
   Sparkle,
   Lightning,
   Clock,
+  Lock,
+  Eye,
+  EyeSlash,
+  Check,
+  X,
+  CircleNotch,
 } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useState, useEffect } from 'react'
@@ -38,6 +44,7 @@ import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
 import { TwoFactorSetup, TwoFactorStatus } from '@/components/security'
+import { DataExportSection, DataDeletionSection, CookiePreferences } from '@/components/compliance'
 
 const organizationTypes = [
   { value: 'company', label: 'Company' },
@@ -109,6 +116,53 @@ export function SettingsPage() {
     pushEventReminders: true,
     pushNewMessages: true,
   })
+
+  // Password change state
+  const [showPasswordForm, setShowPasswordForm] = useState(false)
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  })
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [isChangingPassword, setIsChangingPassword] = useState(false)
+  const changePassword = useAction(api.passwordReset.changePassword)
+
+  // Password validation
+  const passwordRequirements = [
+    { label: '12+ characters', met: passwordData.newPassword.length >= 12 },
+    { label: 'Uppercase letter', met: /[A-Z]/.test(passwordData.newPassword) },
+    { label: 'Lowercase letter', met: /[a-z]/.test(passwordData.newPassword) },
+    { label: 'Number', met: /[0-9]/.test(passwordData.newPassword) },
+    { label: 'Special character', met: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(passwordData.newPassword) },
+  ]
+  const allRequirementsMet = passwordRequirements.every(r => r.met)
+  const passwordsMatch = passwordData.newPassword === passwordData.confirmPassword && passwordData.confirmPassword.length > 0
+
+  const handlePasswordChange = async () => {
+    if (!allRequirementsMet || !passwordsMatch || !passwordData.currentPassword) {
+      toast.error('Please fill in all fields correctly')
+      return
+    }
+
+    setIsChangingPassword(true)
+    try {
+      await changePassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+      })
+      toast.success('Password changed successfully')
+      setShowPasswordForm(false)
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to change password'
+      toast.error(message)
+    } finally {
+      setIsChangingPassword(false)
+    }
+  }
 
   // Load profile data
   useEffect(() => {
@@ -550,15 +604,15 @@ export function SettingsPage() {
           {/* Password Section */}
           <div className="rounded-xl border border-border bg-card p-6">
             <h3 className="font-semibold mb-6 flex items-center gap-2">
-              <Shield size={18} weight="duotone" className="text-primary" />
+              <Lock size={18} weight="duotone" className="text-primary" />
               Password
             </h3>
 
-            <div className="space-y-4">
+            {!showPasswordForm ? (
               <div className="flex items-center justify-between p-4 rounded-lg border border-border">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-                    <Envelope size={20} weight="duotone" className="text-muted-foreground" />
+                    <Lock size={20} weight="duotone" className="text-muted-foreground" />
                   </div>
                   <div>
                     <p className="font-medium text-sm">Change Password</p>
@@ -568,6 +622,7 @@ export function SettingsPage() {
                   </div>
                 </div>
                 <button
+                  onClick={() => setShowPasswordForm(true)}
                   className={cn(
                     'px-4 py-2 text-sm rounded-lg border border-border',
                     'hover:bg-muted transition-colors cursor-pointer'
@@ -576,7 +631,142 @@ export function SettingsPage() {
                   Update
                 </button>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Current Password */}
+                <div>
+                  <Label htmlFor="currentPassword">Current Password</Label>
+                  <div className="relative mt-1.5">
+                    <Input
+                      id="currentPassword"
+                      type={showCurrentPassword ? 'text' : 'password'}
+                      value={passwordData.currentPassword}
+                      onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                      placeholder="Enter your current password"
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                    >
+                      {showCurrentPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* New Password */}
+                <div>
+                  <Label htmlFor="newPassword">New Password</Label>
+                  <div className="relative mt-1.5">
+                    <Input
+                      id="newPassword"
+                      type={showNewPassword ? 'text' : 'password'}
+                      value={passwordData.newPassword}
+                      onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                      placeholder="Enter your new password"
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                    >
+                      {showNewPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+
+                  {/* Password Requirements */}
+                  {passwordData.newPassword.length > 0 && (
+                    <div className="mt-3 p-3 rounded-lg bg-muted/50 space-y-1.5">
+                      {passwordRequirements.map((req) => (
+                        <div key={req.label} className="flex items-center gap-2 text-xs">
+                          {req.met ? (
+                            <Check size={14} weight="bold" className="text-emerald-500" />
+                          ) : (
+                            <X size={14} weight="bold" className="text-muted-foreground" />
+                          )}
+                          <span className={req.met ? 'text-emerald-600' : 'text-muted-foreground'}>
+                            {req.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Confirm Password */}
+                <div>
+                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                  <div className="relative mt-1.5">
+                    <Input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={passwordData.confirmPassword}
+                      onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                      placeholder="Confirm your new password"
+                      className={cn(
+                        'pr-10',
+                        passwordData.confirmPassword.length > 0 && !passwordsMatch && 'border-destructive focus-visible:ring-destructive'
+                      )}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                    >
+                      {showConfirmPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                  {passwordData.confirmPassword.length > 0 && !passwordsMatch && (
+                    <p className="mt-1.5 text-xs text-destructive">Passwords do not match</p>
+                  )}
+                  {passwordsMatch && (
+                    <p className="mt-1.5 text-xs text-emerald-600 flex items-center gap-1">
+                      <Check size={12} weight="bold" /> Passwords match
+                    </p>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    onClick={() => {
+                      setShowPasswordForm(false)
+                      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
+                    }}
+                    className={cn(
+                      'px-4 py-2 text-sm rounded-lg border border-border',
+                      'hover:bg-muted transition-colors cursor-pointer'
+                    )}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handlePasswordChange}
+                    disabled={!allRequirementsMet || !passwordsMatch || !passwordData.currentPassword || isChangingPassword}
+                    className={cn(
+                      'flex items-center gap-2 px-4 py-2 text-sm rounded-lg',
+                      'bg-primary text-primary-foreground font-medium',
+                      'hover:bg-primary/90 transition-colors cursor-pointer',
+                      'disabled:opacity-50 disabled:cursor-not-allowed'
+                    )}
+                  >
+                    {isChangingPassword ? (
+                      <>
+                        <CircleNotch size={16} className="animate-spin" />
+                        Updating...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle size={16} weight="bold" />
+                        Update Password
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Sessions Section */}
@@ -606,6 +796,17 @@ export function SettingsPage() {
             <p className="text-xs text-muted-foreground mt-4 text-center">
               Session management coming soon. You'll be able to view and revoke active sessions.
             </p>
+          </div>
+
+          {/* Data Export Section */}
+          <DataExportSection />
+
+          {/* Data Deletion Section */}
+          <DataDeletionSection />
+
+          {/* Cookie Preferences Section */}
+          <div className="rounded-xl border border-border bg-card p-6">
+            <CookiePreferences />
           </div>
         </TabsContent>
 

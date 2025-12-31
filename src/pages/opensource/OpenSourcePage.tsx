@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { OptimizedImage } from '@/components/ui/optimized-image'
 import { useGitHubData } from '@/hooks/use-github-data'
 import {
   ArrowLeft,
@@ -216,7 +217,7 @@ export function OpenSourcePage() {
                         rel="noopener noreferrer"
                         className="flex items-center gap-3 p-3 rounded-lg border border-border/40 hover:border-border hover:bg-muted/20 transition-all group"
                       >
-                        <img src={c.avatar_url} alt={c.login} className="w-10 h-10 rounded-full" />
+                        <OptimizedImage src={c.avatar_url} alt={c.login} lazy className="w-10 h-10 rounded-full" />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-foreground group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                             {c.login}
@@ -244,9 +245,10 @@ export function OpenSourcePage() {
                         rel="noopener noreferrer"
                         title={c.login}
                       >
-                        <img
+                        <OptimizedImage
                           src={c.avatar_url}
                           alt={c.login}
+                          lazy
                           className="w-6 h-6 rounded-full ring-2 ring-background hover:ring-border hover:z-10 relative transition-all"
                         />
                       </a>
@@ -292,9 +294,10 @@ export function OpenSourcePage() {
                       className="flex items-start gap-3 py-2.5 group hover:bg-muted/30 -mx-2 px-2 rounded-lg transition-colors"
                     >
                       {commit.author ? (
-                        <img
+                        <OptimizedImage
                           src={commit.author.avatar_url}
                           alt={commit.author.login}
+                          lazy
                           className="w-5 h-5 rounded-full mt-0.5"
                         />
                       ) : (

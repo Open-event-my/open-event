@@ -63,7 +63,11 @@ const defaultStatusConfig = {
 }
 
 export function AdminManagement() {
-  const admins = useQuery(api.admin.listAdmins)
+  const currentUser = useQuery(api.queries.auth.getCurrentUser)
+  const isSuperadmin = currentUser?.role === 'superadmin'
+
+  // Only superadmins can access this page - skip query for regular admins
+  const admins = useQuery(api.admin.listAdmins, isSuperadmin ? {} : 'skip')
   const createAdmin = useMutation(api.admin.createAdmin)
   const removeAdmin = useMutation(api.admin.removeAdmin)
 
@@ -115,7 +119,7 @@ export function AdminManagement() {
 
     setIsLoading(true)
     try {
-      await removeAdmin({ userId: selectedAdmin._id })
+      await removeAdmin({ adminId: selectedAdmin._id })
       toast.success('Admin role removed successfully')
       setShowRemoveModal(false)
       setSelectedAdmin(null)
@@ -133,6 +137,21 @@ export function AdminManagement() {
       month: 'short',
       day: 'numeric',
     })
+  }
+
+  // Only superadmins can access this page
+  if (!isSuperadmin) {
+    return (
+      <div className="p-6 lg:p-8">
+        <div className="text-center py-12">
+          <ShieldCheck size={48} className="mx-auto text-muted-foreground mb-4" />
+          <h2 className="text-lg font-semibold">Superadmin Access Required</h2>
+          <p className="text-muted-foreground mt-2">
+            This page is only accessible to superadmin users.
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -16,14 +16,15 @@ import { assertRole } from './lib/auth'
 // Types
 // ============================================================================
 
-type NotificationType =
-  | 'security_alert'
-  | 'new_application'
-  | 'flagged_content'
-  | 'user_report'
-  | 'system_alert'
+// Note: These types are defined for documentation but used via schema validators
+// type NotificationType =
+//   | 'security_alert'
+//   | 'new_application'
+//   | 'flagged_content'
+//   | 'user_report'
+//   | 'system_alert'
 
-type Severity = 'low' | 'medium' | 'high'
+// type Severity = 'low' | 'medium' | 'high'
 
 // ============================================================================
 // Queries

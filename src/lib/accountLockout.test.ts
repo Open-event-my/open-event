@@ -97,7 +97,7 @@ describe('Account Lockout Configuration', () => {
 
 describe('LockoutStatus Interface', () => {
   it('should correctly type check a not-locked status', () => {
-    const status = {
+    const status: { isLocked: boolean; remainingAttempts: number; lockedUntil?: number; lockoutDuration?: number } = {
       isLocked: false,
       remainingAttempts: 5,
     }

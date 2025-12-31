@@ -4,6 +4,7 @@ import { internal } from './_generated/api'
 import { requireAuth, getCurrentUser } from './lib/auth'
 import { Resend } from 'resend'
 import { getNotificationEmailTemplate } from './lib/notificationEmails'
+import { logger } from './lib/monitoring/logger'
 
 // Lazy initialize Resend (API key from environment)
 function getResendClient() {
@@ -393,7 +394,9 @@ export const sendEmailNotification = internalMutation({
     })
 
     if (!notification) {
-      console.error('Notification not found:', args.notificationId)
+      logger.error('Notification not found', undefined, {
+        notificationId: args.notificationId,
+      })
       return
     }
 
@@ -402,7 +405,9 @@ export const sendEmailNotification = internalMutation({
     })
 
     if (!user || !user.email) {
-      console.error('User not found or has no email:', notification.userId)
+      logger.error('User not found or has no email', undefined, {
+        userId: notification.userId,
+      })
       return
     }
 
@@ -413,7 +418,9 @@ export const sendEmailNotification = internalMutation({
     })
 
     if (!shouldSend) {
-      console.log('Email notification skipped due to user preferences:', notification.type)
+      logger.debug('Email notification skipped due to user preferences', {
+        notificationType: notification.type,
+      })
       return
     }
 
@@ -440,9 +447,12 @@ export const sendEmailNotification = internalMutation({
         notificationId: args.notificationId,
       })
 
-      console.log('Email notification sent successfully to:', user.email)
+      logger.info('Email notification sent successfully', {
+        userEmail: user.email,
+        notificationType: notification.type,
+      })
     } catch (error) {
-      console.error('Failed to send email notification:', error)
+      logger.error('Failed to send email notification', error)
       // Don't throw error - notification is still created in-app
     }
   },

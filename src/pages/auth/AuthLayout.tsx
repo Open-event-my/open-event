@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { OptimizedImage } from '@/components/ui/optimized-image'
 
 interface AuthLayoutProps {
   children: React.ReactNode
@@ -23,7 +24,13 @@ export function AuthLayout({
       {/* Left Panel - Image Background (hidden on mobile) */}
       <div className="hidden lg:flex lg:w-1/2 xl:w-3/5 relative overflow-hidden">
         {/* Background Image */}
-        <img src="/auth-bg.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <OptimizedImage
+          src="/auth-bg.jpg"
+          webpSrc="/auth-bg.webp"
+          alt=""
+          priority
+          className="absolute inset-0 w-full h-full object-cover"
+        />
 
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-transparent to-black/60" />
@@ -68,9 +75,11 @@ export function AuthLayout({
       <div className="flex-1 flex flex-col bg-background relative">
         {/* Mobile Background Image */}
         <div className="lg:hidden absolute inset-0 -z-10">
-          <img
+          <OptimizedImage
             src="/auth-bg.jpg"
+            webpSrc="/auth-bg.webp"
             alt=""
+            lazy
             className="absolute inset-0 w-full h-full object-cover opacity-20 dark:opacity-10"
           />
           <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />

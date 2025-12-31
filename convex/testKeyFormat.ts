@@ -7,7 +7,7 @@ import { importPKCS8 } from 'jose'
 
 export const testKeyFormat = mutation({
   args: {},
-  handler: async (ctx) => {
+  handler: async (_ctx) => {
     const key = process.env.JWT_PRIVATE_KEY
 
     if (!key) {

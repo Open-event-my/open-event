@@ -9,6 +9,8 @@ import { InstallPrompt, UpdatePrompt } from '@/components/pwa'
 import { OfflineBanner } from '@/components/ui/offline-banner'
 import { PageLoader, DashboardLoader } from '@/components/ui/page-loader'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { SessionTimeoutWarning } from '@/components/security'
+import { CookieConsentBanner } from '@/components/compliance'
 
 // ============================================================================
 // LANDING PAGE COMPONENTS (loaded immediately - critical for first paint)
@@ -191,6 +193,16 @@ const ApplicationSuccess = lazy(() =>
 )
 
 // ============================================================================
+// LAZY-LOADED: ERROR PAGES
+// ============================================================================
+const NotFoundPage = lazy(() =>
+  import('@/pages/errors').then((m) => ({ default: m.NotFoundPage }))
+)
+const ServerErrorPage = lazy(() =>
+  import('@/pages/errors').then((m) => ({ default: m.ServerErrorPage }))
+)
+
+// ============================================================================
 // LANDING PAGE (not lazy - first paint)
 // ============================================================================
 function LandingPage() {
@@ -330,9 +342,15 @@ function App() {
                 <Route
                   path="events/:eventId/applications"
                   element={
-                    <Suspense fallback={<PageLoader message="Loading..." />}>
-                      <EventApplicationsPage />
-                    </Suspense>
+                    <QueryErrorBoundary
+                      fallback={({ error, retry }) => (
+                        <RouteErrorFallback error={error} onRetry={retry} />
+                      )}
+                    >
+                      <Suspense fallback={<PageLoader message="Loading..." />}>
+                        <EventApplicationsPage />
+                      </Suspense>
+                    </QueryErrorBoundary>
                   }
                 />
                 <Route
@@ -631,8 +649,34 @@ function App() {
                   </Suspense>
                 }
               />
+
+              {/* Error Pages */}
+              <Route
+                path="/500"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ServerErrorPage />
+                  </Suspense>
+                }
+              />
+
+              {/* 404 Catch-all - Must be last */}
+              <Route
+                path="*"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <NotFoundPage />
+                  </Suspense>
+                }
+              />
             </Routes>
             <Toaster />
+
+            {/* Session timeout warning */}
+            <SessionTimeoutWarning />
+
+            {/* Cookie consent banner */}
+            <CookieConsentBanner />
 
             {/* Network status */}
             <OfflineBanner />

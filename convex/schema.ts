@@ -868,7 +868,7 @@ export default defineSchema({
   // ============================================================================
 
   // API Keys - For external API access
-  // Keys are stored as hashed values for security
+  // Keys are stored as encrypted values for security (or hashed for legacy keys)
   apiKeys: defineTable({
     // Owner of this API key
     userId: v.id('users'),
@@ -877,8 +877,14 @@ export default defineSchema({
     name: v.string(), // "My Production App", "Testing Key"
     description: v.optional(v.string()),
 
-    // Security - NEVER store the actual key, only the hash
-    keyHash: v.string(), // SHA-256 hash of the full key
+    // Security - Store encrypted key data (new approach)
+    encryptedKey: v.optional(v.string()), // Encrypted API key ciphertext (base64)
+    encryptionIV: v.optional(v.string()), // Initialization vector (base64)
+    encryptionTag: v.optional(v.string()), // Authentication tag (base64)
+    encryptionSalt: v.optional(v.string()), // Salt for key derivation (base64)
+    
+    // Legacy security - Hash-based storage (deprecated, for backward compatibility)
+    keyHash: v.optional(v.string()), // SHA-256 hash of the full key (legacy)
     keyPrefix: v.string(), // First 8 chars for identification (e.g., "oe_live_")
 
     // Permissions - what this key can do
@@ -1244,6 +1250,31 @@ export default defineSchema({
     processedAt: v.number(),
   }).index('by_event_id', ['eventId']),
 
+  // Payment Idempotency - Prevent duplicate payment operations
+  paymentIdempotency: defineTable({
+    idempotencyKey: v.string(), // Unique key for the operation
+    orderId: v.string(), // Order ID (stored as string for flexibility)
+    operation: v.union(
+      v.literal('checkout'),
+      v.literal('refund'),
+      v.literal('capture')
+    ),
+    status: v.union(
+      v.literal('pending'),
+      v.literal('completed'),
+      v.literal('failed')
+    ),
+    stripeIdempotencyKey: v.optional(v.string()), // Key sent to Stripe
+    result: v.optional(v.string()), // JSON-serialized result for returning on duplicate requests
+    errorMessage: v.optional(v.string()), // Error message if failed
+    createdAt: v.number(),
+    completedAt: v.optional(v.number()),
+    expiresAt: v.number(), // TTL for cleanup (24 hours from creation)
+  })
+    .index('by_idempotency_key', ['idempotencyKey'])
+    .index('by_order_operation', ['orderId', 'operation'])
+    .index('by_expires_at', ['expiresAt']),
+
   // Notes - Playground notes and general event notes
   notes: defineTable({
     eventId: v.optional(v.id('events')), // Optional link to event
@@ -1322,6 +1353,17 @@ export default defineSchema({
   // ============================================================================
   // Account Security
   // ============================================================================
+
+  // CSRF Tokens - Cross-Site Request Forgery protection
+  csrfTokens: defineTable({
+    userId: v.string(), // User ID from auth identity
+    token: v.string(), // Random token value
+    expiresAt: v.number(), // Unix timestamp when token expires
+    createdAt: v.number(), // Unix timestamp when token was created
+  })
+    .index('by_user', ['userId'])
+    .index('by_user_token', ['userId', 'token'])
+    .index('by_expiration', ['expiresAt']),
 
   // Tracks failed login attempts for account lockout
   failedLoginAttempts: defineTable({
@@ -1402,4 +1444,59 @@ export default defineSchema({
   })
     .index('by_key', ['key'])
     .index('by_category', ['category']),
+
+  // ============================================================================
+  // Compliance - Terms of Service Acceptance
+  // ============================================================================
+
+  // Terms Acceptance - Track user acceptance of terms of service
+  termsAcceptance: defineTable({
+    userId: v.id('users'),
+    version: v.string(), // Terms version (e.g., "1.0", "2024-01-15")
+    acceptedAt: v.number(), // Unix timestamp when terms were accepted
+    ipAddress: v.optional(v.string()), // IP address at time of acceptance
+    userAgent: v.optional(v.string()), // Browser/device info
+  })
+    .index('by_user', ['userId'])
+    .index('by_user_version', ['userId', 'version'])
+    .index('by_version', ['version'])
+    .index('by_date', ['acceptedAt']),
+
+  // ============================================================================
+  // Backup & Disaster Recovery
+  // ============================================================================
+
+  // Backups - Backup metadata and tracking
+  backups: defineTable({
+    backupId: v.string(), // Unique backup identifier
+    timestamp: v.number(), // Unix timestamp when backup was created
+    size: v.number(), // Backup size in bytes
+    location: v.string(), // Storage location path
+    checksum: v.string(), // SHA-256 checksum for integrity verification
+    encrypted: v.boolean(), // Whether backup data is encrypted
+    status: v.union(
+      v.literal('pending'),
+      v.literal('completed'),
+      v.literal('failed')
+    ),
+    expiresAt: v.number(), // Unix timestamp when backup should be deleted
+    errorMessage: v.optional(v.string()), // Error message if backup failed
+  })
+    .index('by_backup_id', ['backupId'])
+    .index('by_status', ['status'])
+    .index('by_timestamp', ['timestamp'])
+    .index('by_expiration', ['expiresAt']),
+
+  // Backup Verification - Track backup verification tests
+  backupVerifications: defineTable({
+    backupId: v.id('backups'),
+    verifiedAt: v.number(), // Unix timestamp when verification was performed
+    success: v.boolean(), // Whether verification succeeded
+    errors: v.optional(v.array(v.string())), // List of errors if verification failed
+    verificationMethod: v.optional(v.string()), // Method used for verification
+    notes: v.optional(v.string()), // Additional notes about verification
+  })
+    .index('by_backup', ['backupId'])
+    .index('by_date', ['verifiedAt'])
+    .index('by_success', ['success']),
 })

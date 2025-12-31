@@ -38,3 +38,4 @@ export { createAIProvider, isProviderAvailable, getDefaultProvider } from './fac
 
 // Providers
 export { OpenAIProvider } from './providers/openai'
+export { AnthropicProvider } from './providers/anthropic'

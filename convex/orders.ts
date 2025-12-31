@@ -14,6 +14,7 @@ import { v } from 'convex/values'
 import { query, mutation, internalMutation, internalQuery } from './_generated/server'
 import { getAuthUserId } from '@convex-dev/auth/server'
 import type { Id } from './_generated/dataModel'
+import { logger } from './lib/monitoring/logger'
 
 // Platform fee percentage
 const PLATFORM_FEE_PERCENT = 0.03 // 3%
@@ -457,7 +458,7 @@ export const updatePaymentStatus = internalMutation({
     }
 
     if (!order) {
-      console.error('[Orders] Order not found for payment update', {
+      logger.error('Order not found for payment update', undefined, {
         sessionId: args.stripeSessionId,
         intentId: args.stripePaymentIntentId,
         orderId: args.orderId,
@@ -467,7 +468,9 @@ export const updatePaymentStatus = internalMutation({
 
     // Prevent duplicate completion
     if (order.paymentStatus === 'completed' && args.paymentStatus === 'completed') {
-      console.log('[Orders] Order already completed, skipping:', order.orderNumber)
+      logger.info('Order already completed, skipping duplicate', {
+        orderNumber: order.orderNumber,
+      })
       return
     }
 
@@ -513,7 +516,10 @@ export const updatePaymentStatus = internalMutation({
         }
       }
 
-      console.log('[Orders] Payment completed, attendees created:', order.orderNumber)
+      logger.info('Payment completed, attendees created', {
+        orderNumber: order.orderNumber,
+        attendeeCount: order.items.length,
+      })
     }
 
     if (args.paymentStatus === 'refunded') {
@@ -557,7 +563,10 @@ export const releaseTicketReservation = internalMutation({
       }
     }
 
-    console.log('[Orders] Released ticket reservations for:', order.orderNumber)
+    logger.info('Released ticket reservations', {
+      orderNumber: order.orderNumber,
+      itemCount: order.items.length,
+    })
   },
 })
 
@@ -659,7 +668,9 @@ export const cleanupExpiredOrders = internalMutation({
     }
 
     if (cleanedCount > 0) {
-      console.log(`[Orders] Cleaned up ${cleanedCount} expired orders`)
+      logger.info('Cleaned up expired orders', {
+        cleanedCount,
+      })
     }
 
     return { cleanedCount }
@@ -717,7 +728,9 @@ export const cleanupOldWebhookEvents = internalMutation({
     }
 
     if (deletedCount > 0) {
-      console.log(`[Webhook Events] Cleaned up ${deletedCount} old webhook events`)
+      logger.info('Cleaned up old webhook events', {
+        deletedCount,
+      })
     }
 
     return { deletedCount }

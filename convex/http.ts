@@ -98,6 +98,7 @@ import {
   getPagination,
   paginationMeta,
   getLastPathSegment,
+  validateRequestSize,
 } from './api/helpers'
 import { validateApiKey, requirePermission, PERMISSIONS } from './api/auth'
 // Account lockout utilities - ENABLED for brute force protection
@@ -127,6 +128,73 @@ http.route({
       status: 'ok',
       timestamp: Date.now(),
       version: '1.0.0',
+    })
+  }),
+})
+
+// Configuration health check endpoint
+// Returns detailed status of all configuration settings
+http.route({
+  path: '/api/health/config',
+  method: 'GET',
+  handler: httpAction(async () => {
+    const checks: Array<{
+      name: string
+      status: 'pass' | 'fail' | 'warn'
+      message: string
+      required: boolean
+    }> = []
+
+    // Check required environment variables
+    const openaiKey = process.env.OPENAI_API_KEY
+    checks.push({
+      name: 'OPENAI_API_KEY',
+      status: openaiKey ? 'pass' : 'warn',
+      message: openaiKey ? 'OpenAI API key configured' : 'OpenAI API key not configured - AI features disabled',
+      required: false,
+    })
+
+    const siteUrl = process.env.SITE_URL
+    checks.push({
+      name: 'SITE_URL',
+      status: siteUrl ? 'pass' : 'warn',
+      message: siteUrl ? 'Site URL configured' : 'Site URL not configured - OAuth redirects may fail',
+      required: false,
+    })
+
+    const stripeKey = process.env.STRIPE_SECRET_KEY
+    checks.push({
+      name: 'STRIPE_SECRET_KEY',
+      status: stripeKey ? 'pass' : 'warn',
+      message: stripeKey ? 'Stripe secret key configured' : 'Stripe not configured - payments disabled',
+      required: false,
+    })
+
+    const resendKey = process.env.AUTH_RESEND_KEY
+    checks.push({
+      name: 'AUTH_RESEND_KEY',
+      status: resendKey ? 'pass' : 'warn',
+      message: resendKey ? 'Resend API key configured' : 'Resend not configured - email features disabled',
+      required: false,
+    })
+
+    // Determine overall health
+    const hasFailures = checks.some((c) => c.status === 'fail' && c.required)
+    // Note: hasWarnings could be used for degraded status in future
+    // Note: warnings are tracked in checks array but not separately flagged
+    // const hasWarnings = checks.some((c) => c.status === 'warn')
+
+    return apiSuccess({
+      healthy: !hasFailures,
+      environment: process.env.NODE_ENV || 'development',
+      timestamp: Date.now(),
+      checks,
+      summary: {
+        total: checks.length,
+        passed: checks.filter((c) => c.status === 'pass').length,
+        warnings: checks.filter((c) => c.status === 'warn').length,
+        failed: checks.filter((c) => c.status === 'fail').length,
+      },
     })
   }),
 })
@@ -229,6 +297,12 @@ http.route({
     const userAgent = request.headers.get('User-Agent') || undefined
 
     try {
+      // Validate request size (1MB limit for JSON)
+      const sizeError = validateRequestSize(request, 1 * 1024 * 1024)
+      if (sizeError) {
+        return sizeError
+      }
+
       // Check IP-based rate limit first (before parsing body)
       const ipRateLimit = await ctx.runMutation(internal.globalRateLimit.checkAndIncrement, {
         identifier: clientIP,
@@ -398,7 +472,16 @@ http.route({
   method: 'POST',
   handler: httpAction(async (ctx, request) => {
     const origin = request.headers.get('Origin')
+    const clientIP = getClientIP(request)
+    const userAgent = request.headers.get('User-Agent') || undefined
+    
     try {
+      // Validate request size (1MB limit for JSON)
+      const sizeError = validateRequestSize(request, 1 * 1024 * 1024)
+      if (sizeError) {
+        return sizeError
+      }
+
       const body = await parseBody(request)
       const { email, password, name } = body as { email: string; password: string; name?: string }
 
@@ -409,11 +492,13 @@ http.route({
         })
       }
 
-      // Call signup action
+      // Call signup action (which now includes logging)
       const result = await ctx.runAction(api.customAuth.signup, {
         email,
         password,
         name,
+        userAgent,
+        ipAddress: clientIP,
       })
 
       const cookies = createAuthCookies(result.accessToken, result.refreshToken)
@@ -451,15 +536,36 @@ http.route({
   method: 'POST',
   handler: httpAction(async (ctx, request) => {
     const origin = request.headers.get('Origin')
+    const clientIP = getClientIP(request)
+    const userAgent = request.headers.get('User-Agent') || undefined
+    
     try {
       const cookies = parseCookies(request.headers.get('Cookie'))
       const refreshToken = cookies.refresh_token
 
       if (refreshToken) {
+        // Get session info before deleting for logging
+        const session = await ctx.runQuery(internal.customAuth.getSessionByRefreshToken, {
+          refreshToken,
+        })
+        
         // Delete session from database
         await ctx.runMutation(internal.customAuth.deleteSessionByRefreshToken, {
           refreshToken,
         })
+        
+        // Log logout
+        if (session) {
+          await ctx.runMutation(internal.auditLog.log, {
+            userId: session.userId,
+            action: 'logout',
+            resource: 'auth',
+            ipAddress: clientIP,
+            userAgent,
+            endpoint: '/api/auth/logout',
+            status: 'success',
+          })
+        }
       }
 
       const clearCookies = createClearCookies()
@@ -675,6 +781,12 @@ http.route({
   path: '/api/v1/events',
   method: 'POST',
   handler: httpAction(async (ctx, request) => {
+    // Validate request size (1MB limit for JSON)
+    const sizeError = validateRequestSize(request, 1 * 1024 * 1024)
+    if (sizeError) {
+      return sizeError
+    }
+
     // Validate API key - STRICT CHECK
     const authResult = await validateApiKey(ctx, request)
     if (!authResult.success) {
@@ -795,6 +907,12 @@ http.route({
   pathPrefix: '/api/v1/events/',
   method: 'PATCH',
   handler: httpAction(async (ctx, request) => {
+    // Validate request size (1MB limit for JSON)
+    const sizeError = validateRequestSize(request, 1 * 1024 * 1024)
+    if (sizeError) {
+      return sizeError
+    }
+
     // Validate API key - STRICT CHECK
     const authResult = await validateApiKey(ctx, request)
     if (!authResult.success) {
@@ -1155,6 +1273,12 @@ http.route({
   path: '/api/v1/webhooks',
   method: 'POST',
   handler: httpAction(async (ctx, request) => {
+    // Validate request size (1MB limit for JSON)
+    const sizeError = validateRequestSize(request, 1 * 1024 * 1024)
+    if (sizeError) {
+      return sizeError
+    }
+
     // Validate API key
     const authResult = await validateApiKey(ctx, request)
     if (!authResult.success) {
@@ -1249,6 +1373,12 @@ http.route({
   pathPrefix: '/api/v1/webhooks/',
   method: 'PATCH',
   handler: httpAction(async (ctx, request) => {
+    // Validate request size (1MB limit for JSON)
+    const sizeError = validateRequestSize(request, 1 * 1024 * 1024)
+    if (sizeError) {
+      return sizeError
+    }
+
     // Validate API key
     const authResult = await validateApiKey(ctx, request)
     if (!authResult.success) {
@@ -1706,6 +1836,12 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const headers = { ...getCorsHeaders(request), 'Content-Type': 'application/json' }
 
+    // Validate request size (1MB limit for JSON)
+    const sizeError = validateRequestSize(request, 1 * 1024 * 1024)
+    if (sizeError) {
+      return sizeError
+    }
+
     // Parse and validate request body
     let body: unknown
     try {
@@ -1806,6 +1942,12 @@ http.route({
   method: 'POST',
   handler: httpAction(async (ctx, request) => {
     try {
+      // Validate request size (10MB limit for webhooks - they can be large)
+      const sizeError = validateRequestSize(request, 10 * 1024 * 1024)
+      if (sizeError) {
+        return sizeError
+      }
+
       const signature = request.headers.get('stripe-signature')
       if (!signature) {
         return new Response(JSON.stringify({ error: 'Missing stripe-signature header' }), {
@@ -1841,6 +1983,12 @@ http.route({
   method: 'POST',
   handler: httpAction(async (ctx, request) => {
     const headers = { ...getCorsHeaders(request), 'Content-Type': 'application/json' }
+
+    // Validate request size (1MB limit for JSON)
+    const sizeError = validateRequestSize(request, 1 * 1024 * 1024)
+    if (sizeError) {
+      return sizeError
+    }
 
     // Parse and validate request body
     let body: unknown

@@ -6,6 +6,7 @@
 import { v } from 'convex/values'
 import { mutation, query, internalMutation, internalQuery } from './_generated/server'
 import { getCurrentUser } from './lib/auth'
+import { encryptAPIKey, decryptAPIKey, type EncryptedData } from './lib/security/encryption'
 
 // ----------------------------------------------------------------------------
 // Constants
@@ -72,7 +73,7 @@ function generateApiKey(environment: 'live' | 'test' = 'live'): string {
 
 /**
  * Hash an API key using SHA-256
- * This is what we store in the database
+ * This is what we store in the database (LEGACY - for backward compatibility)
  */
 async function hashApiKey(key: string): Promise<string> {
   const encoder = new TextEncoder()
@@ -80,6 +81,21 @@ async function hashApiKey(key: string): Promise<string> {
   const hashBuffer = await crypto.subtle.digest('SHA-256', data)
   const hashArray = Array.from(new Uint8Array(hashBuffer))
   return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+/**
+ * Get the encryption master key from environment
+ * This key is used to encrypt/decrypt API keys at rest
+ */
+function getEncryptionMasterKey(): string {
+  const masterKey = process.env.ENCRYPTION_KEY
+  if (!masterKey) {
+    throw new Error('ENCRYPTION_KEY environment variable is not set')
+  }
+  if (masterKey.length < 32) {
+    throw new Error('ENCRYPTION_KEY must be at least 32 characters')
+  }
+  return masterKey
 }
 
 /**
@@ -133,15 +149,24 @@ export const create = mutation({
 
     // Generate the key
     const plainKey = generateApiKey(args.environment || 'live')
-    const keyHash = await hashApiKey(plainKey)
     const keyPrefix = getKeyPrefix(plainKey)
 
-    // Store the key (hash only!)
+    // Encrypt the API key for storage (new approach)
+    const masterKey = getEncryptionMasterKey()
+    const encrypted = await encryptAPIKey(plainKey, masterKey)
+
+    // Store the key (encrypted!)
     const keyId = await ctx.db.insert('apiKeys', {
       userId: user._id,
       name: args.name.trim(),
       description: args.description?.trim(),
-      keyHash,
+      // New encrypted storage
+      encryptedKey: encrypted.ciphertext,
+      encryptionIV: encrypted.iv,
+      encryptionTag: encrypted.tag,
+      encryptionSalt: encrypted.salt,
+      // Legacy hash field (optional for backward compatibility)
+      keyHash: undefined,
       keyPrefix,
       permissions: args.permissions,
       rateLimit: args.rateLimit,
@@ -353,6 +378,8 @@ export const remove = mutation({
 /**
  * Validate an API key and return the key info
  * Called from HTTP actions
+ * 
+ * Supports both encrypted keys (new) and hashed keys (legacy)
  */
 export const validateKey = internalQuery({
   args: {
@@ -366,9 +393,38 @@ export const validateKey = internalQuery({
       .withIndex('by_key_prefix', (q) => q.eq('keyPrefix', args.keyPrefix))
       .collect()
 
-    // Find the one with matching hash
+    // Try to find matching key (supports both encrypted and hashed)
     for (const key of keys) {
-      if (key.keyHash === args.keyHash) {
+      let isValid = false;
+      
+      // Check if this is an encrypted key (new approach)
+      if (key.encryptedKey && key.encryptionIV && key.encryptionTag && key.encryptionSalt) {
+        try {
+          // Decrypt the stored key and compare with provided key
+          const masterKey = getEncryptionMasterKey()
+          const encrypted: EncryptedData = {
+            ciphertext: key.encryptedKey,
+            iv: key.encryptionIV,
+            tag: key.encryptionTag,
+            salt: key.encryptionSalt,
+          }
+          const decryptedKey = await decryptAPIKey(encrypted, masterKey)
+          
+          // Hash the decrypted key and compare with provided hash
+          const decryptedHash = await hashApiKey(decryptedKey)
+          isValid = decryptedHash === args.keyHash
+        } catch (error) {
+          // Decryption failed, key is invalid
+          console.error('Failed to decrypt API key:', error)
+          isValid = false
+        }
+      }
+      // Check if this is a legacy hashed key
+      else if (key.keyHash) {
+        isValid = key.keyHash === args.keyHash
+      }
+      
+      if (isValid) {
         // Check if key is active
         if (key.status !== 'active') {
           return null

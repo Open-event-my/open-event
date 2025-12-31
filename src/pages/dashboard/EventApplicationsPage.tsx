@@ -17,6 +17,7 @@ import {
   Eye,
   MagnifyingGlass,
   User,
+  Warning,
 } from '@phosphor-icons/react'
 
 type ApplicationStatus = 'pending' | 'under_review' | 'accepted' | 'rejected' | 'withdrawn'
@@ -49,11 +50,14 @@ export function EventApplicationsPage() {
   const [showRejectModal, setShowRejectModal] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
 
-  const event = useQuery(api.events.get, eventId ? { id: eventId as Id<'events'> } : 'skip')
+  // Validate eventId - reject invalid values like "new", "edit", etc.
+  const isValidEventId = eventId && eventId !== 'new' && eventId !== 'edit' && /^[a-z0-9]+$/.test(eventId)
+
+  const event = useQuery(api.events.get, isValidEventId ? { id: eventId as Id<'events'> } : 'skip')
 
   const applications = useQuery(
     api.eventApplications.listByEvent,
-    eventId
+    isValidEventId
       ? {
           eventId: eventId as Id<'events'>,
           status: statusFilter === 'all' ? undefined : statusFilter,
@@ -141,10 +145,59 @@ export function EventApplicationsPage() {
 
   const selectedApp = filteredApplications?.find((a) => a._id === selectedApplication)
 
-  if (!event) {
+  // Invalid eventId state (e.g., "new", "edit")
+  if (!isValidEventId) {
+    return (
+      <div className="text-center py-16">
+        <Warning size={64} weight="duotone" className="mx-auto text-muted-foreground/30 mb-6" />
+        <h2 className="text-xl font-semibold mb-2">Invalid event ID</h2>
+        <p className="text-muted-foreground mb-6">
+          The event ID in the URL is invalid. Please navigate to a valid event's applications page.
+        </p>
+        <Link
+          to="/dashboard/events"
+          className={cn(
+            'inline-flex items-center gap-2 px-4 py-2.5 rounded-lg',
+            'bg-primary text-primary-foreground font-medium text-sm',
+            'hover:bg-primary/90 transition-colors'
+          )}
+        >
+          <ArrowLeft size={18} weight="bold" />
+          Back to Events
+        </Link>
+      </div>
+    )
+  }
+
+  // Loading state
+  if (event === undefined) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <p className="text-muted-foreground">Loading event...</p>
+      </div>
+    )
+  }
+
+  // Not found state
+  if (event === null) {
+    return (
+      <div className="text-center py-16">
+        <Warning size={64} weight="duotone" className="mx-auto text-muted-foreground/30 mb-6" />
+        <h2 className="text-xl font-semibold mb-2">Event not found</h2>
+        <p className="text-muted-foreground mb-6">
+          The event you're looking for doesn't exist or you don't have permission to view it.
+        </p>
+        <Link
+          to="/dashboard/events"
+          className={cn(
+            'inline-flex items-center gap-2 px-4 py-2.5 rounded-lg',
+            'bg-primary text-primary-foreground font-medium text-sm',
+            'hover:bg-primary/90 transition-colors'
+          )}
+        >
+          <ArrowLeft size={18} weight="bold" />
+          Back to Events
+        </Link>
       </div>
     )
   }

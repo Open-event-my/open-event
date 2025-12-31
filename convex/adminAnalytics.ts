@@ -6,11 +6,15 @@
  * - Event creation trends
  * - Application statistics
  * - Revenue/activity metrics
+ *
+ * NOTE: All analytics data is anonymized to comply with GDPR requirements.
+ * PII (email, name, phone, IP addresses) is hashed or removed.
  */
 
 import { v } from 'convex/values'
 import { query } from './_generated/server'
 import { assertRole } from './lib/auth'
+import { anonymizeUserForAnalytics } from './lib/compliance/analyticsAnonymization'
 
 // ============================================================================
 // Types
@@ -270,6 +274,7 @@ export const getUserRoleDistribution = query({
 /**
  * Get recent activity for the dashboard feed
  * Accessible by admin and superadmin
+ * NOTE: User names and emails are anonymized
  */
 export const getRecentActivity = query({
   args: {
@@ -290,10 +295,12 @@ export const getRecentActivity = query({
     const recentUsers = await ctx.db.query('users').order('desc').take(5)
 
     for (const user of recentUsers) {
+      // Anonymize user data - don't expose email or name
+      const anonymized = anonymizeUserForAnalytics(user)
       activities.push({
         type: 'user_joined',
         title: 'New User',
-        description: `${user.name || user.email} joined the platform`,
+        description: `User ${anonymized.emailHash?.substring(0, 8) || 'unknown'} joined the platform`,
         timestamp: user.createdAt || user._creationTime || Date.now(),
       })
     }

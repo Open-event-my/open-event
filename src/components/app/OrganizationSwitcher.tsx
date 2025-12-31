@@ -124,7 +124,7 @@ export function OrganizationSwitcher({ collapsed }: OrganizationSwitcherProps) {
       <CreateOrganizationModal
         open={createModalOpen}
         onOpenChange={setCreateModalOpen}
-        onSuccess={(organizationId, slug) => {
+        onSuccess={(_organizationId, slug) => {
           navigate(`/dashboard/organizations/${slug}`)
         }}
       />

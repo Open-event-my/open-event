@@ -8,6 +8,7 @@ import { action, internalMutation, internalQuery, mutation } from './_generated/
 import { internal } from './_generated/api'
 import { Resend } from 'resend'
 import bcrypt from 'bcryptjs'
+import { validatePassword } from './lib/passwordValidation'
 
 // Lazy initialize Resend (API key from environment)
 function getResendClient() {
@@ -267,22 +268,38 @@ export const verifyResetToken = mutation({
       .first()
 
     if (!tokenRecord) {
-      return { valid: false, error: 'Invalid reset token' }
+      return {
+        valid: false,
+        errorType: 'invalid',
+        error: 'This reset link is invalid. Please check the link or request a new one.',
+      }
     }
 
     // Check if token is for password reset
     if (tokenRecord.type !== 'password_reset') {
-      return { valid: false, error: 'Invalid token type' }
+      return {
+        valid: false,
+        errorType: 'invalid',
+        error: 'This reset link is invalid. Please check the link or request a new one.',
+      }
     }
 
     // Check if already used
     if (tokenRecord.used) {
-      return { valid: false, error: 'This reset link has already been used' }
+      return {
+        valid: false,
+        errorType: 'used',
+        error: 'This reset link has already been used. If you need to reset your password again, please request a new link.',
+      }
     }
 
     // Check if expired
     if (tokenRecord.expiresAt < Date.now()) {
-      return { valid: false, error: 'This reset link has expired' }
+      return {
+        valid: false,
+        errorType: 'expired',
+        error: 'This reset link has expired. Please request a new password reset link.',
+      }
     }
 
     return { valid: true, userId: tokenRecord.userId }
@@ -299,9 +316,10 @@ export const resetPassword = action({
     newPassword: v.string(),
   },
   handler: async (ctx, args): Promise<{ success: boolean; message?: string }> => {
-    // Validate password strength
-    if (args.newPassword.length < 8) {
-      throw new Error('Password must be at least 8 characters long')
+    // Validate password strength (12+ chars with complexity requirements)
+    const validation = validatePassword(args.newPassword)
+    if (!validation.isValid) {
+      throw new Error(`Password requirements not met: ${validation.errors.join(', ')}`)
     }
 
     // Verify token first (using internal mutation) - throws if invalid
@@ -378,6 +396,9 @@ export const updatePasswordAndMarkTokenUsed = internalMutation({
       throw new Error('Token not found')
     }
 
+    // Get user for audit log
+    const user = await ctx.db.get(tokenRecord.userId)
+
     // Mark token as used
     await ctx.db.patch(tokenRecord._id, {
       used: true,
@@ -390,6 +411,143 @@ export const updatePasswordAndMarkTokenUsed = internalMutation({
       updatedAt: Date.now(),
     })
 
+    // Create audit log entry
+    await ctx.db.insert('auditLogs', {
+      userId: tokenRecord.userId,
+      userEmail: user?.email,
+      action: 'password_reset',
+      resource: 'user',
+      resourceId: tokenRecord.userId.toString(),
+      status: 'success',
+      metadata: { method: 'email_reset' },
+      createdAt: Date.now(),
+    })
+
     return { success: true }
+  },
+})
+
+// ============================================================================
+// CHANGE PASSWORD (for logged-in users)
+// ============================================================================
+
+/**
+ * Get current user by auth identity
+ */
+export const getCurrentUserForPasswordChange = internalQuery({
+  args: { tokenIdentifier: v.string() },
+  handler: async (ctx, args) => {
+    // Find user by token identifier (Convex Auth format)
+    const authAccount = await ctx.db
+      .query('authAccounts')
+      .filter((q) => q.eq(q.field('providerAccountId'), args.tokenIdentifier))
+      .first()
+
+    if (!authAccount) {
+      return null
+    }
+
+    return await ctx.db.get(authAccount.userId)
+  },
+})
+
+/**
+ * Update password for logged-in user
+ */
+export const updateUserPassword = internalMutation({
+  args: {
+    userId: v.id('users'),
+    passwordHash: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId)
+    if (!user) {
+      throw new Error('User not found')
+    }
+
+    // Update password
+    await ctx.db.patch(args.userId, {
+      passwordHash: args.passwordHash,
+      updatedAt: Date.now(),
+    })
+
+    // Create audit log entry
+    await ctx.db.insert('auditLogs', {
+      userId: args.userId,
+      userEmail: user.email,
+      action: 'password_changed',
+      resource: 'user',
+      resourceId: args.userId.toString(),
+      status: 'success',
+      metadata: { method: 'settings' },
+      createdAt: Date.now(),
+    })
+
+    return { success: true }
+  },
+})
+
+/**
+ * Change password (Action) - for logged-in users in settings
+ * Requires current password verification
+ */
+export const changePassword = action({
+  args: {
+    currentPassword: v.string(),
+    newPassword: v.string(),
+  },
+  handler: async (ctx, args): Promise<{ success: boolean; message?: string }> => {
+    // Get authenticated user
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity) {
+      throw new Error('Not authenticated. Please sign in.')
+    }
+
+    // Get user from database
+    const user = await ctx.runQuery(internal.passwordReset.getCurrentUserForPasswordChange, {
+      tokenIdentifier: identity.tokenIdentifier,
+    })
+
+    if (!user) {
+      throw new Error('User not found')
+    }
+
+    // Check if user has a password (might be OAuth only)
+    if (!user.passwordHash) {
+      throw new Error('No password set for this account. You signed up using a social login.')
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(args.currentPassword, user.passwordHash)
+    if (!isCurrentPasswordValid) {
+      throw new Error('Current password is incorrect')
+    }
+
+    // Validate new password strength
+    const validation = validatePassword(args.newPassword)
+    if (!validation.isValid) {
+      throw new Error(`Password requirements not met: ${validation.errors.join(', ')}`)
+    }
+
+    // Check that new password is different from current
+    const isSamePassword = await bcrypt.compare(args.newPassword, user.passwordHash)
+    if (isSamePassword) {
+      throw new Error('New password must be different from your current password')
+    }
+
+    // Hash new password
+    const saltRounds = 10
+    const newPasswordHash = await bcrypt.hash(args.newPassword, saltRounds)
+
+    // Update password
+    await ctx.runMutation(internal.passwordReset.updateUserPassword, {
+      userId: user._id,
+      passwordHash: newPasswordHash,
+    })
+
+    return {
+      success: true,
+      message: 'Password changed successfully',
+    }
   },
 })

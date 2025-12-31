@@ -5,7 +5,7 @@
 
 import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { useQuery, useMutation } from 'convex/react'
+import { useQuery, useAction } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import {
@@ -42,6 +42,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 
 type PaymentStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'refunded' | 'cancelled'
@@ -115,6 +116,8 @@ export function EventSalesPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [refundReason, setRefundReason] = useState('')
+  const [refundAmount, setRefundAmount] = useState<string>('')
+  const [refundType, setRefundType] = useState<'full' | 'partial'>('full')
   const [showRefundDialog, setShowRefundDialog] = useState(false)
   const [processingRefund, setProcessingRefund] = useState(false)
 
@@ -134,7 +137,7 @@ export function EventSalesPage() {
     eventId ? { eventId: eventId as Id<'events'>, period: 'day' } : 'skip'
   )
 
-  const refundOrder = useMutation(api.orders.refund)
+  const createRefund = useAction(api.stripe.createRefund)
 
   if (!event) {
     return (
@@ -165,13 +168,52 @@ export function EventSalesPage() {
 
     setProcessingRefund(true)
     try {
-      await refundOrder({
+      // Calculate refund amount
+      const amountToRefund = refundType === 'full' 
+        ? undefined // Full refund - let Stripe handle the amount
+        : Math.round(parseFloat(refundAmount) * 100) // Convert dollars to cents
+
+      // Validate partial refund amount
+      if (refundType === 'partial') {
+        if (!refundAmount || isNaN(parseFloat(refundAmount))) {
+          toast.error('Please enter a valid refund amount')
+          setProcessingRefund(false)
+          return
+        }
+        if (amountToRefund && amountToRefund <= 0) {
+          toast.error('Refund amount must be greater than zero')
+          setProcessingRefund(false)
+          return
+        }
+        if (amountToRefund && amountToRefund > selectedOrder.total) {
+          toast.error('Refund amount cannot exceed order total')
+          setProcessingRefund(false)
+          return
+        }
+      }
+
+      const result = await createRefund({
         orderId: selectedOrder._id,
         reason: refundReason || undefined,
+        amount: amountToRefund,
       })
-      toast.success('Refund initiated successfully')
+
+      if (result.success) {
+        const formattedAmount = (result.amount / 100).toLocaleString('en-US', {
+          style: 'currency',
+          currency: selectedOrder.currency.toUpperCase(),
+        })
+        toast.success(
+          result.isPartial 
+            ? `Partial refund of ${formattedAmount} processed successfully`
+            : `Full refund of ${formattedAmount} processed successfully`
+        )
+      }
+      
       setShowRefundDialog(false)
       setRefundReason('')
+      setRefundAmount('')
+      setRefundType('full')
       setSelectedOrder(null)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to process refund')
@@ -591,35 +633,160 @@ export function EventSalesPage() {
       </Dialog>
 
       {/* Refund Dialog */}
-      <Dialog open={showRefundDialog} onOpenChange={setShowRefundDialog}>
+      <Dialog open={showRefundDialog} onOpenChange={(open) => {
+        setShowRefundDialog(open)
+        if (!open) {
+          setRefundReason('')
+          setRefundAmount('')
+          setRefundType('full')
+        }
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Refund Order</DialogTitle>
             <DialogDescription>
-              Are you sure you want to refund order {selectedOrder?.orderNumber}? This will refund{' '}
-              {selectedOrder &&
-                formatCurrency(
-                  selectedOrder.total / 100,
-                  selectedOrder.currency.toUpperCase()
-                )}{' '}
-              to the customer.
+              Process a refund for order {selectedOrder?.orderNumber}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="py-4">
-            <label className="text-sm font-medium mb-2 block">Reason (optional)</label>
-            <Input
-              placeholder="Enter refund reason..."
-              value={refundReason}
-              onChange={(e) => setRefundReason(e.target.value)}
-            />
+          <div className="space-y-4 py-4">
+            {/* Refund Type Selection */}
+            <div className="space-y-2">
+              <Label>Refund Type</Label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="refundType"
+                    value="full"
+                    checked={refundType === 'full'}
+                    onChange={() => setRefundType('full')}
+                    className="w-4 h-4"
+                  />
+                  <span>Full Refund</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="refundType"
+                    value="partial"
+                    checked={refundType === 'partial'}
+                    onChange={() => setRefundType('partial')}
+                    className="w-4 h-4"
+                  />
+                  <span>Partial Refund</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Order Total Display */}
+            <div className="bg-muted rounded-lg p-3">
+              <div className="flex justify-between text-sm">
+                <span>Order Total</span>
+                <span className="font-medium">
+                  {selectedOrder &&
+                    formatCurrency(
+                      selectedOrder.total / 100,
+                      selectedOrder.currency.toUpperCase()
+                    )}
+                </span>
+              </div>
+              {selectedOrder?.refundAmount && (
+                <div className="flex justify-between text-sm text-purple-600 mt-1">
+                  <span>Previously Refunded</span>
+                  <span>
+                    {formatCurrency(
+                      selectedOrder.refundAmount / 100,
+                      selectedOrder.currency.toUpperCase()
+                    )}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Partial Refund Amount Input */}
+            {refundType === 'partial' && (
+              <div className="space-y-2">
+                <Label htmlFor="refundAmount">Refund Amount ({selectedOrder?.currency.toUpperCase()})</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    $
+                  </span>
+                  <Input
+                    id="refundAmount"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    max={selectedOrder ? selectedOrder.total / 100 : undefined}
+                    placeholder="0.00"
+                    className="pl-7"
+                    value={refundAmount}
+                    onChange={(e) => setRefundAmount(e.target.value)}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Maximum refundable: {selectedOrder &&
+                    formatCurrency(
+                      (selectedOrder.total - (selectedOrder.refundAmount || 0)) / 100,
+                      selectedOrder.currency.toUpperCase()
+                    )}
+                </p>
+              </div>
+            )}
+
+            {/* Refund Reason */}
+            <div className="space-y-2">
+              <Label htmlFor="refundReason">Reason (optional)</Label>
+              <Input
+                id="refundReason"
+                placeholder="Enter refund reason..."
+                value={refundReason}
+                onChange={(e) => setRefundReason(e.target.value)}
+              />
+            </div>
+
+            {/* Refund Summary */}
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+              <p className="text-sm text-amber-800 dark:text-amber-200">
+                {refundType === 'full' ? (
+                  <>
+                    This will refund{' '}
+                    <strong>
+                      {selectedOrder &&
+                        formatCurrency(
+                          selectedOrder.total / 100,
+                          selectedOrder.currency.toUpperCase()
+                        )}
+                    </strong>{' '}
+                    to the customer.
+                  </>
+                ) : (
+                  <>
+                    This will refund{' '}
+                    <strong>
+                      {refundAmount
+                        ? formatCurrency(
+                            parseFloat(refundAmount),
+                            selectedOrder?.currency.toUpperCase() || 'USD'
+                          )
+                        : '$0.00'}
+                    </strong>{' '}
+                    to the customer.
+                  </>
+                )}
+              </p>
+            </div>
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowRefundDialog(false)}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleRefund} disabled={processingRefund}>
+            <Button 
+              variant="destructive" 
+              onClick={handleRefund} 
+              disabled={processingRefund || (refundType === 'partial' && !refundAmount)}
+            >
               {processingRefund ? 'Processing...' : 'Confirm Refund'}
             </Button>
           </DialogFooter>

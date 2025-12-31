@@ -7,7 +7,7 @@
 
 import { v } from 'convex/values'
 import { mutation, query, internalQuery, internalMutation } from './_generated/server'
-import type { Id, Doc } from './_generated/dataModel'
+import type { Doc } from './_generated/dataModel'
 import { getCurrentUser, assertRole } from './lib/auth'
 import { AppError, ErrorCodes } from './lib/errors'
 

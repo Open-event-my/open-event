@@ -74,50 +74,116 @@ export const signup = action({
     email: v.string(),
     password: v.string(),
     name: v.optional(v.string()),
+    userAgent: v.optional(v.string()),
+    ipAddress: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<AuthResult> => {
-    // Validate email format
-    if (!isValidEmail(args.email)) {
-      throw new Error('Invalid email format')
-    }
-
-    // Validate password strength using new requirements
-    const passwordValidation = validatePassword(args.password)
-    if (!passwordValidation.isValid) {
-      throw new Error(`Password requirements not met: ${passwordValidation.errors.join(', ')}`)
-    }
-
-    // Check if user already exists
-    const existingUser = await ctx.runQuery(internal.customAuth.checkEmailExists, {
-      email: args.email.toLowerCase(),
-    })
-
-    if (existingUser) {
-      throw new Error('Email already exists')
-    }
-
-    // Hash password (this is why we need an action - bcrypt uses setTimeout)
-    const saltRounds = 10
-    const passwordHash = await bcrypt.hash(args.password, saltRounds)
-
-    // Create user via internal mutation
-    const result = await ctx.runMutation(internal.customAuth.createUserWithSession, {
-      email: args.email.toLowerCase(),
-      name: args.name,
-      passwordHash,
-    })
-
-    // Send verification email (don't block on this - it can fail without breaking signup)
+    const email = args.email.toLowerCase()
+    
     try {
-      await ctx.runAction(internal.emailVerification.sendVerificationEmail, {
-        userId: result.userId,
-      })
-    } catch (error) {
-      console.error('Failed to send verification email:', error)
-      // Continue anyway - user can resend verification email later
-    }
+      // Validate email format
+      if (!isValidEmail(email)) {
+        // Log failed signup attempt
+        await ctx.runMutation(internal.auditLog.log, {
+          userEmail: email,
+          action: 'signup',
+          resource: 'auth',
+          status: 'failure',
+          errorMessage: 'Invalid email format',
+          ipAddress: args.ipAddress,
+          userAgent: args.userAgent,
+        })
+        throw new Error('Invalid email format')
+      }
 
-    return result
+      // Validate password strength using new requirements
+      const passwordValidation = validatePassword(args.password)
+      if (!passwordValidation.isValid) {
+        // Log failed signup attempt
+        await ctx.runMutation(internal.auditLog.log, {
+          userEmail: email,
+          action: 'signup',
+          resource: 'auth',
+          status: 'failure',
+          errorMessage: `Password requirements not met: ${passwordValidation.errors.join(', ')}`,
+          ipAddress: args.ipAddress,
+          userAgent: args.userAgent,
+        })
+        throw new Error(`Password requirements not met: ${passwordValidation.errors.join(', ')}`)
+      }
+
+      // Check if user already exists
+      const existingUser = await ctx.runQuery(internal.customAuth.checkEmailExists, {
+        email,
+      })
+
+      if (existingUser) {
+        // Log failed signup attempt
+        await ctx.runMutation(internal.auditLog.log, {
+          userEmail: email,
+          action: 'signup',
+          resource: 'auth',
+          status: 'failure',
+          errorMessage: 'Email already exists',
+          ipAddress: args.ipAddress,
+          userAgent: args.userAgent,
+        })
+        throw new Error('Email already exists')
+      }
+
+      // Hash password (this is why we need an action - bcrypt uses setTimeout)
+      const saltRounds = 10
+      const passwordHash = await bcrypt.hash(args.password, saltRounds)
+
+      // Create user via internal mutation
+      const result = await ctx.runMutation(internal.customAuth.createUserWithSession, {
+        email,
+        name: args.name,
+        passwordHash,
+        userAgent: args.userAgent,
+        ipAddress: args.ipAddress,
+      })
+
+      // Log successful signup
+      await ctx.runMutation(internal.auditLog.log, {
+        userId: result.userId,
+        userEmail: email,
+        action: 'signup',
+        resource: 'auth',
+        status: 'success',
+        ipAddress: args.ipAddress,
+        userAgent: args.userAgent,
+        metadata: {
+          hasName: !!args.name,
+        },
+      })
+
+      // Send verification email (don't block on this - it can fail without breaking signup)
+      try {
+        await ctx.runAction(internal.emailVerification.sendVerificationEmail, {
+          userId: result.userId,
+        })
+      } catch (error) {
+        console.error('Failed to send verification email:', error)
+        // Continue anyway - user can resend verification email later
+      }
+
+      return result
+    } catch (error) {
+      // If we haven't already logged this error, log it now
+      if (error instanceof Error && !error.message.includes('already exists') && !error.message.includes('Invalid email') && !error.message.includes('Password requirements')) {
+        await ctx.runMutation(internal.auditLog.log, {
+          userEmail: email,
+          action: 'signup',
+          resource: 'auth',
+          status: 'failure',
+          errorMessage: error.message,
+          ipAddress: args.ipAddress,
+          userAgent: args.userAgent,
+        })
+      }
+      throw error
+    }
   },
 })
 
@@ -126,47 +192,126 @@ export const signin = action({
   args: {
     email: v.string(),
     password: v.string(),
+    userAgent: v.optional(v.string()),
+    ipAddress: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<SignInResult> => {
-    // Find user by email
-    const user = await ctx.runQuery(internal.customAuth.getUserByEmail, {
-      email: args.email.toLowerCase(),
-    })
+    const email = args.email.toLowerCase()
+    
+    try {
+      // Find user by email
+      const user = await ctx.runQuery(internal.customAuth.getUserByEmail, {
+        email,
+      })
 
-    if (!user) {
-      throw new Error('Invalid email or password')
-    }
+      if (!user) {
+        // Log failed login attempt
+        await ctx.runMutation(internal.auditLog.log, {
+          userEmail: email,
+          action: 'login_failed',
+          resource: 'auth',
+          status: 'failure',
+          errorMessage: 'Invalid email or password',
+          ipAddress: args.ipAddress,
+          userAgent: args.userAgent,
+        })
+        throw new Error('Invalid email or password')
+      }
 
-    // Check if user has passwordHash (might be OAuth user)
-    if (!user.passwordHash) {
-      throw new Error('Please sign in with Google')
-    }
+      // Check if user has passwordHash (might be OAuth user)
+      if (!user.passwordHash) {
+        // Log failed login attempt
+        await ctx.runMutation(internal.auditLog.log, {
+          userId: user._id,
+          userEmail: email,
+          action: 'login_failed',
+          resource: 'auth',
+          status: 'failure',
+          errorMessage: 'OAuth user attempted password login',
+          ipAddress: args.ipAddress,
+          userAgent: args.userAgent,
+        })
+        throw new Error('Please sign in with Google')
+      }
 
-    // Verify password (this is why we need an action - bcrypt uses setTimeout)
-    const isValidPassword = await bcrypt.compare(args.password, user.passwordHash)
-    if (!isValidPassword) {
-      throw new Error('Invalid email or password')
-    }
+      // Verify password (this is why we need an action - bcrypt uses setTimeout)
+      const isValidPassword = await bcrypt.compare(args.password, user.passwordHash)
+      if (!isValidPassword) {
+        // Log failed login attempt
+        await ctx.runMutation(internal.auditLog.log, {
+          userId: user._id,
+          userEmail: email,
+          action: 'login_failed',
+          resource: 'auth',
+          status: 'failure',
+          errorMessage: 'Invalid password',
+          ipAddress: args.ipAddress,
+          userAgent: args.userAgent,
+        })
+        throw new Error('Invalid email or password')
+      }
 
-    // Check account status
-    if (user.status === 'suspended') {
-      throw new Error('Your account has been suspended')
-    }
+      // Check account status
+      if (user.status === 'suspended') {
+        // Log blocked login attempt
+        await ctx.runMutation(internal.auditLog.log, {
+          userId: user._id,
+          userEmail: email,
+          action: 'login_failed',
+          resource: 'auth',
+          status: 'blocked',
+          errorMessage: 'Account suspended',
+          ipAddress: args.ipAddress,
+          userAgent: args.userAgent,
+        })
+        throw new Error('Your account has been suspended')
+      }
 
-    // Create session via internal mutation
-    const result = await ctx.runMutation(internal.customAuth.createSessionForUser, {
-      userId: user._id,
-    })
+      // Create session via internal mutation
+      const result = await ctx.runMutation(internal.customAuth.createSessionForUser, {
+        userId: user._id,
+        userAgent: args.userAgent,
+        ipAddress: args.ipAddress,
+      })
 
-    return {
-      ...result,
-      user: {
-        _id: user._id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        image: user.image,
-      },
+      // Log successful login
+      await ctx.runMutation(internal.auditLog.log, {
+        userId: user._id,
+        userEmail: email,
+        action: 'login',
+        resource: 'auth',
+        status: 'success',
+        ipAddress: args.ipAddress,
+        userAgent: args.userAgent,
+        metadata: {
+          sessionId: result.sessionId,
+        },
+      })
+
+      return {
+        ...result,
+        user: {
+          _id: user._id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          image: user.image,
+        },
+      }
+    } catch (error) {
+      // If we haven't already logged this error, log it now
+      if (error instanceof Error && !error.message.includes('Invalid email') && !error.message.includes('Please sign in') && !error.message.includes('suspended')) {
+        await ctx.runMutation(internal.auditLog.log, {
+          userEmail: email,
+          action: 'login_failed',
+          resource: 'auth',
+          status: 'failure',
+          errorMessage: error.message,
+          ipAddress: args.ipAddress,
+          userAgent: args.userAgent,
+        })
+      }
+      throw error
     }
   },
 })
@@ -175,11 +320,30 @@ export const signin = action({
 export const signout = action({
   args: {
     accessToken: v.string(),
+    userAgent: v.optional(v.string()),
+    ipAddress: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Get user info before deleting session for logging
+    const session = await ctx.runQuery(internal.customAuth.getSessionByAccessToken, {
+      accessToken: args.accessToken,
+    })
+
     await ctx.runMutation(internal.customAuth.deleteSession, {
       accessToken: args.accessToken,
     })
+
+    // Log logout
+    if (session) {
+      await ctx.runMutation(internal.auditLog.log, {
+        userId: session.userId,
+        action: 'logout',
+        resource: 'auth',
+        status: 'success',
+        ipAddress: args.ipAddress,
+        userAgent: args.userAgent,
+      })
+    }
 
     return { success: true }
   },
@@ -273,6 +437,28 @@ export const getUserByEmail = internalQuery({
     return await ctx.db
       .query('users')
       .withIndex('email', (q) => q.eq('email', args.email))
+      .first()
+  },
+})
+
+// Get session by access token (internal)
+export const getSessionByAccessToken = internalQuery({
+  args: { accessToken: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query('sessions')
+      .withIndex('by_access_token', (q) => q.eq('accessToken', args.accessToken))
+      .first()
+  },
+})
+
+// Get session by refresh token (internal)
+export const getSessionByRefreshToken = internalQuery({
+  args: { refreshToken: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query('sessions')
+      .withIndex('by_refresh_token', (q) => q.eq('refreshToken', args.refreshToken))
       .first()
   },
 })

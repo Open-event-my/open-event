@@ -13,7 +13,10 @@ export class OpenAIProvider implements AIProvider {
   private client: OpenAI
 
   constructor(apiKey: string) {
-    this.client = new OpenAI({ apiKey })
+    this.client = new OpenAI({ 
+      apiKey,
+      dangerouslyAllowBrowser: true // Allow in test/development environments
+    })
   }
 
   /**

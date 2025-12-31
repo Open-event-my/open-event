@@ -77,57 +77,57 @@ export const submitVendorApplication = mutation({
     referralSource: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // Validate email format
-    if (!isValidEmail(args.contactEmail)) {
-      throw new Error('Invalid email address')
-    }
+      // Validate email format
+      if (!isValidEmail(args.contactEmail)) {
+        throw new Error('Invalid email address')
+      }
 
-    // Check for duplicate applications from same email
-    const existingApplication = await ctx.db
-      .query('publicApplications')
-      .withIndex('by_email', (q) => q.eq('contactEmail', args.contactEmail))
-      .filter((q) =>
-        q.and(
-          q.eq(q.field('applicationType'), 'vendor'),
-          q.neq(q.field('status'), 'rejected'),
-          q.neq(q.field('status'), 'converted')
+      // Check for duplicate applications from same email
+      const existingApplication = await ctx.db
+        .query('publicApplications')
+        .withIndex('by_email', (q) => q.eq('contactEmail', args.contactEmail))
+        .filter((q) =>
+          q.and(
+            q.eq(q.field('applicationType'), 'vendor'),
+            q.neq(q.field('status'), 'rejected'),
+            q.neq(q.field('status'), 'converted')
+          )
         )
-      )
-      .first()
+        .first()
 
-    if (existingApplication) {
-      throw new Error(
-        'An application with this email is already pending. Please contact us if you need to update your application.'
-      )
-    }
+      if (existingApplication) {
+        throw new Error(
+          'An application with this email is already pending. Please contact us if you need to update your application.'
+        )
+      }
 
-    const applicationId = await ctx.db.insert('publicApplications', {
-      applicationType: 'vendor',
-      status: 'submitted',
-      companyName: args.companyName,
-      description: args.description,
-      contactName: args.contactName,
-      contactEmail: args.contactEmail.toLowerCase(),
-      contactPhone: args.contactPhone,
-      website: args.website,
-      vendorCategory: args.category,
-      vendorServices: args.services,
-      vendorLocation: args.location,
-      vendorPriceRange: args.priceRange,
-      pastExperience: args.pastExperience,
-      additionalNotes: args.additionalNotes,
-      referralSource: args.referralSource,
-      createdAt: Date.now(),
-    })
+      const applicationId = await ctx.db.insert('publicApplications', {
+        applicationType: 'vendor',
+        status: 'submitted',
+        companyName: args.companyName,
+        description: args.description,
+        contactName: args.contactName,
+        contactEmail: args.contactEmail.toLowerCase(),
+        contactPhone: args.contactPhone,
+        website: args.website,
+        vendorCategory: args.category,
+        vendorServices: args.services,
+        vendorLocation: args.location,
+        vendorPriceRange: args.priceRange,
+        pastExperience: args.pastExperience,
+        additionalNotes: args.additionalNotes,
+        referralSource: args.referralSource,
+        createdAt: Date.now(),
+      })
 
-    // Create admin notification for new vendor application
-    await ctx.runMutation(internal.adminNotifications.createApplicationNotification, {
-      applicationId: applicationId,
-      applicationType: 'vendor',
-      companyName: args.companyName,
-    })
+      // Create admin notification for new vendor application
+      await ctx.runMutation(internal.adminNotifications.createApplicationNotification, {
+        applicationId: applicationId,
+        applicationType: 'vendor',
+        companyName: args.companyName,
+      })
 
-    return { applicationId, type: 'vendor' }
+      return { applicationId, type: 'vendor' }
   },
 })
 
@@ -145,68 +145,68 @@ export const submitSponsorApplication = mutation({
     website: v.optional(v.string()),
     industry: v.string(),
     sponsorshipTiers: v.optional(v.array(v.string())),
-    budgetMin: v.optional(v.number()),
-    budgetMax: v.optional(v.number()),
-    targetEventTypes: v.optional(v.array(v.string())),
-    targetAudience: v.optional(v.string()),
-    pastExperience: v.optional(v.string()),
-    additionalNotes: v.optional(v.string()),
-    referralSource: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    // Validate email format
-    if (!isValidEmail(args.contactEmail)) {
-      throw new Error('Invalid email address')
-    }
+      budgetMin: v.optional(v.number()),
+      budgetMax: v.optional(v.number()),
+      targetEventTypes: v.optional(v.array(v.string())),
+      targetAudience: v.optional(v.string()),
+      pastExperience: v.optional(v.string()),
+      additionalNotes: v.optional(v.string()),
+      referralSource: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+      // Validate email format
+      if (!isValidEmail(args.contactEmail)) {
+        throw new Error('Invalid email address')
+      }
 
-    // Check for duplicate applications from same email
-    const existingApplication = await ctx.db
-      .query('publicApplications')
-      .withIndex('by_email', (q) => q.eq('contactEmail', args.contactEmail))
-      .filter((q) =>
-        q.and(
-          q.eq(q.field('applicationType'), 'sponsor'),
-          q.neq(q.field('status'), 'rejected'),
-          q.neq(q.field('status'), 'converted')
+      // Check for duplicate applications from same email
+      const existingApplication = await ctx.db
+        .query('publicApplications')
+        .withIndex('by_email', (q) => q.eq('contactEmail', args.contactEmail))
+        .filter((q) =>
+          q.and(
+            q.eq(q.field('applicationType'), 'sponsor'),
+            q.neq(q.field('status'), 'rejected'),
+            q.neq(q.field('status'), 'converted')
+          )
         )
-      )
-      .first()
+        .first()
 
-    if (existingApplication) {
-      throw new Error(
-        'An application with this email is already pending. Please contact us if you need to update your application.'
-      )
-    }
+      if (existingApplication) {
+        throw new Error(
+          'An application with this email is already pending. Please contact us if you need to update your application.'
+        )
+      }
 
-    const applicationId = await ctx.db.insert('publicApplications', {
-      applicationType: 'sponsor',
-      status: 'submitted',
-      companyName: args.companyName,
-      description: args.description,
-      contactName: args.contactName,
-      contactEmail: args.contactEmail.toLowerCase(),
-      contactPhone: args.contactPhone,
-      website: args.website,
-      sponsorIndustry: args.industry,
-      sponsorTiers: args.sponsorshipTiers,
-      sponsorBudgetMin: args.budgetMin,
-      sponsorBudgetMax: args.budgetMax,
-      sponsorTargetEventTypes: args.targetEventTypes,
-      sponsorTargetAudience: args.targetAudience,
-      pastExperience: args.pastExperience,
-      additionalNotes: args.additionalNotes,
-      referralSource: args.referralSource,
-      createdAt: Date.now(),
-    })
+      const applicationId = await ctx.db.insert('publicApplications', {
+        applicationType: 'sponsor',
+        status: 'submitted',
+        companyName: args.companyName,
+        description: args.description,
+        contactName: args.contactName,
+        contactEmail: args.contactEmail.toLowerCase(),
+        contactPhone: args.contactPhone,
+        website: args.website,
+        sponsorIndustry: args.industry,
+        sponsorTiers: args.sponsorshipTiers,
+        sponsorBudgetMin: args.budgetMin,
+        sponsorBudgetMax: args.budgetMax,
+        sponsorTargetEventTypes: args.targetEventTypes,
+        sponsorTargetAudience: args.targetAudience,
+        pastExperience: args.pastExperience,
+        additionalNotes: args.additionalNotes,
+        referralSource: args.referralSource,
+        createdAt: Date.now(),
+      })
 
-    // Create admin notification for new sponsor application
-    await ctx.runMutation(internal.adminNotifications.createApplicationNotification, {
-      applicationId: applicationId,
-      applicationType: 'sponsor',
-      companyName: args.companyName,
-    })
+      // Create admin notification for new sponsor application
+      await ctx.runMutation(internal.adminNotifications.createApplicationNotification, {
+        applicationId: applicationId,
+        applicationType: 'sponsor',
+        companyName: args.companyName,
+      })
 
-    return { applicationId, type: 'sponsor' }
+      return { applicationId, type: 'sponsor' }
   },
 })
 

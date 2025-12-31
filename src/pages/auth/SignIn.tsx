@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Logo } from '@/components/ui/logo'
+import { OptimizedImage } from '@/components/ui/optimized-image'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
@@ -252,14 +253,16 @@ export function SignIn() {
           {/* Bottom social proof - the team */}
           <div className="flex items-center gap-4">
             <div className="flex -space-x-2">
-              <img
+              <OptimizedImage
                 src="https://github.com/hazlijohar95.png"
                 alt="Hazli"
+                lazy
                 className="w-8 h-8 rounded-full border-2 border-background shadow-sm"
               />
-              <img
+              <OptimizedImage
                 src="https://github.com/azmir32.png"
                 alt="Azmir"
+                lazy
                 className="w-8 h-8 rounded-full border-2 border-background shadow-sm"
               />
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 border-2 border-background shadow-sm flex items-center justify-center text-white text-xs font-medium">

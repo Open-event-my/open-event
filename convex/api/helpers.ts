@@ -248,6 +248,44 @@ export async function parseBody<T>(request: Request): Promise<T | null> {
 }
 
 /**
+ * Validate request size before processing
+ * Returns error response if size exceeds limit, null if valid
+ */
+export function validateRequestSize(request: Request, maxSize?: number): Response | null {
+  const contentLength = request.headers.get('Content-Length')
+  
+  if (!contentLength) {
+    return null // No Content-Length header, proceed
+  }
+  
+  const size = parseInt(contentLength, 10)
+  const limit = maxSize || 10 * 1024 * 1024 // Default 10MB
+  
+  if (isNaN(size) || size < 0) {
+    return apiError('INVALID_REQUEST', 'Invalid Content-Length header', 400)
+  }
+  
+  if (size > limit) {
+    const formatBytes = (bytes: number): string => {
+      if (bytes === 0) return '0 Bytes'
+      const k = 1024
+      const sizes = ['Bytes', 'KB', 'MB', 'GB']
+      const i = Math.floor(Math.log(bytes) / Math.log(k))
+      return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
+    }
+    
+    return apiError(
+      'PAYLOAD_TOO_LARGE',
+      `Request body too large. Maximum size is ${formatBytes(limit)}, received ${formatBytes(size)}`,
+      413,
+      [{ size, limit }]
+    )
+  }
+  
+  return null // Valid size
+}
+
+/**
  * Extract pagination parameters from URL
  * @param url - The request URL
  * @returns { page, limit, offset }

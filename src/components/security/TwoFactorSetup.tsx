@@ -5,7 +5,7 @@
  */
 
 import { useState } from 'react'
-import { useMutation, useQuery } from 'convex/react'
+import { useMutation } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import { cn } from '@/lib/utils'
 import {
@@ -124,13 +124,13 @@ Generated: ${new Date().toISOString()}
                 'w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors',
                 step === s
                   ? 'bg-primary text-primary-foreground'
-                  : ['backup', 'complete'].includes(step) ||
-                      (['intro', 'scan', 'verify', 'backup'] as const).indexOf(step) > i
+                  : step === 'complete' ||
+                      (['intro', 'scan', 'verify', 'backup'] as const).indexOf(step as 'intro' | 'scan' | 'verify' | 'backup') > i
                     ? 'bg-emerald-500 text-white'
                     : 'bg-muted text-muted-foreground'
               )}
             >
-              {(['intro', 'scan', 'verify', 'backup'] as const).indexOf(step) > i ? (
+              {step === 'complete' || (['intro', 'scan', 'verify', 'backup'] as const).indexOf(step as 'intro' | 'scan' | 'verify' | 'backup') > i ? (
                 <Check size={14} weight="bold" />
               ) : (
                 i + 1

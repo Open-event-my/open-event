@@ -6,6 +6,7 @@
  */
 
 import { OpenAIProvider } from './providers/openai'
+import { AnthropicProvider } from './providers/anthropic'
 import type { AIProvider, ProviderType, ProviderCredentials } from './types'
 
 /**
@@ -30,8 +31,10 @@ export function createAIProvider(type: ProviderType, credentials: ProviderCreden
     }
 
     case 'anthropic': {
-      // TODO: Implement Anthropic provider
-      throw new Error('Anthropic provider not yet implemented. Coming soon!')
+      if (!credentials.anthropic) {
+        throw new Error('Anthropic API key is required')
+      }
+      return new AnthropicProvider(credentials.anthropic)
     }
 
     case 'groq': {

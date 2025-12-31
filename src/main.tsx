@@ -5,9 +5,28 @@ import './index.css'
 import App from './App.tsx'
 import { Providers } from './providers.tsx'
 import { initSentry, captureError } from './lib/sentry'
+import { initializeEnvironment, envValidator } from './lib/config'
+
+// Initialize and validate environment variables (must be first)
+try {
+  initializeEnvironment()
+  console.log('[Config] Environment validated successfully')
+} catch (error) {
+  console.error('[Config] Environment validation failed:', error)
+  // In production, this will throw and prevent app from starting
+  // In development, we continue with a warning
+}
 
 // Initialize Sentry error tracking (must be early)
 initSentry()
+
+// Log configuration health in development
+if (envValidator.isDevelopment()) {
+  const health = envValidator.healthCheck()
+  if (!health.healthy) {
+    console.warn('[Config] Configuration health check warnings:', health.checks.filter(c => c.status !== 'pass'))
+  }
+}
 
 // Global error handlers
 window.addEventListener('error', (event) => {

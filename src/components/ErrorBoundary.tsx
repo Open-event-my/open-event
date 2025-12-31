@@ -2,6 +2,7 @@ import { Component, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { WarningCircle, ArrowClockwise, House, Bug } from '@phosphor-icons/react'
 import { captureError } from '@/lib/sentry'
+import { formatErrorMessage } from '@/lib/errorFormatter'
 
 interface Props {
   children: ReactNode
@@ -85,12 +86,15 @@ export class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback
       }
 
+      // Format the error for user-friendly display
+      const formatted = this.state.error ? formatErrorMessage(this.state.error) : null
+
       // Minimal error UI for smaller components
       if (this.props.minimal) {
         return (
           <div className="flex items-center justify-center p-4 text-muted-foreground">
             <Bug size={16} className="mr-2" />
-            <span className="text-sm">Something went wrong</span>
+            <span className="text-sm">{formatted?.message || 'Something went wrong'}</span>
             <button
               onClick={this.handleReset}
               className="ml-2 text-primary hover:underline text-sm"
@@ -101,18 +105,37 @@ export class ErrorBoundary extends Component<Props, State> {
         )
       }
 
-      // Full error UI
+      // Full error UI with user-friendly message and suggestions
       return (
         <div className="flex flex-col items-center justify-center min-h-[400px] p-8 text-center">
           <div className="flex items-center justify-center w-16 h-16 mb-4 rounded-full bg-destructive/10">
             <WarningCircle size={32} weight="duotone" className="text-destructive" />
           </div>
 
-          <h2 className="text-xl font-semibold text-foreground mb-2">Something went wrong</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-2">
+            {formatted?.message || 'Something went wrong'}
+          </h2>
 
-          <p className="text-muted-foreground mb-6 max-w-md">
-            We encountered an unexpected error. Our team has been notified and is working on a fix.
-          </p>
+          {formatted?.suggestions && formatted.suggestions.length > 0 && (
+            <div className="text-muted-foreground mb-6 max-w-md">
+              <p className="mb-2">Here's what you can try:</p>
+              <ul className="text-sm space-y-1 text-left">
+                {formatted.suggestions.slice(0, 3).map((suggestion, index) => (
+                  <li key={index} className="flex items-start">
+                    <span className="mr-2">•</span>
+                    <span>{suggestion}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {!formatted?.suggestions && (
+            <p className="text-muted-foreground mb-6 max-w-md">
+              We encountered an unexpected error. Our team has been notified and is working on a
+              fix.
+            </p>
+          )}
 
           {import.meta.env.DEV && this.state.error && (
             <details className="mb-6 text-left w-full max-w-lg">
@@ -130,7 +153,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className="flex items-center gap-3">
             <Button onClick={this.handleReset} variant="default">
               <ArrowClockwise size={16} weight="bold" className="mr-2" />
-              Try again
+              {formatted?.actionText || 'Try again'}
             </Button>
             <Button onClick={this.handleGoHome} variant="outline">
               <House size={16} weight="bold" className="mr-2" />

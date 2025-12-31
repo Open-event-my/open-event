@@ -6,6 +6,7 @@
 import { v } from 'convex/values'
 import { query, internalQuery } from './_generated/server'
 import { getCurrentUser, isAdminRole } from './lib/auth'
+import { anonymizeEventForAnalytics, anonymizeUserForAnalytics } from './lib/compliance/analyticsAnonymization'
 
 // ============================================================================
 // Helper Functions
@@ -1366,6 +1367,228 @@ export const getEngagementAnalyticsInternal = internalQuery({
         eventsWithSponsors,
         averagePerEvent: Math.round(avgSponsorsPerEvent * 100) / 100,
       },
+    }
+  },
+})
+
+// ============================================================================
+// Anonymized Analytics Queries (GDPR Compliant)
+// ============================================================================
+
+/**
+ * Get anonymized event trends for analytics export
+ * Removes all PII while preserving analytical value
+ */
+export const getAnonymizedEventTrends = query({
+  args: {
+    period: v.optional(
+      v.union(v.literal('day'), v.literal('week'), v.literal('month'), v.literal('year'))
+    ),
+    startDate: v.optional(v.number()),
+    endDate: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx)
+    if (!user) return []
+
+    const period = args.period || 'month'
+    const now = Date.now()
+    const startDate = args.startDate || now - 365 * 24 * 60 * 60 * 1000
+    const endDate = args.endDate || now
+
+    // Get all events for this organizer
+    const allEvents = await ctx.db
+      .query('events')
+      .withIndex('by_organizer', (q) => q.eq('organizerId', user._id))
+      .collect()
+
+    // Anonymize events
+    const anonymizedEvents = allEvents.map(anonymizeEventForAnalytics)
+
+    // Filter by date range
+    const eventsInRange = anonymizedEvents.filter(
+      (e) => (e.createdAt || e._creationTime || 0) >= startDate && (e.createdAt || e._creationTime || 0) <= endDate
+    )
+
+    // Group by period (using anonymized data)
+    const grouped = groupByPeriod(eventsInRange, (e) => e.createdAt || e._creationTime || 0, period)
+
+    // Convert to array format
+    const trends = Array.from(grouped.entries())
+      .map(([periodStart, events]) => {
+        const totalEvents = events.length
+        const totalBudget = events.reduce((sum, e) => sum + (e.budget || 0), 0)
+        const totalAttendees = events.reduce((sum, e) => sum + (e.expectedAttendees || 0), 0)
+
+        const byStatus = {
+          draft: events.filter((e) => e.status === 'draft').length,
+          planning: events.filter((e) => e.status === 'planning').length,
+          active: events.filter((e) => e.status === 'active').length,
+          completed: events.filter((e) => e.status === 'completed').length,
+          cancelled: events.filter((e) => e.status === 'cancelled').length,
+        }
+
+        return {
+          period: periodStart,
+          periodLabel: new Date(periodStart).toISOString(),
+          totalEvents,
+          totalBudget,
+          totalAttendees,
+          averageBudget: totalEvents > 0 ? Math.round(totalBudget / totalEvents) : 0,
+          averageAttendees: totalEvents > 0 ? Math.round(totalAttendees / totalEvents) : 0,
+          byStatus,
+        }
+      })
+      .sort((a, b) => a.period - b.period)
+
+    return trends
+  },
+})
+
+/**
+ * Get anonymized platform-wide user analytics
+ * Admin/Superadmin only - aggregates anonymized user data
+ */
+export const getAnonymizedUserAnalytics = query({
+  args: {
+    period: v.optional(
+      v.union(v.literal('day'), v.literal('week'), v.literal('month'), v.literal('year'))
+    ),
+    startDate: v.optional(v.number()),
+    endDate: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx)
+    if (!user || !isAdminRole(user.role)) {
+      throw new Error('Unauthorized: Admin access required')
+    }
+
+    const period = args.period || 'month'
+    const now = Date.now()
+    const startDate = args.startDate || now - 365 * 24 * 60 * 60 * 1000
+    const endDate = args.endDate || now
+
+    // Get all users
+    const allUsers = await ctx.db.query('users').collect()
+
+    // Anonymize users
+    const anonymizedUsers = allUsers.map(anonymizeUserForAnalytics)
+
+    // Filter by date range
+    const usersInRange = anonymizedUsers.filter(
+      (u) => (u.createdAt || u._creationTime || 0) >= startDate && (u.createdAt || u._creationTime || 0) <= endDate
+    )
+
+    // Group by period
+    const grouped = groupByPeriod(usersInRange, (u) => u.createdAt || u._creationTime || 0, period)
+
+    // Convert to array format
+    const trends = Array.from(grouped.entries())
+      .map(([periodStart, users]) => {
+        const totalUsers = users.length
+
+        // Count by role (no PII)
+        const byRole = {
+          organizer: users.filter((u) => u.role === 'organizer').length,
+          admin: users.filter((u) => u.role === 'admin').length,
+          superadmin: users.filter((u) => u.role === 'superadmin').length,
+        }
+
+        // Count by status (no PII)
+        const byStatus = {
+          active: users.filter((u) => u.status === 'active').length,
+          suspended: users.filter((u) => u.status === 'suspended').length,
+        }
+
+        // Count unique email domains (anonymized)
+        const emailDomains = new Set(
+          users.map((u) => u.emailDomain).filter((d): d is string => !!d)
+        )
+
+        return {
+          period: periodStart,
+          periodLabel: new Date(periodStart).toISOString(),
+          totalUsers,
+          byRole,
+          byStatus,
+          uniqueEmailDomains: emailDomains.size,
+        }
+      })
+      .sort((a, b) => a.period - b.period)
+
+    return trends
+  },
+})
+
+/**
+ * Get anonymized session analytics
+ * Admin/Superadmin only - tracks session patterns without PII
+ */
+export const getAnonymizedSessionAnalytics = query({
+  args: {
+    startDate: v.optional(v.number()),
+    endDate: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx)
+    if (!user || !isAdminRole(user.role)) {
+      throw new Error('Unauthorized: Admin access required')
+    }
+
+    const now = Date.now()
+    const startDate = args.startDate || now - 30 * 24 * 60 * 60 * 1000 // Default: 30 days
+    const endDate = args.endDate || now
+
+    // Get all sessions
+    const allSessions = await ctx.db.query('sessions').collect()
+
+    // Filter by date range
+    const sessionsInRange = allSessions.filter(
+      (s) => (s.createdAt || s._creationTime || 0) >= startDate && (s.createdAt || s._creationTime || 0) <= endDate
+    )
+
+    // Anonymize sessions (remove IP and user agent PII)
+    const anonymizedSessions = sessionsInRange.map((session) => {
+      // Extract browser and OS without storing full user agent
+      let browser = 'Other'
+      let os = 'Other'
+
+      if (session.userAgent) {
+        if (session.userAgent.includes('Chrome')) browser = 'Chrome'
+        else if (session.userAgent.includes('Firefox')) browser = 'Firefox'
+        else if (session.userAgent.includes('Safari')) browser = 'Safari'
+        else if (session.userAgent.includes('Edge')) browser = 'Edge'
+
+        if (session.userAgent.includes('Windows')) os = 'Windows'
+        else if (session.userAgent.includes('Mac')) os = 'macOS'
+        else if (session.userAgent.includes('Linux')) os = 'Linux'
+        else if (session.userAgent.includes('Android')) os = 'Android'
+        else if (session.userAgent.includes('iOS')) os = 'iOS'
+      }
+
+      return {
+        browser,
+        os,
+        createdAt: session.createdAt || session._creationTime || 0,
+      }
+    })
+
+    // Aggregate by browser
+    const byBrowser: Record<string, number> = {}
+    for (const session of anonymizedSessions) {
+      byBrowser[session.browser] = (byBrowser[session.browser] || 0) + 1
+    }
+
+    // Aggregate by OS
+    const byOS: Record<string, number> = {}
+    for (const session of anonymizedSessions) {
+      byOS[session.os] = (byOS[session.os] || 0) + 1
+    }
+
+    return {
+      totalSessions: anonymizedSessions.length,
+      byBrowser,
+      byOS,
     }
   },
 })

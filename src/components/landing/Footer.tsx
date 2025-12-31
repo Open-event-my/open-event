@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
+import { OptimizedImage } from '@/components/ui/optimized-image'
 import { GithubLogo, ChatCircle, XLogo, EnvelopeSimple, ArrowRight } from '@phosphor-icons/react'
 
 const socialLinks = [
@@ -214,9 +215,10 @@ export function Footer() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 font-medium text-foreground hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                 >
-                  <img
+                  <OptimizedImage
                     src="https://github.com/hazlijohar95.png"
                     alt="Hazli"
+                    lazy
                     className="w-4 h-4 sm:w-5 sm:h-5 rounded-full"
                   />
                   Hazli
@@ -229,9 +231,10 @@ export function Footer() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 font-medium text-foreground hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                 >
-                  <img
+                  <OptimizedImage
                     src="https://github.com/azmir32.png"
                     alt="Azmir"
+                    lazy
                     className="w-4 h-4 sm:w-5 sm:h-5 rounded-full"
                   />
                   Azmir

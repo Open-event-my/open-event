@@ -4,9 +4,15 @@
  * Provides structured error logging for Convex backend functions.
  * Errors are logged with context and can be integrated with external
  * monitoring services via webhooks.
+ *
+ * Integrates with Sentry for production error tracking.
  */
 
 import type { MutationCtx, QueryCtx, ActionCtx } from '../_generated/server'
+import { initSentry, captureError as sentryCaptureError, captureMessage as sentryCaptureMessage } from './sentry'
+
+// Initialize Sentry on module load
+initSentry()
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
@@ -125,6 +131,9 @@ export class Logger {
       metadata: { ...this.context.metadata, ...metadata },
     })
     console.warn(formatLogEntry(entry))
+
+    // Send warnings to Sentry as well
+    sentryCaptureMessage(message, 'warning')
   }
 
   /**
@@ -136,6 +145,17 @@ export class Logger {
       metadata: { ...this.context.metadata, ...metadata },
     })
     console.error(formatLogEntry(entry))
+
+    // Send to Sentry for production error tracking
+    if (error) {
+      sentryCaptureError(error, {
+        ...this.context,
+        ...metadata,
+        message,
+      })
+    } else {
+      sentryCaptureMessage(message, 'error')
+    }
 
     // In production, you could send this to an external service
     // e.g., via a webhook or Convex action

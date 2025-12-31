@@ -4,8 +4,57 @@ import { convexAuth } from '@convex-dev/auth/server'
 import type { MutationCtx } from './_generated/server'
 import type { Id } from './_generated/dataModel'
 import type { AuthProviderMaterializedConfig } from '@convex-dev/auth/server'
+import { internal } from './_generated/api'
 
 const SITE_URL = process.env.SITE_URL || 'http://localhost:5173'
+
+// Helper to check for pre-promoted users and get inherited role
+// This handles the case where an admin promotes an email before the user signs up
+async function getInheritedRole(
+  ctx: MutationCtx,
+  email: string | undefined,
+  currentUserId: Id<'users'>
+): Promise<'organizer' | 'admin' | 'superadmin'> {
+  if (!email) return 'organizer'
+
+  // Find any pre-existing user records with this email (from admin promotion)
+  const preExistingUsers = await ctx.db
+    .query('users')
+    .withIndex('email', (q) => q.eq('email', email))
+    .filter((q) => q.neq(q.field('_id'), currentUserId))
+    .collect()
+
+  // Find the highest role among pre-existing users
+  let hasSuperadmin = false
+  let hasAdmin = false
+
+  for (const preUser of preExistingUsers) {
+    if (preUser.role === 'superadmin') {
+      hasSuperadmin = true
+      break
+    } else if (preUser.role === 'admin') {
+      hasAdmin = true
+    }
+  }
+
+  const inheritedRole: 'organizer' | 'admin' | 'superadmin' = hasSuperadmin
+    ? 'superadmin'
+    : hasAdmin
+      ? 'admin'
+      : 'organizer'
+
+  // Delete orphaned pre-promoted records
+  for (const preUser of preExistingUsers) {
+    console.log('[AUTH] Deleting orphaned pre-promoted user:', preUser._id)
+    await ctx.db.delete(preUser._id)
+  }
+
+  if (inheritedRole !== 'organizer') {
+    console.log('[AUTH] Inheriting role from pre-promoted user:', inheritedRole)
+  }
+
+  return inheritedRole
+}
 
 // #region agent log
 // Debug: Check JWT_PRIVATE_KEY and JWKS environment variables
@@ -259,14 +308,16 @@ try {
             // Let's try patch first - if it fails, there's a deeper issue
             try {
               // Try to patch - this will fail if user doesn't exist
+              // Check for pre-promoted admin role before assigning default
+              const inheritedRole = await getInheritedRole(ctx, args.profile.email, userId)
               await ctx.db.patch(userId, {
-                role: 'organizer',
+                role: inheritedRole,
                 status: 'active',
                 createdAt: Date.now(),
                 email: args.profile.email,
                 name: args.profile.name as string | undefined,
               })
-              console.log('[AUTH] Successfully patched existing user from Convex Auth')
+              console.log('[AUTH] Successfully patched user with role:', inheritedRole)
             } catch (patchError: any) {
               // Patch failed - user doesn't exist
               // This means Convex Auth didn't create it, which is unexpected
@@ -310,14 +361,29 @@ try {
         } else {
           // User exists - update it
           if (!existingUserId) {
-            // New user - set default role to organizer
-            console.log('[AUTH] Setting default role for new user')
+            // New user - check for pre-promoted admin role before assigning default
+            const inheritedRole = await getInheritedRole(ctx, args.profile.email, userId)
+            console.log('[AUTH] Setting role for new user:', inheritedRole)
             await ctx.db.patch(userId, {
-              role: 'organizer',
+              role: inheritedRole,
               status: 'active',
               createdAt: Date.now(),
             })
-            console.log('[AUTH] Successfully set default role')
+            console.log('[AUTH] Successfully set role')
+            
+            // Log signup/login for new user
+            await ctx.runMutation(internal.auditLog.log, {
+              userId,
+              userEmail: args.profile.email,
+              action: args.type === 'oauth' ? 'login' : 'signup',
+              resource: 'auth',
+              status: 'success',
+              metadata: {
+                authType: args.type,
+                provider: args.provider.id,
+                isNewUser: true,
+              },
+            })
           } else {
             // Existing user - update timestamp
             console.log('[AUTH] Updating timestamp for existing user')
@@ -325,6 +391,20 @@ try {
               updatedAt: Date.now(),
             })
             console.log('[AUTH] Successfully updated timestamp')
+            
+            // Log login for existing user
+            await ctx.runMutation(internal.auditLog.log, {
+              userId,
+              userEmail: args.profile.email,
+              action: 'login',
+              resource: 'auth',
+              status: 'success',
+              metadata: {
+                authType: args.type,
+                provider: args.provider.id,
+                isExistingUser: true,
+              },
+            })
           }
         }
       } catch (error) {

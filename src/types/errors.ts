@@ -1,6 +1,11 @@
 /**
  * Error handling utilities for type-safe error management
+ *
+ * Updated to use the error formatter for user-friendly messages.
+ * Requirements: 11.1, 11.3
  */
+
+import { formatErrorMessage, type FormattedError } from '@/lib/errorFormatter'
 
 /**
  * Extended error interface for application errors
@@ -28,18 +33,11 @@ export function isAppError(error: unknown): error is AppError {
 /**
  * Safely extract error message from an unknown error type
  * This is the primary function for handling catch blocks
+ * Now uses the error formatter to provide user-friendly messages
  */
 export function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message
-  }
-  if (typeof error === 'string') {
-    return error
-  }
-  if (error && typeof error === 'object' && 'message' in error) {
-    return String((error as { message: unknown }).message)
-  }
-  return 'An unexpected error occurred'
+  const formatted = formatErrorMessage(error)
+  return formatted.message
 }
 
 /**
@@ -71,6 +69,7 @@ export type AuthErrorCode = keyof typeof AUTH_ERRORS
 
 /**
  * Error display info for UI
+ * @deprecated Use FormattedError from errorFormatter instead
  */
 export interface ErrorDisplay {
   title: string
@@ -80,122 +79,8 @@ export interface ErrorDisplay {
 }
 
 /**
- * Map error codes to user-friendly display info
- */
-const ERROR_DISPLAY_MAP: Record<string, ErrorDisplay> = {
-  // Auth errors
-  INVALID_CREDENTIALS: {
-    title: 'Sign In Failed',
-    message: 'Invalid email or password. Please try again.',
-    action: 'Try again',
-    variant: 'generic',
-  },
-  EMAIL_NOT_VERIFIED: {
-    title: 'Email Not Verified',
-    message: 'Please check your email and click the verification link.',
-    action: 'Resend verification email',
-    variant: 'generic',
-  },
-  SESSION_EXPIRED: {
-    title: 'Session Expired',
-    message: 'Your session has expired. Please sign in again.',
-    action: 'Sign in',
-    variant: 'permission',
-  },
-  UNAUTHORIZED: {
-    title: 'Access Denied',
-    message: 'You need to sign in to access this page.',
-    action: 'Sign in',
-    variant: 'permission',
-  },
-  FORBIDDEN: {
-    title: 'Access Denied',
-    message: "You don't have permission to perform this action.",
-    variant: 'permission',
-  },
-  // Resource errors
-  NOT_FOUND: {
-    title: 'Not Found',
-    message: "The requested item couldn't be found.",
-    variant: 'notFound',
-  },
-  ALREADY_EXISTS: {
-    title: 'Already Exists',
-    message: 'This item already exists.',
-    variant: 'generic',
-  },
-  // Network errors
-  NETWORK_ERROR: {
-    title: 'Connection Problem',
-    message: 'Unable to connect to the server. Please check your internet connection.',
-    action: 'Retry',
-    variant: 'network',
-  },
-  RATE_LIMITED: {
-    title: 'Too Many Requests',
-    message: 'Please wait a moment before trying again.',
-    variant: 'generic',
-  },
-}
-
-const DEFAULT_ERROR_DISPLAY: ErrorDisplay = {
-  title: 'Something Went Wrong',
-  message: 'An unexpected error occurred. Please try again.',
-  action: 'Try again',
-  variant: 'generic',
-}
-
-/**
- * Extract error code from error object
- */
-function extractErrorCode(error: unknown): string | null {
-  if (error && typeof error === 'object') {
-    if ('code' in error && typeof (error as { code: unknown }).code === 'string') {
-      return (error as { code: string }).code
-    }
-    if (error instanceof Error) {
-      // Try to parse code from message like "[ERROR_CODE] message"
-      const match = error.message.match(/^\[([A-Z_]+)\]/)
-      if (match) return match[1]
-    }
-  }
-  return null
-}
-
-/**
- * Detect error type from error message for network/permission errors
- */
-function detectErrorType(error: unknown): ErrorDisplay['variant'] {
-  const message = getErrorMessage(error).toLowerCase()
-
-  if (
-    message.includes('network') ||
-    message.includes('fetch') ||
-    message.includes('connection') ||
-    message.includes('offline') ||
-    message.includes('timeout')
-  ) {
-    return 'network'
-  }
-
-  if (
-    message.includes('unauthorized') ||
-    message.includes('forbidden') ||
-    message.includes('permission') ||
-    message.includes('access denied')
-  ) {
-    return 'permission'
-  }
-
-  if (message.includes('not found') || message.includes('404')) {
-    return 'notFound'
-  }
-
-  return 'generic'
-}
-
-/**
  * Get user-friendly error display info from an error
+ * Now uses the error formatter for consistent error handling
  *
  * @example
  * ```tsx
@@ -208,40 +93,52 @@ function detectErrorType(error: unknown): ErrorDisplay['variant'] {
  * ```
  */
 export function getErrorDisplay(error: unknown): ErrorDisplay {
-  // Try to get display from error code
-  const code = extractErrorCode(error)
-  if (code && ERROR_DISPLAY_MAP[code]) {
-    return ERROR_DISPLAY_MAP[code]
+  const formatted = formatErrorMessage(error)
+
+  // Map category to variant
+  const variantMap: Record<FormattedError['category'], ErrorDisplay['variant']> = {
+    auth: 'permission',
+    network: 'network',
+    validation: 'generic',
+    permission: 'permission',
+    notFound: 'notFound',
+    rateLimit: 'generic',
+    payment: 'generic',
+    server: 'generic',
+    unknown: 'generic',
   }
 
-  // Detect error type from message
-  const variant = detectErrorType(error)
-
-  // Use variant-specific default
-  if (variant === 'network') {
-    return ERROR_DISPLAY_MAP['NETWORK_ERROR']
-  }
-  if (variant === 'permission') {
-    return {
-      ...DEFAULT_ERROR_DISPLAY,
-      title: 'Access Denied',
-      message: getErrorMessage(error),
-      variant: 'permission',
-    }
-  }
-  if (variant === 'notFound') {
-    return {
-      ...DEFAULT_ERROR_DISPLAY,
-      title: 'Not Found',
-      message: getErrorMessage(error),
-      variant: 'notFound',
-    }
-  }
-
-  // Return generic with actual error message
   return {
-    ...DEFAULT_ERROR_DISPLAY,
-    message: getErrorMessage(error),
+    title: getCategoryTitle(formatted.category),
+    message: formatted.message,
+    action: formatted.actionText,
+    variant: variantMap[formatted.category],
+  }
+}
+
+/**
+ * Get title based on error category
+ */
+function getCategoryTitle(category: FormattedError['category']): string {
+  switch (category) {
+    case 'auth':
+      return 'Authentication Required'
+    case 'network':
+      return 'Connection Problem'
+    case 'validation':
+      return 'Invalid Input'
+    case 'permission':
+      return 'Access Denied'
+    case 'notFound':
+      return 'Not Found'
+    case 'rateLimit':
+      return 'Too Many Requests'
+    case 'payment':
+      return 'Payment Error'
+    case 'server':
+      return 'Server Error'
+    case 'unknown':
+      return 'Something Went Wrong'
   }
 }
 
@@ -249,5 +146,6 @@ export function getErrorDisplay(error: unknown): ErrorDisplay {
  * Check if an error is a network error
  */
 export function isNetworkError(error: unknown): boolean {
-  return detectErrorType(error) === 'network'
+  const formatted = formatErrorMessage(error)
+  return formatted.category === 'network'
 }

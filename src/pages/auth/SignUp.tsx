@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Logo } from '@/components/ui/logo'
+import { OptimizedImage } from '@/components/ui/optimized-image'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
@@ -87,7 +88,7 @@ export function SignUp() {
       // #region agent log
       fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'src/pages/auth/SignUp.tsx:87',message:'Before signIn call',data:{email,hasPassword:!!password,hasName:!!name},timestamp:Date.now(),sessionId:'debug-session',runId:'signup-attempt',hypothesisId:'S1'})}).catch(()=>{});
       // #endregion
-      await signIn('password', { email, password, flow: 'signUp', name: name || undefined })
+      await signIn('password', { email, password, flow: 'signUp', name: name || '' })
       // #region agent log
       fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'src/pages/auth/SignUp.tsx:90',message:'signIn success - before navigate',data:{email},timestamp:Date.now(),sessionId:'debug-session',runId:'signup-attempt',hypothesisId:'S2'})}).catch(()=>{});
       // #endregion
@@ -190,14 +191,16 @@ export function SignUp() {
           {/* Bottom social proof - the team */}
           <div className="flex items-center gap-4">
             <div className="flex -space-x-2">
-              <img
+              <OptimizedImage
                 src="https://github.com/hazlijohar95.png"
                 alt="Hazli"
+                lazy
                 className="w-8 h-8 rounded-full border-2 border-background shadow-sm"
               />
-              <img
+              <OptimizedImage
                 src="https://github.com/azmir32.png"
                 alt="Azmir"
+                lazy
                 className="w-8 h-8 rounded-full border-2 border-background shadow-sm"
               />
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 border-2 border-background shadow-sm flex items-center justify-center text-white text-xs font-medium">

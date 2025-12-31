@@ -1,310 +1,230 @@
-import { forwardRef, type ComponentType, type ReactNode } from 'react'
+/**
+ * Form Field Component
+ *
+ * A wrapper component that provides consistent form field styling with:
+ * - Label support
+ * - Error message display
+ * - Required field indicator
+ * - Accessibility attributes
+ *
+ * Validates: Requirements 11.9, 11.10
+ */
+
+import * as React from 'react'
 import { cn } from '@/lib/utils'
 import { Label } from './label'
-import { Input } from './input'
+import { WarningCircle } from '@phosphor-icons/react'
 
-/**
- * Icon component type (e.g., from @phosphor-icons/react)
- */
-type IconComponent = ComponentType<{
-  size?: number
-  weight?: 'thin' | 'light' | 'regular' | 'bold' | 'fill' | 'duotone'
-  className?: string
-}>
-
-interface FormFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  /** Field label text */
-  label: string
-  /** Optional icon component to display before input */
-  icon?: IconComponent
+export interface FormFieldProps {
+  /** Field name for accessibility */
+  name: string
+  /** Label text */
+  label?: string
   /** Error message to display */
   error?: string
-  /** Helper text to display below input */
-  helperText?: string
-  /** Container className */
-  containerClassName?: string
-  /** Label className */
-  labelClassName?: string
-  /** Additional content after the label (e.g., optional badge) */
-  labelAddon?: ReactNode
+  /** Whether the field is required */
+  required?: boolean
+  /** Help text to display below the field */
+  helpText?: string
+  /** Additional class names for the container */
+  className?: string
+  /** Children (the actual input element) */
+  children: React.ReactNode
+  /** Whether to show the error icon */
+  showErrorIcon?: boolean
 }
 
 /**
- * Reusable form field component with label, icon, and error handling.
+ * FormField component for consistent form field layout and error display
  *
  * @example
+ * ```tsx
  * <FormField
- *   label="Email"
- *   id="email"
- *   type="email"
- *   icon={Envelope}
- *   value={email}
- *   onChange={(e) => setEmail(e.target.value)}
- *   error={errors.email}
+ *   name="email"
+ *   label="Email Address"
+ *   error={validation.getFieldError('email')}
  *   required
- * />
+ * >
+ *   <Input
+ *     id="email"
+ *     type="email"
+ *     value={email}
+ *     onChange={(e) => setEmail(e.target.value)}
+ *     aria-invalid={validation.hasFieldError('email')}
+ *   />
+ * </FormField>
+ * ```
  */
-export const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
-  (
-    {
-      label,
-      icon: Icon,
-      error,
-      helperText,
-      containerClassName,
-      labelClassName,
-      labelAddon,
-      className,
-      id,
-      required,
-      ...props
-    },
-    ref
-  ) => {
-    return (
-      <div className={cn('space-y-1.5', containerClassName)}>
-        <div className="flex items-center justify-between">
-          <Label htmlFor={id} className={cn('text-sm font-medium', labelClassName)}>
-            {label}
-            {required && <span className="text-red-500 ml-0.5">*</span>}
-          </Label>
-          {labelAddon}
-        </div>
-        <div className="relative">
-          {Icon && (
-            <Icon
+export function FormField({
+  name,
+  label,
+  error,
+  required,
+  helpText,
+  className,
+  children,
+  showErrorIcon = true,
+}: FormFieldProps) {
+  const errorId = `${name}-error`
+  const helpTextId = `${name}-help`
+  const hasError = !!error
+
+  // Clone children to add aria attributes
+  const enhancedChildren = React.Children.map(children, (child) => {
+    if (React.isValidElement(child)) {
+      const additionalProps: Record<string, unknown> = {
+        'aria-invalid': hasError || undefined,
+        'aria-describedby': [
+          hasError ? errorId : null,
+          helpText ? helpTextId : null,
+        ]
+          .filter(Boolean)
+          .join(' ') || undefined,
+      }
+
+      // Add error styling class if the child accepts className
+      if (hasError && 'className' in (child.props as object)) {
+        additionalProps.className = cn(
+          (child.props as { className?: string }).className,
+          'border-destructive focus-visible:ring-destructive'
+        )
+      }
+
+      return React.cloneElement(child, additionalProps)
+    }
+    return child
+  })
+
+  return (
+    <div className={cn('space-y-2', className)}>
+      {label && (
+        <Label htmlFor={name} className="flex items-center gap-1">
+          {label}
+          {required && (
+            <span className="text-destructive" aria-hidden="true">
+              *
+            </span>
+          )}
+        </Label>
+      )}
+
+      {enhancedChildren}
+
+      {error && (
+        <div
+          id={errorId}
+          role="alert"
+          className="flex items-start gap-1.5 text-sm text-destructive"
+        >
+          {showErrorIcon && (
+            <WarningCircle
               size={16}
-              weight="duotone"
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+              weight="fill"
+              className="mt-0.5 flex-shrink-0"
+              aria-hidden="true"
             />
           )}
-          <Input
-            ref={ref}
-            id={id}
-            className={cn(
-              Icon && 'pl-10',
-              'h-10 rounded-xl text-sm',
-              error && 'border-red-500 focus-visible:ring-red-500',
-              className
-            )}
-            required={required}
-            aria-invalid={!!error}
-            aria-describedby={error ? `${id}-error` : helperText ? `${id}-helper` : undefined}
-            {...props}
-          />
+          <span>{error}</span>
         </div>
-        {error && (
-          <p id={`${id}-error`} className="text-xs text-red-500" role="alert">
-            {error}
-          </p>
-        )}
-        {helperText && !error && (
-          <p id={`${id}-helper`} className="text-xs text-muted-foreground">
-            {helperText}
-          </p>
-        )}
-      </div>
-    )
-  }
-)
+      )}
 
-FormField.displayName = 'FormField'
-
-// ============================================================================
-// FORM TEXTAREA
-// ============================================================================
-
-interface FormTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
-  /** Field label text */
-  label: string
-  /** Error message to display */
-  error?: string
-  /** Helper text to display below input */
-  helperText?: string
-  /** Container className */
-  containerClassName?: string
-  /** Label className */
-  labelClassName?: string
-  /** Additional content after the label */
-  labelAddon?: ReactNode
+      {helpText && !error && (
+        <p id={helpTextId} className="text-xs text-muted-foreground">
+          {helpText}
+        </p>
+      )}
+    </div>
+  )
 }
 
 /**
- * Reusable textarea field component with label and error handling.
- *
- * @example
- * <FormTextarea
- *   label="Description"
- *   id="description"
- *   value={description}
- *   onChange={(e) => setDescription(e.target.value)}
- *   rows={4}
- * />
+ * FormFieldGroup component for grouping related form fields
  */
-export const FormTextarea = forwardRef<HTMLTextAreaElement, FormTextareaProps>(
-  (
-    {
-      label,
-      error,
-      helperText,
-      containerClassName,
-      labelClassName,
-      labelAddon,
-      className,
-      id,
-      required,
-      ...props
-    },
-    ref
-  ) => {
-    return (
-      <div className={cn('space-y-1.5', containerClassName)}>
-        <div className="flex items-center justify-between">
-          <Label htmlFor={id} className={cn('text-sm font-medium', labelClassName)}>
-            {label}
-            {required && <span className="text-red-500 ml-0.5">*</span>}
-          </Label>
-          {labelAddon}
-        </div>
-        <textarea
-          ref={ref}
-          id={id}
-          className={cn(
-            'flex min-h-[80px] w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
-            error && 'border-red-500 focus-visible:ring-red-500',
-            className
-          )}
-          required={required}
-          aria-invalid={!!error}
-          aria-describedby={error ? `${id}-error` : helperText ? `${id}-helper` : undefined}
-          {...props}
-        />
-        {error && (
-          <p id={`${id}-error`} className="text-xs text-red-500" role="alert">
-            {error}
-          </p>
-        )}
-        {helperText && !error && (
-          <p id={`${id}-helper`} className="text-xs text-muted-foreground">
-            {helperText}
-          </p>
-        )}
-      </div>
-    )
-  }
-)
-
-FormTextarea.displayName = 'FormTextarea'
-
-// ============================================================================
-// FORM SELECT
-// ============================================================================
-
-interface FormSelectOption {
-  value: string
-  label: string
-  disabled?: boolean
+export interface FormFieldGroupProps {
+  /** Group title */
+  title?: string
+  /** Group description */
+  description?: string
+  /** Children (form fields) */
+  children: React.ReactNode
+  /** Additional class names */
+  className?: string
 }
 
-interface FormSelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'children'> {
-  /** Field label text */
-  label: string
-  /** Select options */
-  options: FormSelectOption[]
-  /** Placeholder option text */
-  placeholder?: string
-  /** Error message to display */
-  error?: string
-  /** Helper text to display below input */
-  helperText?: string
-  /** Container className */
-  containerClassName?: string
-  /** Label className */
-  labelClassName?: string
-  /** Additional content after the label */
-  labelAddon?: ReactNode
+export function FormFieldGroup({
+  title,
+  description,
+  children,
+  className,
+}: FormFieldGroupProps) {
+  return (
+    <fieldset className={cn('space-y-4', className)}>
+      {(title || description) && (
+        <div className="space-y-1">
+          {title && (
+            <legend className="text-sm font-medium leading-none">{title}</legend>
+          )}
+          {description && (
+            <p className="text-xs text-muted-foreground">{description}</p>
+          )}
+        </div>
+      )}
+      {children}
+    </fieldset>
+  )
 }
 
 /**
- * Reusable select field component with label and error handling.
- *
- * @example
- * <FormSelect
- *   label="Category"
- *   id="category"
- *   value={category}
- *   onChange={(e) => setCategory(e.target.value)}
- *   options={[
- *     { value: 'catering', label: 'Catering' },
- *     { value: 'venue', label: 'Venue' },
- *   ]}
- *   placeholder="Select a category"
- * />
+ * FormError component for displaying form-level errors
  */
-export const FormSelect = forwardRef<HTMLSelectElement, FormSelectProps>(
-  (
-    {
-      label,
-      options,
-      placeholder,
-      error,
-      helperText,
-      containerClassName,
-      labelClassName,
-      labelAddon,
-      className,
-      id,
-      required,
-      ...props
-    },
-    ref
-  ) => {
-    return (
-      <div className={cn('space-y-1.5', containerClassName)}>
-        <div className="flex items-center justify-between">
-          <Label htmlFor={id} className={cn('text-sm font-medium', labelClassName)}>
-            {label}
-            {required && <span className="text-red-500 ml-0.5">*</span>}
-          </Label>
-          {labelAddon}
-        </div>
-        <select
-          ref={ref}
-          id={id}
-          className={cn(
-            'flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
-            error && 'border-red-500 focus-visible:ring-red-500',
-            className
-          )}
-          required={required}
-          aria-invalid={!!error}
-          aria-describedby={error ? `${id}-error` : helperText ? `${id}-helper` : undefined}
-          {...props}
-        >
-          {placeholder && (
-            <option value="" disabled>
-              {placeholder}
-            </option>
-          )}
-          {options.map((option) => (
-            <option key={option.value} value={option.value} disabled={option.disabled}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        {error && (
-          <p id={`${id}-error`} className="text-xs text-red-500" role="alert">
-            {error}
-          </p>
-        )}
-        {helperText && !error && (
-          <p id={`${id}-helper`} className="text-xs text-muted-foreground">
-            {helperText}
-          </p>
-        )}
-      </div>
-    )
-  }
-)
+export interface FormErrorProps {
+  /** Error message */
+  error?: string | null
+  /** Additional class names */
+  className?: string
+}
 
-FormSelect.displayName = 'FormSelect'
+export function FormError({ error, className }: FormErrorProps) {
+  if (!error) return null
+
+  return (
+    <div
+      role="alert"
+      className={cn(
+        'flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive',
+        className
+      )}
+    >
+      <WarningCircle size={18} weight="fill" className="flex-shrink-0" />
+      <span>{error}</span>
+    </div>
+  )
+}
+
+/**
+ * FormSuccess component for displaying success messages
+ */
+export interface FormSuccessProps {
+  /** Success message */
+  message?: string | null
+  /** Additional class names */
+  className?: string
+}
+
+export function FormSuccess({ message, className }: FormSuccessProps) {
+  if (!message) return null
+
+  return (
+    <div
+      role="status"
+      className={cn(
+        'flex items-center gap-2 rounded-lg border border-green-500/50 bg-green-500/10 p-3 text-sm text-green-600 dark:text-green-400',
+        className
+      )}
+    >
+      <span>{message}</span>
+    </div>
+  )
+}
+
+export default FormField
