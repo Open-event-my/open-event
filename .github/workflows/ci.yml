@@ -62,7 +62,7 @@ jobs:
       should-run: ${{ steps.should-run.outputs.result }}
       shard-matrix: ${{ steps.shard-matrix.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: dorny/paths-filter@v3
         id: filter
@@ -127,7 +127,7 @@ jobs:
     needs: changes
     if: github.event_name == 'pull_request' && needs.changes.outputs.deps == 'true'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/dependency-review-action@v4
         with:
           fail-on-severity: high
@@ -143,7 +143,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.should-run == 'true'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-node
 
       - name: Run ESLint
@@ -171,7 +171,7 @@ jobs:
        needs.changes.outputs.config == 'true' ||
        github.event.inputs.force-full-run == 'true')
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-node
 
       - name: Type check frontend
@@ -191,7 +191,7 @@ jobs:
        needs.changes.outputs.deps == 'true' ||
        github.event.inputs.force-full-run == 'true')
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-node
 
       - name: Run tests with coverage
@@ -238,7 +238,7 @@ jobs:
     outputs:
       build-time: ${{ steps.build.outputs.time }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-node
 
       - name: Restore Vite cache
@@ -303,7 +303,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.changes.outputs.shard-matrix) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: ./.github/actions/setup-node
         with:
@@ -350,7 +350,7 @@ jobs:
     needs: [changes, e2e]
     if: always() && needs.e2e.result != 'skipped'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-node
 
       - name: Download all blob reports
@@ -389,7 +389,7 @@ jobs:
       github.event.inputs.skip-lighthouse != 'true' &&
       (github.event_name == 'pull_request' || github.ref == 'refs/heads/main')
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-node
 
       - name: Download build artifacts
