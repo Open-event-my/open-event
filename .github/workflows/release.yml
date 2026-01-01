@@ -133,7 +133,7 @@ jobs:
           echo "| JS Bundle | ${JS_SIZE} |" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload release artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ steps.build.outputs.artifact-name }}
           path: dist/
@@ -169,7 +169,7 @@ jobs:
           CI: true
 
       - name: Upload smoke test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: smoke-test-results
