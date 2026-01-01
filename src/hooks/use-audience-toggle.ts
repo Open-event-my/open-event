@@ -15,16 +15,12 @@ const STORAGE_KEY = 'open-event-audience'
  */
 export function useAudienceToggle() {
   // Use useSyncExternalStore for proper SSR hydration with localStorage
-  const audience = useSyncExternalStore(
-    subscribeToStorage,
-    getStoredAudience,
-    getServerSnapshot
-  )
+  const audience = useSyncExternalStore(subscribeToStorage, getStoredAudience, getServerSnapshot)
 
   const setAudience = useCallback((value: Audience) => {
     localStorage.setItem(STORAGE_KEY, value)
     // Dispatch storage event to sync across hook instances
-    window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY }))
+    window.dispatchEvent(new StorageEvent('storage'))
   }, [])
 
   return {

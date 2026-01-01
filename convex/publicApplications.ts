@@ -1,6 +1,8 @@
 import { mutation, query } from './_generated/server'
 import { v } from 'convex/values'
 import { assertRole } from './lib/auth'
+import { isValidEmail } from './lib/emailValidation'
+import { internal } from './_generated/api'
 
 // ============================================================================
 // Constants
@@ -76,8 +78,7 @@ export const submitVendorApplication = mutation({
   },
   handler: async (ctx, args) => {
     // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(args.contactEmail)) {
+    if (!isValidEmail(args.contactEmail)) {
       throw new Error('Invalid email address')
     }
 
@@ -119,6 +120,13 @@ export const submitVendorApplication = mutation({
       createdAt: Date.now(),
     })
 
+    // Create admin notification for new vendor application
+    await ctx.runMutation(internal.adminNotifications.createApplicationNotification, {
+      applicationId: applicationId,
+      applicationType: 'vendor',
+      companyName: args.companyName,
+    })
+
     return { applicationId, type: 'vendor' }
   },
 })
@@ -147,8 +155,7 @@ export const submitSponsorApplication = mutation({
   },
   handler: async (ctx, args) => {
     // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(args.contactEmail)) {
+    if (!isValidEmail(args.contactEmail)) {
       throw new Error('Invalid email address')
     }
 
@@ -192,6 +199,13 @@ export const submitSponsorApplication = mutation({
       createdAt: Date.now(),
     })
 
+    // Create admin notification for new sponsor application
+    await ctx.runMutation(internal.adminNotifications.createApplicationNotification, {
+      applicationId: applicationId,
+      applicationType: 'sponsor',
+      companyName: args.companyName,
+    })
+
     return { applicationId, type: 'sponsor' }
   },
 })
@@ -220,7 +234,12 @@ export const listForAdmin = query({
       applications = await ctx.db
         .query('publicApplications')
         .withIndex('by_type_status', (q) =>
-          q.eq('applicationType', args.type!).eq('status', args.status as 'submitted' | 'under_review' | 'approved' | 'rejected' | 'converted')
+          q
+            .eq('applicationType', args.type!)
+            .eq(
+              'status',
+              args.status as 'submitted' | 'under_review' | 'approved' | 'rejected' | 'converted'
+            )
         )
         .order('desc')
         .take(limit)
@@ -233,14 +252,16 @@ export const listForAdmin = query({
     } else if (args.status) {
       applications = await ctx.db
         .query('publicApplications')
-        .withIndex('by_status', (q) => q.eq('status', args.status as 'submitted' | 'under_review' | 'approved' | 'rejected' | 'converted'))
+        .withIndex('by_status', (q) =>
+          q.eq(
+            'status',
+            args.status as 'submitted' | 'under_review' | 'approved' | 'rejected' | 'converted'
+          )
+        )
         .order('desc')
         .take(limit)
     } else {
-      applications = await ctx.db
-        .query('publicApplications')
-        .order('desc')
-        .take(limit)
+      applications = await ctx.db.query('publicApplications').order('desc').take(limit)
     }
 
     // Enrich with reviewer info
@@ -360,11 +381,7 @@ export const getPendingCounts = query({
 export const updateStatus = mutation({
   args: {
     applicationId: v.id('publicApplications'),
-    status: v.union(
-      v.literal('under_review'),
-      v.literal('approved'),
-      v.literal('rejected')
-    ),
+    status: v.union(v.literal('under_review'), v.literal('approved'), v.literal('rejected')),
     notes: v.optional(v.string()),
     rejectionReason: v.optional(v.string()),
   },
@@ -393,8 +410,7 @@ export const updateStatus = mutation({
     // Log moderation action
     await ctx.db.insert('moderationLogs', {
       adminId: user._id,
-      action:
-        args.status === 'rejected' ? 'application_rejected' : 'application_reviewed',
+      action: args.status === 'rejected' ? 'application_rejected' : 'application_reviewed',
       targetType: 'application',
       targetId: args.applicationId,
       reason: args.status === 'rejected' ? args.rejectionReason : args.notes,

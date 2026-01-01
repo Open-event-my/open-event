@@ -1,6 +1,7 @@
 import { query } from '../_generated/server'
 import { getAuthUserId } from '@convex-dev/auth/server'
 import { getCurrentUser as getCurrentUserFromLib } from '../lib/auth'
+import { logger } from '../lib/monitoring/logger'
 
 /**
  * Get the current authenticated user.
@@ -14,7 +15,16 @@ import { getCurrentUser as getCurrentUserFromLib } from '../lib/auth'
 export const getCurrentUser = query({
   args: {},
   handler: async (ctx) => {
-    return await getCurrentUserFromLib(ctx)
+    // Removed debug logging that exposed sensitive data (Requirements 1.1, 2.2)
+    const result = await getCurrentUserFromLib(ctx)
+
+    // Log with structured logger (no sensitive data)
+    logger.debug('getCurrentUser query executed', {
+      hasUser: !!result,
+      userRole: result?.role ?? 'null',
+    })
+
+    return result
   },
 })
 
@@ -51,4 +61,3 @@ export const getUserRole = query({
     return user?.role ?? null
   },
 })
-

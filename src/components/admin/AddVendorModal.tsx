@@ -3,14 +3,7 @@ import { useMutation } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
-import {
-  X,
-  Buildings,
-  Package,
-  Shield,
-  CurrencyDollar,
-  CircleNotch,
-} from '@phosphor-icons/react'
+import { X, Buildings, Package, Shield, CurrencyDollar, CircleNotch } from '@phosphor-icons/react'
 
 type Tab = 'basic' | 'services' | 'legal' | 'payment'
 

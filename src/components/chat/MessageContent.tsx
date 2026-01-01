@@ -60,9 +60,7 @@ function CodeBlock({ language, code }: CodeBlockProps) {
           {/* Header bar */}
           <div className="code-header">
             {/* Language badge */}
-            <span className="code-language">
-              {language || 'text'}
-            </span>
+            <span className="code-language">{language || 'text'}</span>
 
             {/* Actions */}
             <div className="code-actions">
@@ -84,10 +82,7 @@ function CodeBlock({ language, code }: CodeBlockProps) {
               )}
               <button
                 onClick={handleCopy}
-                className={cn(
-                  'icon-btn',
-                  copied && 'text-emerald-400'
-                )}
+                className={cn('icon-btn', copied && 'text-emerald-400')}
                 aria-label={copied ? 'Copied!' : 'Copy code'}
               >
                 {copied ? (
@@ -108,11 +103,7 @@ function CodeBlock({ language, code }: CodeBlockProps) {
           {/* Code content */}
           <div className={cn('code-content', shouldCollapse && 'code-collapsed')}>
             <pre
-              className={cn(
-                className,
-                'p-4 overflow-x-auto text-sm font-mono',
-                'custom-scrollbar'
-              )}
+              className={cn(className, 'p-4 overflow-x-auto text-sm font-mono', 'custom-scrollbar')}
               style={style}
             >
               {tokens.map((line, i) => {
@@ -132,17 +123,12 @@ function CodeBlock({ language, code }: CodeBlockProps) {
             </pre>
 
             {/* Gradient fade overlay for collapsed state */}
-            {shouldCollapse && (
-              <div className="code-fade-overlay" />
-            )}
+            {shouldCollapse && <div className="code-fade-overlay" />}
           </div>
 
           {/* Expand button at bottom for collapsed state */}
           {shouldCollapse && (
-            <button
-              onClick={toggleExpand}
-              className="code-expand-btn"
-            >
+            <button onClick={toggleExpand} className="code-expand-btn">
               <CaretDown size={14} weight="bold" />
               <span>Show all {lineCount} lines</span>
             </button>
@@ -198,15 +184,9 @@ export const MessageContent = memo(function MessageContent({
         remarkPlugins={[remarkGfm]}
         components={{
           // Headings
-          h1: ({ children }) => (
-            <h1 className="text-lg font-bold mt-4 mb-2">{children}</h1>
-          ),
-          h2: ({ children }) => (
-            <h2 className="text-base font-bold mt-3 mb-2">{children}</h2>
-          ),
-          h3: ({ children }) => (
-            <h3 className="text-sm font-bold mt-2 mb-1">{children}</h3>
-          ),
+          h1: ({ children }) => <h1 className="text-lg font-bold mt-4 mb-2">{children}</h1>,
+          h2: ({ children }) => <h2 className="text-base font-bold mt-3 mb-2">{children}</h2>,
+          h3: ({ children }) => <h3 className="text-sm font-bold mt-2 mb-1">{children}</h3>,
 
           // Paragraphs
           p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
@@ -256,12 +236,7 @@ export const MessageContent = memo(function MessageContent({
             const isBlock = match !== null
 
             if (isBlock) {
-              return (
-                <CodeBlock
-                  language={match[1]}
-                  code={String(children)}
-                />
-              )
+              return <CodeBlock language={match[1]} code={String(children)} />
             }
 
             return <InlineCode isUser={isUser}>{children}</InlineCode>
@@ -277,23 +252,15 @@ export const MessageContent = memo(function MessageContent({
             </div>
           ),
           thead: ({ children }) => (
-            <thead className={cn(isUser ? 'bg-black/10' : 'bg-muted/50')}>
-              {children}
-            </thead>
+            <thead className={cn(isUser ? 'bg-black/10' : 'bg-muted/50')}>{children}</thead>
           ),
           th: ({ children }) => (
-            <th className="px-3 py-2 text-left font-semibold border-b border-border">
-              {children}
-            </th>
+            <th className="px-3 py-2 text-left font-semibold border-b border-border">{children}</th>
           ),
-          td: ({ children }) => (
-            <td className="px-3 py-2 border-b border-border/50">{children}</td>
-          ),
+          td: ({ children }) => <td className="px-3 py-2 border-b border-border/50">{children}</td>,
 
           // Horizontal rule
-          hr: () => (
-            <hr className={cn('my-4', isUser ? 'border-white/20' : 'border-border')} />
-          ),
+          hr: () => <hr className={cn('my-4', isUser ? 'border-white/20' : 'border-border')} />,
 
           // Strong and emphasis
           strong: ({ children }) => <strong className="font-semibold">{children}</strong>,

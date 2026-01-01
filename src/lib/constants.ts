@@ -3,6 +3,37 @@
  * This file contains shared configuration, colors, and mappings
  */
 
+// ============================================================================
+// APP CONFIGURATION
+// ============================================================================
+
+export const APP_CONFIG = {
+  name: 'Open Event',
+  version: '1.0.0',
+  github: {
+    owner: 'hazlijohar95',
+    repo: 'open-event',
+  },
+} as const
+
+// Storage keys for localStorage/sessionStorage
+export const STORAGE_KEYS = {
+  AUDIENCE: 'open-event-audience',
+  AGENTIC_CHAT: 'open-event-agentic-chat-v2',
+  PWA_DISMISSED: 'pwa-install-dismissed',
+  GITHUB_CACHE: 'github-data-cache',
+} as const
+
+// Cache TTL values (in milliseconds)
+export const CACHE_TTL = {
+  GITHUB_DATA: 60 * 60 * 1000, // 1 hour
+  PWA_DISMISS: 7 * 24 * 60 * 60 * 1000, // 7 days
+} as const
+
+// ============================================================================
+// EVENT STATUS CONFIGURATION
+// ============================================================================
+
 // Event status configuration
 export const EVENT_STATUS = {
   DRAFT: 'draft',
@@ -165,10 +196,7 @@ export const formatTime = (timestamp: number) => {
 }
 
 // Currency formatting
-export const formatCurrency = (
-  amount: number,
-  currency: string = 'USD'
-): string => {
+export const formatCurrency = (amount: number, currency: string = 'USD'): string => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
@@ -176,3 +204,31 @@ export const formatCurrency = (
     maximumFractionDigits: 0,
   }).format(amount)
 }
+
+// ============================================================================
+// VENDOR CONFIGURATION
+// ============================================================================
+
+export const VENDOR_CATEGORIES = [
+  'catering',
+  'photography',
+  'videography',
+  'decoration',
+  'entertainment',
+  'audio_visual',
+  'security',
+  'transportation',
+  'printing',
+  'staffing',
+  'venue',
+  'equipment',
+  'other',
+] as const
+
+export type VendorCategory = (typeof VENDOR_CATEGORIES)[number]
+
+export const PRICE_RANGES = ['budget', 'mid', 'premium'] as const
+export type PriceRange = (typeof PRICE_RANGES)[number]
+
+export const APPLICATION_SOURCES = ['manual', 'email', 'import', 'referral', 'form'] as const
+export type ApplicationSource = (typeof APPLICATION_SOURCES)[number]

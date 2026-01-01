@@ -82,7 +82,8 @@ export const getSummary = query({
       totalCommitted,
       totalPlanned: totalEstimated - totalPaid - totalCommitted,
       variance: totalActual - totalEstimated,
-      variancePercent: totalEstimated > 0 ? ((totalActual - totalEstimated) / totalEstimated) * 100 : 0,
+      variancePercent:
+        totalEstimated > 0 ? ((totalActual - totalEstimated) / totalEstimated) * 100 : 0,
       itemCount: activeItems.length,
       byCategory,
       eventBudget: event.budget || 0,
@@ -100,7 +101,14 @@ export const create = mutation({
     description: v.optional(v.string()),
     estimatedAmount: v.number(),
     actualAmount: v.optional(v.number()),
-    status: v.optional(v.union(v.literal('planned'), v.literal('committed'), v.literal('paid'), v.literal('cancelled'))),
+    status: v.optional(
+      v.union(
+        v.literal('planned'),
+        v.literal('committed'),
+        v.literal('paid'),
+        v.literal('cancelled')
+      )
+    ),
     vendorId: v.optional(v.id('vendors')),
     sponsorId: v.optional(v.id('sponsors')),
     notes: v.optional(v.string()),
@@ -140,7 +148,14 @@ export const update = mutation({
     description: v.optional(v.string()),
     estimatedAmount: v.optional(v.number()),
     actualAmount: v.optional(v.number()),
-    status: v.optional(v.union(v.literal('planned'), v.literal('committed'), v.literal('paid'), v.literal('cancelled'))),
+    status: v.optional(
+      v.union(
+        v.literal('planned'),
+        v.literal('committed'),
+        v.literal('paid'),
+        v.literal('cancelled')
+      )
+    ),
     vendorId: v.optional(v.id('vendors')),
     sponsorId: v.optional(v.id('sponsors')),
     paidAt: v.optional(v.number()),
@@ -205,7 +220,12 @@ export const remove = mutation({
 export const bulkUpdateStatus = mutation({
   args: {
     ids: v.array(v.id('budgetItems')),
-    status: v.union(v.literal('planned'), v.literal('committed'), v.literal('paid'), v.literal('cancelled')),
+    status: v.union(
+      v.literal('planned'),
+      v.literal('committed'),
+      v.literal('paid'),
+      v.literal('cancelled')
+    ),
   },
   handler: async (ctx, args) => {
     const user = await getCurrentUser(ctx)

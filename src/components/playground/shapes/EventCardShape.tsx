@@ -1,9 +1,5 @@
-import {
-  ShapeUtil,
-  HTMLContainer,
-  Rectangle2d,
-  type TLOnResizeHandler,
-} from 'tldraw'
+import { ShapeUtil, HTMLContainer, Rectangle2d } from 'tldraw'
+import type { TLResizeInfo } from '@tldraw/editor'
 import type { EventCardShape, EventCardProps } from '@/lib/playground/types'
 import { CalendarBlank, MapPin, Users, CurrencyDollar } from '@phosphor-icons/react'
 
@@ -54,7 +50,7 @@ export class EventCardShapeUtil extends ShapeUtil<EventCardShape> {
     return true
   }
 
-  override onResize: TLOnResizeHandler<EventCardShape> = (shape, info) => {
+  override onResize = (_shape: EventCardShape, info: TLResizeInfo<EventCardShape>) => {
     return {
       props: {
         w: Math.max(240, info.initialBounds.width * info.scaleX),
@@ -64,7 +60,8 @@ export class EventCardShapeUtil extends ShapeUtil<EventCardShape> {
   }
 
   component(shape: EventCardShape) {
-    const { title, eventType, startDate, venueName, expectedAttendees, budget, locationType } = shape.props
+    const { title, eventType, startDate, venueName, expectedAttendees, budget, locationType } =
+      shape.props
 
     return (
       <HTMLContainer>
@@ -78,13 +75,15 @@ export class EventCardShapeUtil extends ShapeUtil<EventCardShape> {
             <span className="text-xs font-semibold text-purple uppercase tracking-wide">
               {eventType}
             </span>
-            <span className={`ml-auto text-[10px] px-2 py-0.5 rounded-full font-medium ${
-              locationType === 'virtual'
-                ? 'bg-blue-500/10 text-blue-500'
-                : locationType === 'hybrid'
-                ? 'bg-amber-500/10 text-amber-500'
-                : 'bg-green-500/10 text-green-500'
-            }`}>
+            <span
+              className={`ml-auto text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                locationType === 'virtual'
+                  ? 'bg-blue-500/10 text-blue-500'
+                  : locationType === 'hybrid'
+                    ? 'bg-amber-500/10 text-amber-500'
+                    : 'bg-green-500/10 text-green-500'
+              }`}
+            >
               {locationType}
             </span>
           </div>
@@ -133,13 +132,6 @@ export class EventCardShapeUtil extends ShapeUtil<EventCardShape> {
   }
 
   indicator(shape: EventCardShape) {
-    return (
-      <rect
-        width={shape.props.w}
-        height={shape.props.h}
-        rx={12}
-        ry={12}
-      />
-    )
+    return <rect width={shape.props.w} height={shape.props.h} rx={12} ry={12} />
   }
 }

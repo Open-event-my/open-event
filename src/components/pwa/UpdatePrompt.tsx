@@ -54,9 +54,7 @@ export function UpdatePrompt({ onUpdate }: UpdatePromptProps) {
         {/* Content */}
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium">Update available</p>
-          <p className="text-xs text-muted-foreground">
-            A new version is ready
-          </p>
+          <p className="text-xs text-muted-foreground">A new version is ready</p>
         </div>
 
         {/* Actions */}

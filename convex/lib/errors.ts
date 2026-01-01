@@ -3,7 +3,12 @@
  *
  * This module provides consistent error types and formatting
  * for the entire Convex backend.
+ *
+ * Updated to use error formatter for user-friendly messages.
+ * Requirements: 11.1, 11.3
  */
+
+import { formatConvexError, throwUserFriendlyError } from './errorFormatter'
 
 /**
  * Application Error class for consistent error handling.
@@ -14,13 +19,14 @@
  * ```
  */
 export class AppError extends Error {
-  constructor(
-    message: string,
-    public readonly code: string,
-    public readonly status: number = 400
-  ) {
+  public readonly code: string
+  public readonly status: number
+
+  constructor(message: string, code: string, status: number = 400) {
     super(message)
     this.name = 'AppError'
+    this.code = code
+    this.status = status
   }
 }
 
@@ -55,6 +61,7 @@ export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes]
 
 /**
  * Format an error for HTTP response.
+ * Now uses the error formatter for user-friendly messages.
  *
  * Usage:
  * ```typescript
@@ -73,85 +80,82 @@ export function formatErrorResponse(error: unknown): {
   code: string
   status: number
   details?: unknown
+  suggestions?: string[]
 } {
   if (error instanceof AppError) {
+    const formatted = formatConvexError(error, error.code)
     return {
-      error: error.message,
-      code: error.code,
+      error: formatted.message,
+      code: formatted.code,
       status: error.status,
+      suggestions: formatted.suggestions,
     }
   }
 
   if (error instanceof Error) {
-    // Check for specific error types from Convex
+    // Format the error message to be user-friendly
+    const formatted = formatConvexError(error)
+
+    // Determine status code from error message
+    let status = 500
     if (error.message.includes('Authentication required')) {
-      return {
-        error: error.message,
-        code: ErrorCodes.UNAUTHORIZED,
-        status: 401,
-      }
+      status = 401
+    } else if (error.message.includes('Access denied')) {
+      status = 403
+    } else if (error.message.includes('not found')) {
+      status = 404
     }
 
-    if (error.message.includes('Access denied')) {
-      return {
-        error: error.message,
-        code: ErrorCodes.FORBIDDEN,
-        status: 403,
-      }
-    }
-
-    if (error.message.includes('not found')) {
-      return {
-        error: error.message,
-        code: ErrorCodes.NOT_FOUND,
-        status: 404,
-      }
-    }
-
-    // Default error
     return {
-      error: error.message,
-      code: ErrorCodes.INTERNAL_ERROR,
-      status: 500,
+      error: formatted.message,
+      code: formatted.code,
+      status,
+      suggestions: formatted.suggestions,
     }
   }
 
-  // Unknown error type
+  // Unknown error type - format it
+  const formatted = formatConvexError(error)
   return {
-    error: 'An unexpected error occurred',
-    code: ErrorCodes.INTERNAL_ERROR,
+    error: formatted.message,
+    code: formatted.code,
     status: 500,
+    suggestions: formatted.suggestions,
   }
 }
 
 /**
  * Create an authentication error
+ * Now throws user-friendly error
  */
 export function authError(message = 'Authentication required'): AppError {
-  return new AppError(message, ErrorCodes.UNAUTHORIZED, 401)
+  throwUserFriendlyError('UNAUTHORIZED', message)
 }
 
 /**
  * Create a forbidden error
+ * Now throws user-friendly error
  */
 export function forbiddenError(message = 'Access denied'): AppError {
-  return new AppError(message, ErrorCodes.FORBIDDEN, 403)
+  throwUserFriendlyError('FORBIDDEN', message)
 }
 
 /**
  * Create a not found error
+ * Now throws user-friendly error
  */
 export function notFoundError(resource: string): AppError {
-  return new AppError(`${resource} not found`, ErrorCodes.NOT_FOUND, 404)
+  throwUserFriendlyError('NOT_FOUND', `${resource} not found`)
 }
 
 /**
  * Create a validation error
+ * Now throws user-friendly error
  */
 export function validationError(message: string, details?: unknown): AppError {
-  const error = new AppError(message, ErrorCodes.INVALID_INPUT, 400)
+  const formatted = formatConvexError({ code: 'INVALID_INPUT', message }, 'INVALID_INPUT')
+  const error = new AppError(formatted.message, ErrorCodes.INVALID_INPUT, 400)
   if (details) {
-    // Attach details for more context
     ;(error as AppError & { details?: unknown }).details = details
   }
   return error
@@ -159,9 +163,10 @@ export function validationError(message: string, details?: unknown): AppError {
 
 /**
  * Create a rate limit error
+ * Now throws user-friendly error
  */
 export function rateLimitError(message = 'Rate limit exceeded'): AppError {
-  return new AppError(message, ErrorCodes.RATE_LIMITED, 429)
+  throwUserFriendlyError('RATE_LIMITED', message)
 }
 
 /**

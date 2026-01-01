@@ -21,5 +21,12 @@
     "noEmit": true
   },
   "include": ["./**/*"],
-  "exclude": ["./_generated"]
+  "exclude": [
+    "./_generated",
+    "./**/*.test.ts",
+    "./**/*.property.test.ts",
+    "./**/*.e2e.test.ts",
+    "./testJWKS.ts",
+    "./testKeyFormat.ts"
+  ]
 }

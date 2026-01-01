@@ -163,7 +163,7 @@ export function useAgenticChat() {
     if (conversationAreaRef.current && state.messages.length > 0) {
       conversationAreaRef.current.scrollTop = conversationAreaRef.current.scrollHeight
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Actions

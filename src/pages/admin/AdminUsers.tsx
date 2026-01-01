@@ -18,13 +18,11 @@ import {
   Crown,
   Trash,
   CaretDown,
+  CheckSquare,
+  Square,
+  MinusSquare,
 } from '@phosphor-icons/react'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   Dialog,
   DialogContent,
@@ -44,16 +42,52 @@ import {
 type UserStatus = 'active' | 'suspended' | 'pending'
 type UserRole = 'admin' | 'organizer' | 'superadmin'
 
-const statusConfig: Record<UserStatus, { bg: string; text: string; label: string; description: string }> = {
-  active: { bg: 'bg-green-500/10', text: 'text-green-600', label: 'Active', description: 'User has full access' },
-  suspended: { bg: 'bg-red-500/10', text: 'text-red-600', label: 'Suspended', description: 'Access restricted' },
-  pending: { bg: 'bg-amber-500/10', text: 'text-amber-600', label: 'Pending', description: 'Awaiting verification' },
+const statusConfig: Record<
+  UserStatus,
+  { bg: string; text: string; label: string; description: string }
+> = {
+  active: {
+    bg: 'bg-green-500/10',
+    text: 'text-green-600',
+    label: 'Active',
+    description: 'User has full access',
+  },
+  suspended: {
+    bg: 'bg-red-500/10',
+    text: 'text-red-600',
+    label: 'Suspended',
+    description: 'Access restricted',
+  },
+  pending: {
+    bg: 'bg-amber-500/10',
+    text: 'text-amber-600',
+    label: 'Pending',
+    description: 'Awaiting verification',
+  },
 }
 
-const roleConfig: Record<UserRole, { bg: string; text: string; icon: typeof ShieldCheck; description: string }> = {
-  superadmin: { bg: 'bg-purple-500/10', text: 'text-purple-600', icon: Crown, description: 'Full platform access' },
-  admin: { bg: 'bg-amber-500/10', text: 'text-amber-600', icon: ShieldCheck, description: 'Manage users & content' },
-  organizer: { bg: 'bg-blue-500/10', text: 'text-blue-600', icon: UserCircle, description: 'Create & manage events' },
+const roleConfig: Record<
+  UserRole,
+  { bg: string; text: string; icon: typeof ShieldCheck; description: string }
+> = {
+  superadmin: {
+    bg: 'bg-purple-500/10',
+    text: 'text-purple-600',
+    icon: Crown,
+    description: 'Full platform access',
+  },
+  admin: {
+    bg: 'bg-amber-500/10',
+    text: 'text-amber-600',
+    icon: ShieldCheck,
+    description: 'Manage users & content',
+  },
+  organizer: {
+    bg: 'bg-blue-500/10',
+    text: 'text-blue-600',
+    icon: UserCircle,
+    description: 'Create & manage events',
+  },
 }
 
 const statusFilters = [
@@ -98,15 +132,32 @@ export function AdminUsers() {
     api.admin.listAllUsersPaginated,
     roleFilter === 'all'
       ? { status: statusFilter === 'all' ? undefined : statusFilter, limit: PAGE_SIZE, offset }
-      : { role: roleFilter, status: statusFilter === 'all' ? undefined : statusFilter, limit: PAGE_SIZE, offset }
+      : {
+          role: roleFilter,
+          status: statusFilter === 'all' ? undefined : statusFilter,
+          limit: PAGE_SIZE,
+          offset,
+        }
   )
 
-  const admins = useQuery(api.admin.listAdmins)
+  // Only superadmins can list admins - skip query for regular admins
+  const admins = useQuery(api.admin.listAdmins, isSuperadmin ? {} : 'skip')
 
   const createAdmin = useMutation(api.admin.createAdmin)
   const removeAdmin = useMutation(api.admin.removeAdmin)
   const suspendUser = useMutation(api.moderation.suspendUser)
   const unsuspendUser = useMutation(api.moderation.unsuspendUser)
+  const bulkSuspendUsers = useMutation(api.admin.bulkSuspendUsers)
+  const bulkUnsuspendUsers = useMutation(api.admin.bulkUnsuspendUsers)
+  const bulkChangeRole = useMutation(api.admin.bulkChangeRole)
+
+  // Bulk selection state
+  const [selectedUsers, setSelectedUsers] = useState<Set<Id<'users'>>>(new Set())
+  const [showBulkSuspendModal, setShowBulkSuspendModal] = useState(false)
+  const [showBulkUnsuspendModal, setShowBulkUnsuspendModal] = useState(false)
+  const [showBulkRoleModal, setShowBulkRoleModal] = useState(false)
+  const [bulkRoleTarget, setBulkRoleTarget] = useState<'admin' | 'organizer'>('organizer')
+  const [isBulkLoading, setIsBulkLoading] = useState(false)
 
   // Reset pagination when filters change
   const handleFilterChange = useCallback((type: 'role' | 'status', value: string) => {
@@ -133,9 +184,8 @@ export function AdminUsers() {
     if (!usersResult?.items) return []
     if (!searchQuery.trim()) return usersResult.items
     const search = searchQuery.toLowerCase()
-    return usersResult.items.filter((u) =>
-      u.name?.toLowerCase().includes(search) ||
-      u.email?.toLowerCase().includes(search)
+    return usersResult.items.filter(
+      (u) => u.name?.toLowerCase().includes(search) || u.email?.toLowerCase().includes(search)
     )
   }, [usersResult, searchQuery])
 
@@ -229,6 +279,123 @@ export function AdminUsers() {
     setShowRemoveModal(true)
   }
 
+  // Bulk selection handlers
+  const toggleUserSelection = useCallback((userId: Id<'users'>) => {
+    setSelectedUsers((prev) => {
+      const next = new Set(prev)
+      if (next.has(userId)) {
+        next.delete(userId)
+      } else {
+        next.add(userId)
+      }
+      return next
+    })
+  }, [])
+
+  const toggleSelectAll = useCallback(() => {
+    if (!filteredUsers) return
+    const selectableUsers = filteredUsers.filter(
+      (u) => u._id !== currentUser?._id && u.role !== 'superadmin'
+    )
+    if (selectedUsers.size === selectableUsers.length) {
+      setSelectedUsers(new Set())
+    } else {
+      setSelectedUsers(new Set(selectableUsers.map((u) => u._id)))
+    }
+  }, [filteredUsers, selectedUsers.size, currentUser?._id])
+
+  const clearSelection = useCallback(() => {
+    setSelectedUsers(new Set())
+  }, [])
+
+  // Bulk action handlers
+  const handleBulkSuspend = async () => {
+    if (selectedUsers.size === 0 || !actionReason.trim()) {
+      toast.error('Please provide a reason')
+      return
+    }
+
+    setIsBulkLoading(true)
+    try {
+      const result = await bulkSuspendUsers({
+        userIds: Array.from(selectedUsers),
+        reason: actionReason,
+      })
+      if (result.success) {
+        toast.success(`Successfully suspended ${result.summary.succeeded} users`)
+      } else {
+        toast.warning(
+          `Suspended ${result.summary.succeeded} users, ${result.summary.failed} failed`
+        )
+      }
+      setShowBulkSuspendModal(false)
+      setSelectedUsers(new Set())
+      setActionReason('')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Bulk suspend failed')
+    } finally {
+      setIsBulkLoading(false)
+    }
+  }
+
+  const handleBulkUnsuspend = async () => {
+    if (selectedUsers.size === 0) return
+
+    setIsBulkLoading(true)
+    try {
+      const result = await bulkUnsuspendUsers({
+        userIds: Array.from(selectedUsers),
+      })
+      if (result.success) {
+        toast.success(`Successfully unsuspended ${result.summary.succeeded} users`)
+      } else {
+        toast.warning(
+          `Unsuspended ${result.summary.succeeded} users, ${result.summary.failed} failed`
+        )
+      }
+      setShowBulkUnsuspendModal(false)
+      setSelectedUsers(new Set())
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Bulk unsuspend failed')
+    } finally {
+      setIsBulkLoading(false)
+    }
+  }
+
+  const handleBulkRoleChange = async () => {
+    if (selectedUsers.size === 0) return
+
+    setIsBulkLoading(true)
+    try {
+      const result = await bulkChangeRole({
+        userIds: Array.from(selectedUsers),
+        newRole: bulkRoleTarget,
+      })
+      if (result.success) {
+        toast.success(`Successfully changed role for ${result.summary.succeeded} users`)
+      } else {
+        toast.warning(
+          `Changed role for ${result.summary.succeeded} users, ${result.summary.failed} failed`
+        )
+      }
+      setShowBulkRoleModal(false)
+      setSelectedUsers(new Set())
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Bulk role change failed')
+    } finally {
+      setIsBulkLoading(false)
+    }
+  }
+
+  // Selection info for the bulk action toolbar
+  const selectableUsers = useMemo(() => {
+    if (!filteredUsers) return []
+    return filteredUsers.filter((u) => u._id !== currentUser?._id && u.role !== 'superadmin')
+  }, [filteredUsers, currentUser?._id])
+
+  const isAllSelected = selectableUsers.length > 0 && selectedUsers.size === selectableUsers.length
+  const isPartiallySelected = selectedUsers.size > 0 && !isAllSelected
+
   const formatDate = (timestamp?: number) => {
     if (!timestamp) return 'N/A'
     return new Date(timestamp).toLocaleDateString('en-US', {
@@ -247,9 +414,7 @@ export function AdminUsers() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold font-mono">User Management</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage users, admins, and account statuses
-          </p>
+          <p className="text-muted-foreground mt-1">Manage users, admins, and account statuses</p>
         </div>
         {isSuperadmin && (
           <button
@@ -343,9 +508,7 @@ export function AdminUsers() {
         {/* Status Filter Tabs */}
         <div className="flex flex-wrap items-center gap-2">
           {statusFilters.map((filter) => {
-            const count = filter.value === 'all'
-              ? totalCount
-              : (statusCounts[filter.value] || 0)
+            const count = filter.value === 'all' ? totalCount : statusCounts[filter.value] || 0
             const config = filter.value !== 'all' ? statusConfig[filter.value] : null
             const isActive = statusFilter === filter.value
 
@@ -368,9 +531,7 @@ export function AdminUsers() {
                       <span
                         className={cn(
                           'px-1.5 py-0.5 rounded text-xs font-semibold min-w-[1.25rem] text-center',
-                          isActive
-                            ? 'bg-white/20 text-inherit'
-                            : 'bg-muted text-muted-foreground'
+                          isActive ? 'bg-white/20 text-inherit' : 'bg-muted text-muted-foreground'
                         )}
                       >
                         {count}
@@ -389,6 +550,110 @@ export function AdminUsers() {
         </div>
       </div>
 
+      {/* Bulk Action Toolbar */}
+      {selectedUsers.size > 0 && (
+        <div className="flex items-center justify-between p-4 rounded-xl border border-primary/30 bg-primary/5">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={clearSelection}
+              className="p-1 hover:bg-muted rounded transition-colors cursor-pointer"
+            >
+              <XCircle size={20} className="text-muted-foreground" />
+            </button>
+            <span className="text-sm font-medium">
+              {selectedUsers.size} user{selectedUsers.size !== 1 ? 's' : ''} selected
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setActionReason('')
+                setShowBulkSuspendModal(true)
+              }}
+              className={cn(
+                'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium',
+                'bg-red-500/10 text-red-600 hover:bg-red-500/20 transition-colors cursor-pointer'
+              )}
+            >
+              <XCircle size={16} weight="bold" />
+              Suspend
+            </button>
+            <button
+              onClick={() => setShowBulkUnsuspendModal(true)}
+              className={cn(
+                'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium',
+                'bg-green-500/10 text-green-600 hover:bg-green-500/20 transition-colors cursor-pointer'
+              )}
+            >
+              <CheckCircle size={16} weight="bold" />
+              Unsuspend
+            </button>
+            {isSuperadmin && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className={cn(
+                      'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium',
+                      'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 transition-colors cursor-pointer'
+                    )}
+                  >
+                    <ShieldCheck size={16} weight="bold" />
+                    Change Role
+                    <CaretDown size={12} />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setBulkRoleTarget('admin')
+                      setShowBulkRoleModal(true)
+                    }}
+                  >
+                    <Crown size={16} className="mr-2 text-amber-600" />
+                    Make Admin
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setBulkRoleTarget('organizer')
+                      setShowBulkRoleModal(true)
+                    }}
+                  >
+                    <UserCircle size={16} className="mr-2 text-blue-600" />
+                    Make Organizer
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Select All Header */}
+      {filteredUsers && filteredUsers.length > 0 && (
+        <div className="flex items-center gap-3 px-2">
+          <button
+            onClick={toggleSelectAll}
+            className="p-1 hover:bg-muted rounded transition-colors cursor-pointer"
+            title={isAllSelected ? 'Deselect all' : 'Select all'}
+          >
+            {isAllSelected ? (
+              <CheckSquare size={20} weight="fill" className="text-primary" />
+            ) : isPartiallySelected ? (
+              <MinusSquare size={20} weight="fill" className="text-primary" />
+            ) : (
+              <Square size={20} className="text-muted-foreground" />
+            )}
+          </button>
+          <span className="text-sm text-muted-foreground">
+            {isAllSelected
+              ? 'All selectable users selected'
+              : isPartiallySelected
+                ? `${selectedUsers.size} selected`
+                : 'Select all'}
+          </span>
+        </div>
+      )}
+
       {/* Users List */}
       <div className="space-y-3">
         {!usersResult ? (
@@ -405,9 +670,7 @@ export function AdminUsers() {
             <Users size={64} weight="duotone" className="mx-auto text-muted-foreground/30 mb-6" />
             <h3 className="text-lg font-semibold mb-2">No users found</h3>
             <p className="text-muted-foreground max-w-sm mx-auto">
-              {searchQuery
-                ? `No users match "${searchQuery}"`
-                : 'No users in this category'}
+              {searchQuery ? `No users match "${searchQuery}"` : 'No users in this category'}
             </p>
           </div>
         ) : (
@@ -421,14 +684,37 @@ export function AdminUsers() {
               user.role !== 'superadmin' &&
               (isSuperadmin || user.role !== 'admin')
 
+            const isSelected = selectedUsers.has(user._id)
+            const canSelect = !isCurrentUser && user.role !== 'superadmin'
+
             return (
               <div
                 key={user._id}
-                className="rounded-xl border border-border bg-card p-5 hover:border-primary/20 hover:bg-muted/30 transition-colors group"
+                className={cn(
+                  'rounded-xl border bg-card p-5 transition-colors group',
+                  isSelected
+                    ? 'border-primary/50 bg-primary/5'
+                    : 'border-border hover:border-primary/20 hover:bg-muted/30'
+                )}
               >
                 <div className="flex items-center justify-between gap-4">
                   {/* User Info */}
                   <div className="flex items-center gap-4 min-w-0">
+                    {/* Selection Checkbox */}
+                    {canSelect && (
+                      <button
+                        onClick={() => toggleUserSelection(user._id)}
+                        className="p-1 hover:bg-muted rounded transition-colors cursor-pointer flex-shrink-0"
+                      >
+                        {isSelected ? (
+                          <CheckSquare size={20} weight="fill" className="text-primary" />
+                        ) : (
+                          <Square size={20} className="text-muted-foreground" />
+                        )}
+                      </button>
+                    )}
+                    {!canSelect && <div className="w-[28px]" />}
+
                     <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                       <span className="text-lg font-semibold text-primary">
                         {(user.name || 'U')[0].toUpperCase()}
@@ -436,9 +722,7 @@ export function AdminUsers() {
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold truncate">
-                          {user.name || 'Unnamed'}
-                        </h3>
+                        <h3 className="font-semibold truncate">{user.name || 'Unnamed'}</h3>
                         {isCurrentUser && (
                           <span className="px-1.5 py-0.5 text-xs bg-muted text-muted-foreground rounded">
                             You
@@ -517,7 +801,9 @@ export function AdminUsers() {
                             <>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
-                                onClick={() => openRemoveAdminModal(user._id, user.name || 'this user')}
+                                onClick={() =>
+                                  openRemoveAdminModal(user._id, user.name || 'this user')
+                                }
                                 className="text-red-600 focus:text-red-600"
                               >
                                 <Trash size={16} weight="duotone" className="mr-2" />
@@ -656,8 +942,8 @@ export function AdminUsers() {
               <DialogTitle>Remove Admin Role</DialogTitle>
             </div>
             <DialogDescription>
-              Are you sure you want to remove admin privileges from <strong>{selectedUserName}</strong>?
-              They will be downgraded to organizer role.
+              Are you sure you want to remove admin privileges from{' '}
+              <strong>{selectedUserName}</strong>? They will be downgraded to organizer role.
             </DialogDescription>
           </DialogHeader>
 
@@ -701,8 +987,8 @@ export function AdminUsers() {
               <DialogTitle>Suspend User</DialogTitle>
             </div>
             <DialogDescription>
-              Are you sure you want to suspend <strong>{selectedUserName}</strong>?
-              They will not be able to access the platform.
+              Are you sure you want to suspend <strong>{selectedUserName}</strong>? They will not be
+              able to access the platform.
             </DialogDescription>
           </DialogHeader>
 
@@ -751,8 +1037,8 @@ export function AdminUsers() {
               <DialogTitle>Unsuspend User</DialogTitle>
             </div>
             <DialogDescription>
-              Are you sure you want to unsuspend <strong>{selectedUserName}</strong>?
-              They will regain access to the platform.
+              Are you sure you want to unsuspend <strong>{selectedUserName}</strong>? They will
+              regain access to the platform.
             </DialogDescription>
           </DialogHeader>
 
@@ -780,6 +1066,135 @@ export function AdminUsers() {
               className="px-4 py-2 rounded-lg text-sm font-medium bg-green-500 text-white hover:bg-green-600 transition-colors"
             >
               Unsuspend User
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Suspend Modal */}
+      <Dialog open={showBulkSuspendModal} onOpenChange={setShowBulkSuspendModal}>
+        <DialogContent>
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-lg bg-red-500/10">
+                <XCircle size={20} weight="duotone" className="text-red-600" />
+              </div>
+              <DialogTitle>Bulk Suspend Users</DialogTitle>
+            </div>
+            <DialogDescription>
+              Are you sure you want to suspend <strong>{selectedUsers.size} users</strong>? They
+              will not be able to access the platform.
+            </DialogDescription>
+          </DialogHeader>
+
+          <textarea
+            value={actionReason}
+            onChange={(e) => setActionReason(e.target.value)}
+            placeholder="Reason for suspension (required)"
+            rows={3}
+            className={cn(
+              'w-full px-3 py-2 rounded-lg border border-border bg-background',
+              'text-sm placeholder:text-muted-foreground resize-none',
+              'focus:outline-none focus:ring-2 focus:ring-primary/20'
+            )}
+          />
+
+          <DialogFooter>
+            <button
+              onClick={() => setShowBulkSuspendModal(false)}
+              className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleBulkSuspend}
+              disabled={!actionReason.trim() || isBulkLoading}
+              className={cn(
+                'px-4 py-2 rounded-lg text-sm font-medium cursor-pointer',
+                'bg-red-500 text-white hover:bg-red-600 transition-colors',
+                'disabled:opacity-50 disabled:cursor-not-allowed'
+              )}
+            >
+              {isBulkLoading ? 'Suspending...' : `Suspend ${selectedUsers.size} Users`}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Unsuspend Modal */}
+      <Dialog open={showBulkUnsuspendModal} onOpenChange={setShowBulkUnsuspendModal}>
+        <DialogContent>
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-lg bg-green-500/10">
+                <CheckCircle size={20} weight="duotone" className="text-green-600" />
+              </div>
+              <DialogTitle>Bulk Unsuspend Users</DialogTitle>
+            </div>
+            <DialogDescription>
+              Are you sure you want to unsuspend <strong>{selectedUsers.size} users</strong>? They
+              will regain access to the platform.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <button
+              onClick={() => setShowBulkUnsuspendModal(false)}
+              className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleBulkUnsuspend}
+              disabled={isBulkLoading}
+              className={cn(
+                'px-4 py-2 rounded-lg text-sm font-medium cursor-pointer',
+                'bg-green-500 text-white hover:bg-green-600 transition-colors',
+                'disabled:opacity-50 disabled:cursor-not-allowed'
+              )}
+            >
+              {isBulkLoading ? 'Unsuspending...' : `Unsuspend ${selectedUsers.size} Users`}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Role Change Modal */}
+      <Dialog open={showBulkRoleModal} onOpenChange={setShowBulkRoleModal}>
+        <DialogContent>
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-lg bg-amber-500/10">
+                <ShieldCheck size={20} weight="duotone" className="text-amber-600" />
+              </div>
+              <DialogTitle>Bulk Change Role</DialogTitle>
+            </div>
+            <DialogDescription>
+              Are you sure you want to change the role of{' '}
+              <strong>{selectedUsers.size} users</strong> to{' '}
+              <strong className="capitalize">{bulkRoleTarget}</strong>?
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <button
+              onClick={() => setShowBulkRoleModal(false)}
+              className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleBulkRoleChange}
+              disabled={isBulkLoading}
+              className={cn(
+                'px-4 py-2 rounded-lg text-sm font-medium cursor-pointer',
+                'bg-amber-500 text-white hover:bg-amber-600 transition-colors',
+                'disabled:opacity-50 disabled:cursor-not-allowed'
+              )}
+            >
+              {isBulkLoading
+                ? 'Changing...'
+                : `Change ${selectedUsers.size} Users to ${bulkRoleTarget}`}
             </button>
           </DialogFooter>
         </DialogContent>

@@ -4,11 +4,105 @@
 // Standardized response format for all API endpoints
 // All responses follow a consistent envelope structure
 
-// CORS headers for cross-origin requests
-export const corsHeaders = {
+// ============================================================================
+// CORS Configuration
+// ============================================================================
+// Origins can be configured via environment variable ALLOWED_ORIGINS
+// Set as comma-separated list: "https://app1.com,https://app2.com"
+
+// Default allowed origins
+const DEFAULT_ORIGINS = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://localhost:5174',
+  'https://openevent.my',
+  'https://www.openevent.my',
+  'https://openevent.app',
+  'https://open-event.vercel.app',
+]
+
+// Parse additional origins from environment variable
+function parseAllowedOrigins(): string[] {
+  const origins = [...DEFAULT_ORIGINS]
+
+  // Add SITE_URL if set
+  if (process.env.SITE_URL) {
+    origins.push(process.env.SITE_URL)
+  }
+
+  // Parse ALLOWED_ORIGINS environment variable (comma-separated)
+  const envOrigins = process.env.ALLOWED_ORIGINS
+  if (envOrigins) {
+    const additionalOrigins = envOrigins
+      .split(',')
+      .map((o) => o.trim())
+      .filter((o) => o.length > 0 && o.startsWith('http'))
+    origins.push(...additionalOrigins)
+  }
+
+  // Remove duplicates
+  return [...new Set(origins)]
+}
+
+const ALLOWED_ORIGINS = parseAllowedOrigins()
+
+// Get CORS origin for a request
+export function getCorsOrigin(requestOrigin?: string | null): string {
+  if (!requestOrigin) return ALLOWED_ORIGINS[0]
+  if (ALLOWED_ORIGINS.includes(requestOrigin)) return requestOrigin
+  // Default to first allowed origin if request origin not allowed
+  return ALLOWED_ORIGINS[0]
+}
+
+// ============================================================================
+// Security Headers
+// ============================================================================
+// Protection against common web vulnerabilities (OWASP Top 10)
+
+/**
+ * Security headers applied to all API responses
+ * - X-Content-Type-Options: Prevents MIME type sniffing
+ * - X-Frame-Options: Prevents clickjacking attacks
+ * - X-XSS-Protection: Legacy XSS protection (for older browsers)
+ * - Referrer-Policy: Controls referrer information
+ * - Permissions-Policy: Restricts browser features
+ */
+export const securityHeaders: Record<string, string> = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'X-XSS-Protection': '1; mode=block',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
+  'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+}
+
+/**
+ * Content Security Policy for API responses
+ * Restrictive policy since APIs return JSON, not HTML
+ */
+export const cspHeader: Record<string, string> = {
+  'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
+}
+
+// CORS headers for cross-origin requests (for public APIs without credentials)
+export const corsHeaders: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PATCH, PUT, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-API-Key',
+  ...securityHeaders,
+  ...cspHeader,
+}
+
+// CORS headers for auth endpoints (with credentials)
+export function authCorsHeaders(origin?: string | null): Record<string, string> {
+  return {
+    'Access-Control-Allow-Origin': getCorsOrigin(origin),
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Cookie',
+    'Access-Control-Allow-Credentials': 'true',
+    ...securityHeaders,
+    ...cspHeader,
+  }
 }
 
 // ----------------------------------------------------------------------------
@@ -106,8 +200,7 @@ export const ApiErrors = {
   unauthorized: (message: string = 'Invalid or missing API key') =>
     apiError('UNAUTHORIZED', message, 401),
 
-  forbidden: (message: string = 'Insufficient permissions') =>
-    apiError('FORBIDDEN', message, 403),
+  forbidden: (message: string = 'Insufficient permissions') => apiError('FORBIDDEN', message, 403),
 
   // Validation errors
   badRequest: (message: string, details?: unknown[]) =>
@@ -117,8 +210,7 @@ export const ApiErrors = {
     apiError('VALIDATION_ERROR', message, 400, details),
 
   // Not found
-  notFound: (resource: string = 'Resource') =>
-    apiError('NOT_FOUND', `${resource} not found`, 404),
+  notFound: (resource: string = 'Resource') => apiError('NOT_FOUND', `${resource} not found`, 404),
 
   // Rate limiting
   rateLimitExceeded: (retryAfter: number) =>
@@ -153,6 +245,44 @@ export async function parseBody<T>(request: Request): Promise<T | null> {
   } catch {
     return null
   }
+}
+
+/**
+ * Validate request size before processing
+ * Returns error response if size exceeds limit, null if valid
+ */
+export function validateRequestSize(request: Request, maxSize?: number): Response | null {
+  const contentLength = request.headers.get('Content-Length')
+
+  if (!contentLength) {
+    return null // No Content-Length header, proceed
+  }
+
+  const size = parseInt(contentLength, 10)
+  const limit = maxSize || 10 * 1024 * 1024 // Default 10MB
+
+  if (isNaN(size) || size < 0) {
+    return apiError('INVALID_REQUEST', 'Invalid Content-Length header', 400)
+  }
+
+  if (size > limit) {
+    const formatBytes = (bytes: number): string => {
+      if (bytes === 0) return '0 Bytes'
+      const k = 1024
+      const sizes = ['Bytes', 'KB', 'MB', 'GB']
+      const i = Math.floor(Math.log(bytes) / Math.log(k))
+      return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
+    }
+
+    return apiError(
+      'PAYLOAD_TOO_LARGE',
+      `Request body too large. Maximum size is ${formatBytes(limit)}, received ${formatBytes(size)}`,
+      413,
+      [{ size, limit }]
+    )
+  }
+
+  return null // Valid size
 }
 
 /**
@@ -225,12 +355,23 @@ export function getLastPathSegment(pathname: string): string | null {
 // ----------------------------------------------------------------------------
 
 /**
- * Handle OPTIONS preflight request for CORS
+ * Handle OPTIONS preflight request for CORS (public APIs)
  */
 export function handleCors(): Response {
   return new Response(null, {
     status: 204,
     headers: corsHeaders,
+  })
+}
+
+/**
+ * Handle OPTIONS preflight request for auth endpoints (with credentials)
+ */
+export function handleAuthCors(request: Request): Response {
+  const origin = request.headers.get('Origin')
+  return new Response(null, {
+    status: 204,
+    headers: authCorsHeaders(origin),
   })
 }
 
@@ -258,4 +399,3 @@ export function withRateLimitHeaders(
     headers,
   })
 }
-

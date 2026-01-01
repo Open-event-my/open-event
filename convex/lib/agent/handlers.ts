@@ -8,12 +8,7 @@
 import type { GenericActionCtx } from 'convex/server'
 import type { DataModel, Id } from '../../_generated/dataModel'
 import { api } from '../../_generated/api'
-import type {
-  ToolName,
-  ToolResult,
-  VendorSearchResult,
-  SponsorSearchResult,
-} from './types'
+import type { ToolName, ToolResult, VendorSearchResult, SponsorSearchResult } from './types'
 
 type ActionCtx = GenericActionCtx<DataModel>
 
@@ -268,7 +263,8 @@ async function handleSearchVendors(
   })
 
   // Transform to search results
-  const results: VendorSearchResult[] = vendors.slice(0, limit).map((v) => ({
+  type VendorType = (typeof vendors)[number]
+  const results: VendorSearchResult[] = vendors.slice(0, limit).map((v: VendorType) => ({
     id: v._id,
     name: v.name,
     category: v.category,
@@ -379,7 +375,8 @@ async function handleSearchSponsors(
   })
 
   // Transform to search results
-  const results: SponsorSearchResult[] = sponsors.slice(0, limit).map((s) => ({
+  type SponsorType = (typeof sponsors)[number]
+  const results: SponsorSearchResult[] = sponsors.slice(0, limit).map((s: SponsorType) => ({
     id: s._id,
     name: s.name,
     industry: s.industry,
@@ -485,9 +482,10 @@ async function handleAddSponsorToEvent(
 async function handleGetUserProfile(
   ctx: ActionCtx,
   // Parameters required by ToolHandler signature
-  ...[, ]: [string, Record<string, unknown>]
+  ...[,]: [string, Record<string, unknown>]
 ): Promise<ToolResult> {
-  const profile = await ctx.runQuery(api.organizerProfiles.getMyProfile)
+  // Note: getCurrentUser in lib/auth.ts now supports both Convex Auth and custom session tokens
+  const profile = await ctx.runQuery(api.organizerProfiles.getMyProfile, {})
 
   if (!profile) {
     return {
@@ -518,6 +516,62 @@ async function handleGetUserProfile(
 // Recommendation/Matching Handlers
 // ============================================================================
 
+/**
+ * Calculate location similarity score between two location strings.
+ * Returns a score from 0-30 based on how well locations match.
+ */
+function calculateLocationScore(
+  eventLocation: string | undefined,
+  vendorLocation: string | undefined
+): { score: number; reason: string | null } {
+  if (!eventLocation || !vendorLocation) {
+    return { score: 0, reason: null }
+  }
+
+  const eventLower = eventLocation.toLowerCase()
+  const vendorLower = vendorLocation.toLowerCase()
+
+  // Extract city/state/country components
+  const extractParts = (loc: string) => {
+    const parts = loc.split(/[,\s]+/).filter(Boolean)
+    return {
+      full: loc,
+      parts: parts.map((p) => p.toLowerCase()),
+    }
+  }
+
+  const eventParts = extractParts(eventLower)
+  const vendorParts = extractParts(vendorLower)
+
+  // Exact match
+  if (eventLower === vendorLower) {
+    return { score: 30, reason: `Located in ${vendorLocation}` }
+  }
+
+  // Check for city match (usually first significant part)
+  const commonParts = eventParts.parts.filter((p) =>
+    vendorParts.parts.some((vp) => vp.includes(p) || p.includes(vp))
+  )
+
+  if (commonParts.length > 0) {
+    // Same region/city
+    if (commonParts.length >= 2) {
+      return { score: 25, reason: `Same area (${vendorLocation})` }
+    }
+    return { score: 15, reason: `Near your venue (${vendorLocation})` }
+  }
+
+  // Check for state/country match
+  const stateCountryMatch = vendorParts.parts.some((vp) =>
+    eventParts.parts.some((ep) => vp === ep && vp.length > 3)
+  )
+  if (stateCountryMatch) {
+    return { score: 10, reason: `Same region (${vendorLocation})` }
+  }
+
+  return { score: 0, reason: null }
+}
+
 async function handleGetRecommendedVendors(
   ctx: ActionCtx,
   _userId: string,
@@ -541,43 +595,98 @@ async function handleGetRecommendedVendors(
 
   // Get vendors (filtered by category if provided)
   const vendors = await ctx.runQuery(api.vendors.list, { category })
+  type VendorType = (typeof vendors)[number]
 
   // Score and sort vendors based on event fit
-  const scoredVendors = vendors.map((vendor) => {
+  const scoredVendors = vendors.map((vendor: VendorType) => {
     let score = 0
+    const matchReasons: string[] = []
 
-    // Rating bonus
-    if (vendor.rating) score += vendor.rating * 10
-
-    // Verified bonus
-    if (vendor.verified) score += 20
-
-    // Price range match (based on event budget if available)
-    if (event.budget && vendor.priceRange) {
-      const budgetPerVendor = event.budget / 5 // rough estimate
-      if (budgetPerVendor < 5000 && vendor.priceRange === 'budget') score += 15
-      else if (budgetPerVendor < 20000 && vendor.priceRange === 'mid-range') score += 15
-      else if (budgetPerVendor < 50000 && vendor.priceRange === 'premium') score += 15
-      else if (vendor.priceRange === 'luxury') score += 15
+    // Location-based scoring (new!)
+    const eventLocation = event.venueAddress || event.venueName
+    const locationResult = calculateLocationScore(eventLocation, vendor.location)
+    if (locationResult.score > 0) {
+      score += locationResult.score
+      if (locationResult.reason) matchReasons.push(locationResult.reason)
     }
 
-    return { vendor, score }
+    // Rating bonus with explanation
+    if (vendor.rating) {
+      const ratingScore = vendor.rating * 10
+      score += ratingScore
+      if (vendor.rating >= 4.5) {
+        matchReasons.push(`Excellent rating (${vendor.rating}★)`)
+      } else if (vendor.rating >= 4.0) {
+        matchReasons.push(`Highly rated (${vendor.rating}★)`)
+      }
+    }
+
+    // Verified bonus with explanation
+    if (vendor.verified) {
+      score += 20
+      matchReasons.push('Verified vendor')
+    }
+
+    // Price range match with explanation
+    if (event.budget && vendor.priceRange) {
+      const budgetPerVendor = event.budget / 5
+      let priceMatch = false
+      if (budgetPerVendor < 5000 && vendor.priceRange === 'budget') {
+        score += 15
+        priceMatch = true
+      } else if (budgetPerVendor < 20000 && vendor.priceRange === 'mid-range') {
+        score += 15
+        priceMatch = true
+      } else if (budgetPerVendor < 50000 && vendor.priceRange === 'premium') {
+        score += 15
+        priceMatch = true
+      } else if (budgetPerVendor >= 50000 && vendor.priceRange === 'luxury') {
+        score += 15
+        priceMatch = true
+      }
+      if (priceMatch) {
+        matchReasons.push(`Fits your budget (${vendor.priceRange})`)
+      }
+    }
+
+    // Event size match (based on expected attendees)
+    if (event.expectedAttendees && vendor.capacity?.maxEventsPerMonth) {
+      if (event.expectedAttendees <= 100 || vendor.capacity.maxEventsPerMonth >= 4) {
+        score += 10
+        matchReasons.push('Available capacity')
+      }
+    }
+
+    // Category relevance
+    if (category && vendor.category.toLowerCase() === category.toLowerCase()) {
+      score += 10
+      matchReasons.push(`Specializes in ${vendor.category}`)
+    }
+
+    return { vendor, score, matchReasons }
   })
 
   // Sort by score and take top N
+  type ScoredVendor = { vendor: VendorType; score: number; matchReasons: string[] }
   const topVendors = scoredVendors
-    .sort((a, b) => b.score - a.score)
+    .sort((a: ScoredVendor, b: ScoredVendor) => b.score - a.score)
     .slice(0, limit)
-    .map(({ vendor, score }) => ({
+    .map(({ vendor, score, matchReasons }: ScoredVendor) => ({
       id: vendor._id,
       name: vendor.name,
       category: vendor.category,
       description: vendor.description,
       rating: vendor.rating,
       priceRange: vendor.priceRange,
+      location: vendor.location,
       verified: vendor.verified,
       matchScore: score,
-      matchReason: score > 40 ? 'Highly recommended' : score > 20 ? 'Good match' : 'Potential match',
+      // Detailed explanation of why this vendor is recommended
+      matchReasons: matchReasons.length > 0 ? matchReasons : ['Available for booking'],
+      whyRecommended:
+        matchReasons.length > 0
+          ? matchReasons.slice(0, 3).join(' • ')
+          : 'Available vendor in your category',
     }))
 
   if (topVendors.length === 0) {
@@ -596,6 +705,7 @@ async function handleGetRecommendedVendors(
     success: true,
     data: {
       eventTitle: event.title,
+      eventLocation: event.venueAddress || event.venueName,
       recommendations: topVendors,
     },
     summary: `Found ${topVendors.length} recommended ${category ? `${category} ` : ''}vendor${topVendors.length !== 1 ? 's' : ''} for "${event.title}"`,
@@ -625,49 +735,106 @@ async function handleGetRecommendedSponsors(
 
   // Get sponsors
   const sponsors = await ctx.runQuery(api.sponsors.list, {})
+  type SponsorType = (typeof sponsors)[number]
 
   // Score and sort sponsors based on event fit
-  const scoredSponsors = sponsors.map((sponsor) => {
+  const scoredSponsors = sponsors.map((sponsor: SponsorType) => {
     let score = 0
+    const matchReasons: string[] = []
 
-    // Verified bonus
-    if (sponsor.verified) score += 20
+    // Verified bonus with explanation
+    if (sponsor.verified) {
+      score += 20
+      matchReasons.push('Verified sponsor')
+    }
 
-    // Event type match
-    if (sponsor.targetEventTypes?.includes(event.eventType || '')) score += 30
+    // Event type match with explanation
+    if (sponsor.targetEventTypes && event.eventType) {
+      const matchingType = sponsor.targetEventTypes.find(
+        (t: string) =>
+          t.toLowerCase().includes(event.eventType!.toLowerCase()) ||
+          event.eventType!.toLowerCase().includes(t.toLowerCase())
+      )
+      if (matchingType) {
+        score += 30
+        matchReasons.push(`Targets ${event.eventType} events`)
+      }
+    }
+
+    // Industry relevance for event type
+    const industryEventMatch: Record<string, string[]> = {
+      technology: ['conference', 'workshop', 'meetup', 'webinar'],
+      finance: ['conference', 'seminar', 'corporate'],
+      healthcare: ['conference', 'seminar', 'workshop'],
+      entertainment: ['festival', 'concert', 'party', 'celebration'],
+      education: ['workshop', 'seminar', 'conference'],
+      sports: ['tournament', 'competition', 'sports'],
+    }
+    const eventTypeLower = event.eventType?.toLowerCase() || ''
+    const industryLower = sponsor.industry.toLowerCase()
+    if (industryEventMatch[industryLower]?.some((t) => eventTypeLower.includes(t))) {
+      score += 15
+      matchReasons.push(`${sponsor.industry} industry aligns with your event type`)
+    }
 
     // Budget alignment with event size
-    if (event.expectedAttendees && sponsor.budgetMin) {
-      // Larger events attract bigger sponsors
-      if (event.expectedAttendees > 500 && sponsor.budgetMin > 10000) score += 20
-      else if (event.expectedAttendees > 100 && sponsor.budgetMin > 5000) score += 15
-      else if (sponsor.budgetMin < 5000) score += 10
+    if (event.expectedAttendees && sponsor.budgetMin !== undefined) {
+      if (event.expectedAttendees > 500 && sponsor.budgetMin > 10000) {
+        score += 20
+        matchReasons.push('Budget matches large event scale')
+      } else if (event.expectedAttendees > 100 && sponsor.budgetMin > 5000) {
+        score += 15
+        matchReasons.push('Budget fits medium-sized events')
+      } else if (event.expectedAttendees <= 100 && sponsor.budgetMin < 5000) {
+        score += 15
+        matchReasons.push('Budget appropriate for event size')
+      }
     }
 
-    // Tier filter if specified
+    // Tier filter with explanation
     if (tier && sponsor.sponsorshipTiers) {
-      if (sponsor.sponsorshipTiers.includes(tier)) score += 25
+      if (sponsor.sponsorshipTiers.includes(tier)) {
+        score += 25
+        matchReasons.push(`Offers ${tier} sponsorship tier`)
+      }
+    } else if (sponsor.sponsorshipTiers && sponsor.sponsorshipTiers.length > 0) {
+      score += 5
+      matchReasons.push(`Available tiers: ${sponsor.sponsorshipTiers.slice(0, 2).join(', ')}`)
     }
 
-    return { sponsor, score }
+    // Past sponsorship experience bonus
+    if (sponsor.pastSponsorships && sponsor.pastSponsorships.length > 0) {
+      score += 10
+      matchReasons.push(`${sponsor.pastSponsorships.length} past sponsorships`)
+    }
+
+    return { sponsor, score, matchReasons }
   })
 
   // Sort by score and take top N
+  type ScoredSponsor = { sponsor: SponsorType; score: number; matchReasons: string[] }
   const topSponsors = scoredSponsors
-    .sort((a, b) => b.score - a.score)
+    .sort((a: ScoredSponsor, b: ScoredSponsor) => b.score - a.score)
     .slice(0, limit)
-    .map(({ sponsor, score }) => ({
+    .map(({ sponsor, score, matchReasons }: ScoredSponsor) => ({
       id: sponsor._id,
       name: sponsor.name,
       industry: sponsor.industry,
       description: sponsor.description,
-      budgetRange: sponsor.budgetMin && sponsor.budgetMax
-        ? `$${sponsor.budgetMin.toLocaleString()} - $${sponsor.budgetMax.toLocaleString()}`
-        : undefined,
+      budgetRange:
+        sponsor.budgetMin !== undefined && sponsor.budgetMax !== undefined
+          ? `$${sponsor.budgetMin.toLocaleString()} - $${sponsor.budgetMax.toLocaleString()}`
+          : undefined,
       sponsorshipTiers: sponsor.sponsorshipTiers,
       verified: sponsor.verified,
       matchScore: score,
-      matchReason: score > 50 ? 'Highly interested' : score > 30 ? 'Good fit' : 'Potential interest',
+      // Detailed explanation of why this sponsor is recommended
+      matchReasons:
+        matchReasons.length > 0 ? matchReasons : ['Open to new sponsorship opportunities'],
+      whyRecommended:
+        matchReasons.length > 0
+          ? matchReasons.slice(0, 3).join(' • ')
+          : 'Available for sponsorship inquiries',
     }))
 
   if (topSponsors.length === 0) {
@@ -686,6 +853,8 @@ async function handleGetRecommendedSponsors(
     success: true,
     data: {
       eventTitle: event.title,
+      eventType: event.eventType,
+      expectedAttendees: event.expectedAttendees,
       recommendations: topSponsors,
     },
     summary: `Found ${topSponsors.length} recommended sponsor${topSponsors.length !== 1 ? 's' : ''} for "${event.title}"`,
@@ -713,11 +882,12 @@ async function handleGetEventVendors(
     }
   }
 
+  type EventVendorType = (typeof vendors)[number]
   return {
     toolCallId: '',
     name: 'getEventVendors',
     success: true,
-    data: vendors.map((v) => ({
+    data: vendors.map((v: EventVendorType) => ({
       id: v._id,
       vendorId: v.vendorId,
       vendorName: v.vendor?.name,
@@ -751,11 +921,12 @@ async function handleGetEventSponsors(
     }
   }
 
+  type EventSponsorType = (typeof sponsors)[number]
   return {
     toolCallId: '',
     name: 'getEventSponsors',
     success: true,
-    data: sponsors.map((s) => ({
+    data: sponsors.map((s: EventSponsorType) => ({
       id: s._id,
       sponsorId: s.sponsorId,
       sponsorName: s.sponsor?.name,

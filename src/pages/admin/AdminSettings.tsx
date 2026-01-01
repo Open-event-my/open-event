@@ -1,4 +1,5 @@
-import { useQuery } from 'convex/react'
+import { useState } from 'react'
+import { useQuery, useMutation } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import { cn } from '@/lib/utils'
 import {
@@ -13,11 +14,46 @@ import {
   Lock,
   Key,
   Code,
+  Gear,
+  Sparkle,
+  UserPlus,
+  Gauge,
+  Flag,
+  ArrowClockwise,
+  FloppyDisk,
 } from '@phosphor-icons/react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import { toast } from 'sonner'
+
+type SettingValue = string | number | boolean | unknown[]
+
+interface Setting {
+  _id: string
+  key: string
+  category: string
+  label: string
+  description?: string
+  value: SettingValue
+  valueType: 'string' | 'number' | 'boolean' | 'json'
+  defaultValue?: SettingValue
+}
 
 export function AdminSettings() {
   const currentUser = useQuery(api.queries.auth.getCurrentUser)
   const isSuperadmin = currentUser?.role === 'superadmin'
+
+  // Platform settings
+  const allSettings = useQuery(api.platformSettings.getAll)
+  const initializeSettings = useMutation(api.platformSettings.initializeDefaults)
+  const updateSetting = useMutation(api.platformSettings.update)
+  const resetSetting = useMutation(api.platformSettings.resetToDefault)
+
+  // Track modified settings
+  const [modifiedSettings, setModifiedSettings] = useState<Record<string, SettingValue>>({})
+  const [savingKeys, setSavingKeys] = useState<Set<string>>(new Set())
 
   // Platform stats for the overview
   const users = useQuery(api.admin.listAllUsers, { limit: 1000 })
@@ -35,6 +71,167 @@ export function AdminSettings() {
     totalSponsors: sponsors?.length || 0,
     approvedSponsors: sponsors?.filter((s) => s.status === 'approved').length || 0,
     pendingSponsors: sponsors?.filter((s) => s.status === 'pending').length || 0,
+  }
+
+  // Check if settings are initialized
+  const hasSettings = allSettings && Object.keys(allSettings).length > 0
+
+  // Handle initialize settings
+  const handleInitializeSettings = async () => {
+    try {
+      const result = await initializeSettings({})
+      toast.success(`Initialized ${result.created} settings (${result.skipped} already existed)`)
+    } catch {
+      toast.error('Failed to initialize settings')
+    }
+  }
+
+  // Handle setting value change
+  const handleSettingChange = (key: string, value: SettingValue) => {
+    setModifiedSettings((prev) => ({ ...prev, [key]: value }))
+  }
+
+  // Save a single setting
+  const handleSaveSetting = async (key: string) => {
+    if (!(key in modifiedSettings)) return
+
+    setSavingKeys((prev) => new Set(prev).add(key))
+    try {
+      await updateSetting({ key, value: modifiedSettings[key] })
+      setModifiedSettings((prev) => {
+        const newState = { ...prev }
+        delete newState[key]
+        return newState
+      })
+      toast.success(`Setting "${key}" updated`)
+    } catch {
+      toast.error(`Failed to update setting: ${key}`)
+    } finally {
+      setSavingKeys((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(key)
+        return newSet
+      })
+    }
+  }
+
+  // Reset a setting to default
+  const handleResetSetting = async (key: string) => {
+    setSavingKeys((prev) => new Set(prev).add(key))
+    try {
+      await resetSetting({ key })
+      setModifiedSettings((prev) => {
+        const newState = { ...prev }
+        delete newState[key]
+        return newState
+      })
+      toast.success(`Setting "${key}" reset to default`)
+    } catch {
+      toast.error(`Failed to reset setting: ${key}`)
+    } finally {
+      setSavingKeys((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(key)
+        return newSet
+      })
+    }
+  }
+
+  // Get current value (modified or saved)
+  const getCurrentValue = (setting: Setting): SettingValue => {
+    return setting.key in modifiedSettings ? modifiedSettings[setting.key] : setting.value
+  }
+
+  // Get category icon
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'ai':
+        return <Sparkle size={16} weight="duotone" className="text-purple-500" />
+      case 'registration':
+        return <UserPlus size={16} weight="duotone" className="text-blue-500" />
+      case 'features':
+        return <Gear size={16} weight="duotone" className="text-green-500" />
+      case 'rateLimit':
+        return <Gauge size={16} weight="duotone" className="text-orange-500" />
+      case 'moderation':
+        return <Flag size={16} weight="duotone" className="text-red-500" />
+      default:
+        return <Gear size={16} weight="duotone" className="text-muted-foreground" />
+    }
+  }
+
+  // Render setting input based on type
+  const renderSettingInput = (setting: Setting) => {
+    const currentValue = getCurrentValue(setting)
+    const isModified = setting.key in modifiedSettings
+    const isSaving = savingKeys.has(setting.key)
+
+    return (
+      <div
+        key={setting.key}
+        className="flex items-center justify-between py-3 border-b border-border last:border-0"
+      >
+        <div className="flex-1 min-w-0 pr-4">
+          <div className="flex items-center gap-2">
+            <Label className="font-medium">{setting.label}</Label>
+            {isModified && (
+              <span className="text-xs px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600">
+                Modified
+              </span>
+            )}
+          </div>
+          {setting.description && (
+            <p className="text-xs text-muted-foreground mt-0.5">{setting.description}</p>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {setting.valueType === 'boolean' ? (
+            <Switch
+              checked={currentValue as boolean}
+              onCheckedChange={(checked) => handleSettingChange(setting.key, checked)}
+              disabled={isSaving}
+            />
+          ) : setting.valueType === 'number' ? (
+            <Input
+              type="number"
+              value={currentValue as number}
+              onChange={(e) => handleSettingChange(setting.key, Number(e.target.value))}
+              className="w-24 text-right"
+              disabled={isSaving}
+            />
+          ) : setting.valueType === 'string' ? (
+            <Input
+              type="text"
+              value={currentValue as string}
+              onChange={(e) => handleSettingChange(setting.key, e.target.value)}
+              className="w-40"
+              disabled={isSaving}
+            />
+          ) : (
+            <span className="text-sm text-muted-foreground">(JSON)</span>
+          )}
+          {isModified && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => handleSaveSetting(setting.key)}
+              disabled={isSaving}
+            >
+              <FloppyDisk size={16} />
+            </Button>
+          )}
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => handleResetSetting(setting.key)}
+            disabled={isSaving}
+            title="Reset to default"
+          >
+            <ArrowClockwise size={16} />
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -179,6 +376,57 @@ export function AdminSettings() {
           </div>
         </div>
       </div>
+
+      {/* Platform Settings - Superadmin Only */}
+      {isSuperadmin && (
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="p-4 border-b border-border bg-muted/30">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-purple-500/10">
+                  <Gear size={20} weight="duotone" className="text-purple-500" />
+                </div>
+                <div>
+                  <h2 className="font-semibold">Platform Settings</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Configure platform-wide settings (Superadmin only)
+                  </p>
+                </div>
+              </div>
+              {!hasSettings && (
+                <Button onClick={handleInitializeSettings} size="sm">
+                  Initialize Defaults
+                </Button>
+              )}
+            </div>
+          </div>
+          <div className="p-4">
+            {!hasSettings ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Gear size={48} weight="duotone" className="mx-auto mb-4 opacity-50" />
+                <p className="text-sm">No settings configured yet.</p>
+                <p className="text-sm">Click "Initialize Defaults" to set up platform settings.</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {Object.entries(allSettings).map(([category, settings]) => (
+                  <div key={category}>
+                    <div className="flex items-center gap-2 mb-3">
+                      {getCategoryIcon(category)}
+                      <h3 className="text-sm font-semibold capitalize">
+                        {category === 'rateLimit' ? 'Rate Limiting' : category}
+                      </h3>
+                    </div>
+                    <div className="rounded-lg border border-border bg-muted/20 px-4">
+                      {(settings as Setting[]).map(renderSettingInput)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Access Levels */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">

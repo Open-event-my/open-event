@@ -41,16 +41,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
 
 // Status icon component
-function StatusIcon({ status, size = 16, className }: { status: string; size?: number; className?: string }) {
+function StatusIcon({
+  status,
+  size = 16,
+  className,
+}: {
+  status: string
+  size?: number
+  className?: string
+}) {
   const iconProps = { size, weight: 'duotone' as const, className }
   switch (status) {
     case 'draft':
@@ -70,7 +73,9 @@ function StatusIcon({ status, size = 16, className }: { status: string; size?: n
 
 // Progress indicator showing where event is in lifecycle
 function StatusProgress({ currentStatus }: { currentStatus: string }) {
-  const currentIndex = statusWorkflowOrder.indexOf(currentStatus as typeof statusWorkflowOrder[number])
+  const currentIndex = statusWorkflowOrder.indexOf(
+    currentStatus as (typeof statusWorkflowOrder)[number]
+  )
 
   if (currentStatus === 'cancelled') {
     return (
@@ -98,15 +103,26 @@ function StatusProgress({ currentStatus }: { currentStatus: string }) {
                     className={cn(
                       'w-2 h-2 rounded-full transition-all',
                       isCompleted && 'bg-emerald-500',
-                      isCurrent && config.bg.replace('/10', '').replace('bg-', 'bg-') + ' ring-2 ring-offset-1 ring-offset-background ' + config.bg.replace('/10', '/30'),
+                      isCurrent &&
+                        config.bg.replace('/10', '') +
+                          ' ring-2 ring-offset-1 ring-offset-background ' +
+                          config.bg.replace('/10', '/30'),
                       isUpcoming && 'bg-muted-foreground/20'
                     )}
-                    style={isCurrent ? {
-                      backgroundColor: status === 'draft' ? 'rgb(113 113 122)' :
-                        status === 'planning' ? 'rgb(217 119 6)' :
-                        status === 'active' ? 'rgb(5 150 105)' :
-                        'rgb(37 99 235)'
-                    } : undefined}
+                    style={
+                      isCurrent
+                        ? {
+                            backgroundColor:
+                              status === 'draft'
+                                ? 'rgb(113 113 122)'
+                                : status === 'planning'
+                                  ? 'rgb(217 119 6)'
+                                  : status === 'active'
+                                    ? 'rgb(5 150 105)'
+                                    : 'rgb(37 99 235)',
+                          }
+                        : undefined
+                    }
                   />
                 </TooltipTrigger>
                 <TooltipContent side="top" className="text-xs">
@@ -136,11 +152,12 @@ export function EventsPage() {
   const [deleteEventId, setDeleteEventId] = useState<Id<'events'> | null>(null)
   const [deleteEventTitle, setDeleteEventTitle] = useState('')
 
-  // Get all events to calculate counts
+  // Get all events once and filter client-side (avoids double query)
   const allEvents = useQuery(api.events.getMyEvents, {})
-  const events = useQuery(api.events.getMyEvents, {
-    status: statusFilter === 'all' ? undefined : statusFilter,
-  })
+  const events = useMemo(() => {
+    if (!allEvents || statusFilter === 'all') return allEvents
+    return allEvents.filter((e) => e.status === statusFilter)
+  }, [allEvents, statusFilter])
   const deleteEvent = useMutation(api.events.remove)
   const updateEvent = useMutation(api.events.update)
   const duplicateEvent = useMutation(api.events.duplicate)
@@ -148,10 +165,13 @@ export function EventsPage() {
   // Calculate counts per status
   const statusCounts = useMemo(() => {
     if (!allEvents) return {}
-    return allEvents.reduce((acc, event) => {
-      acc[event.status] = (acc[event.status] || 0) + 1
-      return acc
-    }, {} as Record<string, number>)
+    return allEvents.reduce(
+      (acc, event) => {
+        acc[event.status] = (acc[event.status] || 0) + 1
+        return acc
+      },
+      {} as Record<string, number>
+    )
   }, [allEvents])
 
   const handleDelete = async () => {
@@ -200,9 +220,7 @@ export function EventsPage() {
       {/* Status Filter Tabs with Counts - horizontal scroll on mobile */}
       <div className="flex items-center gap-2 pb-2 border-b border-border overflow-x-auto hide-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0">
         {eventStatusFilters.map((filter) => {
-          const count = filter.value === 'all'
-            ? totalCount
-            : (statusCounts[filter.value] || 0)
+          const count = filter.value === 'all' ? totalCount : statusCounts[filter.value] || 0
           const config = filter.value !== 'all' ? eventStatusConfig[filter.value] : null
           const isActive = statusFilter === filter.value
 
@@ -234,7 +252,9 @@ export function EventsPage() {
                       />
                     )}
                     <span className="hidden sm:inline">{filter.label}</span>
-                    <span className="sm:hidden">{filter.label.split(' ')[0]}</span>
+                    <span className="sm:hidden">
+                      {filter.label.includes(' ') ? filter.label.split(' ')[0] : filter.label}
+                    </span>
                     <span
                       className={cn(
                         'px-1 sm:px-1.5 py-0.5 rounded text-[10px] sm:text-xs font-semibold min-w-[1rem] sm:min-w-[1.25rem] text-center',
@@ -263,10 +283,7 @@ export function EventsPage() {
         // Loading state
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="rounded-xl border border-border bg-card p-5 animate-pulse"
-            >
+            <div key={i} className="rounded-xl border border-border bg-card p-5 animate-pulse">
               <div className="h-6 bg-muted rounded w-1/3 mb-3" />
               <div className="h-4 bg-muted rounded w-1/2" />
             </div>
@@ -275,11 +292,7 @@ export function EventsPage() {
       ) : events.length === 0 ? (
         // Empty State
         <div className="rounded-xl border border-dashed border-border bg-card p-12 text-center">
-          <Calendar
-            size={64}
-            weight="duotone"
-            className="mx-auto text-muted-foreground/30 mb-6"
-          />
+          <Calendar size={64} weight="duotone" className="mx-auto text-muted-foreground/30 mb-6" />
           <h3 className="text-lg font-semibold mb-2">
             {statusFilter === 'all'
               ? 'no events yet'
@@ -304,10 +317,7 @@ export function EventsPage() {
                 className="rounded-lg sm:rounded-xl border border-border bg-card p-3 sm:p-5 hover:border-primary/20 hover:bg-muted/30 transition-colors group"
               >
                 <div className="flex items-start justify-between gap-2 sm:gap-4">
-                  <Link
-                    to={`/dashboard/events/${event._id}`}
-                    className="flex-1 min-w-0"
-                  >
+                  <Link to={`/dashboard/events/${event._id}`} className="flex-1 min-w-0">
                     {/* Title and Status Badge */}
                     <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 mb-2">
                       <h3 className="text-sm sm:text-base font-semibold truncate group-hover:text-primary transition-colors">
@@ -398,28 +408,18 @@ export function EventsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
                         <DropdownMenuItem
-                          onClick={() =>
-                            navigate(`/dashboard/events/${event._id}`)
-                          }
+                          onClick={() => navigate(`/dashboard/events/${event._id}`)}
                         >
                           <Eye size={16} weight="duotone" className="mr-2" />
                           View Details
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() =>
-                            navigate(`/dashboard/events/${event._id}/edit`)
-                          }
+                          onClick={() => navigate(`/dashboard/events/${event._id}/edit`)}
                         >
-                          <PencilSimple
-                            size={16}
-                            weight="duotone"
-                            className="mr-2"
-                          />
+                          <PencilSimple size={16} weight="duotone" className="mr-2" />
                           Edit Event
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDuplicate(event._id)}
-                        >
+                        <DropdownMenuItem onClick={() => handleDuplicate(event._id)}>
                           <Copy size={16} weight="duotone" className="mr-2" />
                           Duplicate
                         </DropdownMenuItem>
@@ -437,9 +437,7 @@ export function EventsPage() {
                             return (
                               <DropdownMenuItem
                                 key={status}
-                                onClick={() =>
-                                  handleStatusChange(event._id, status)
-                                }
+                                onClick={() => handleStatusChange(event._id, status)}
                               >
                                 <StatusIcon
                                   status={status}
@@ -453,16 +451,10 @@ export function EventsPage() {
 
                         {event.status !== 'cancelled' && (
                           <DropdownMenuItem
-                            onClick={() =>
-                              handleStatusChange(event._id, 'cancelled')
-                            }
+                            onClick={() => handleStatusChange(event._id, 'cancelled')}
                             className="text-red-500 focus:text-red-500"
                           >
-                            <XCircle
-                              size={16}
-                              weight="duotone"
-                              className="mr-2"
-                            />
+                            <XCircle size={16} weight="duotone" className="mr-2" />
                             Cancel Event
                           </DropdownMenuItem>
                         )}
@@ -498,9 +490,8 @@ export function EventsPage() {
           <DialogHeader>
             <DialogTitle>Delete Event</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{deleteEventTitle}"? This action
-              cannot be undone. All associated vendors and sponsors will also be
-              removed from this event.
+              Are you sure you want to delete "{deleteEventTitle}"? This action cannot be undone.
+              All associated vendors and sponsors will also be removed from this event.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

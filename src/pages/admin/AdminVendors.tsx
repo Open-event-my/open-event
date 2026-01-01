@@ -17,12 +17,7 @@ import {
   MapPin,
   Clock,
 } from '@phosphor-icons/react'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   Dialog,
   DialogContent,
@@ -35,10 +30,28 @@ import { AddVendorModal } from '@/components/admin'
 
 type VendorStatus = 'pending' | 'approved' | 'rejected'
 
-const statusConfig: Record<VendorStatus, { bg: string; text: string; label: string; description: string }> = {
-  pending: { bg: 'bg-amber-500/10', text: 'text-amber-600', label: 'Pending', description: 'Awaiting review' },
-  approved: { bg: 'bg-green-500/10', text: 'text-green-600', label: 'Approved', description: 'Active in marketplace' },
-  rejected: { bg: 'bg-red-500/10', text: 'text-red-600', label: 'Rejected', description: 'Application declined' },
+const statusConfig: Record<
+  VendorStatus,
+  { bg: string; text: string; label: string; description: string }
+> = {
+  pending: {
+    bg: 'bg-amber-500/10',
+    text: 'text-amber-600',
+    label: 'Pending',
+    description: 'Awaiting review',
+  },
+  approved: {
+    bg: 'bg-green-500/10',
+    text: 'text-green-600',
+    label: 'Approved',
+    description: 'Active in marketplace',
+  },
+  rejected: {
+    bg: 'bg-red-500/10',
+    text: 'text-red-600',
+    label: 'Rejected',
+    description: 'Application declined',
+  },
 }
 
 const statusFilters = [
@@ -70,10 +83,13 @@ export function AdminVendors() {
   // Calculate status counts
   const statusCounts = useMemo(() => {
     if (!allVendors) return {}
-    return allVendors.reduce((acc, vendor) => {
-      acc[vendor.status] = (acc[vendor.status] || 0) + 1
-      return acc
-    }, {} as Record<string, number>)
+    return allVendors.reduce(
+      (acc, vendor) => {
+        acc[vendor.status] = (acc[vendor.status] || 0) + 1
+        return acc
+      },
+      {} as Record<string, number>
+    )
   }, [allVendors])
 
   const filteredVendors = vendors?.filter((v) => {
@@ -130,9 +146,7 @@ export function AdminVendors() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold font-mono">Vendor Management</h1>
-          <p className="text-muted-foreground mt-1">
-            Review and manage vendor applications
-          </p>
+          <p className="text-muted-foreground mt-1">Review and manage vendor applications</p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
@@ -152,9 +166,7 @@ export function AdminVendors() {
         {/* Status Filter Tabs with Counts */}
         <div className="flex flex-wrap items-center gap-2 pb-2 border-b border-border sm:border-0 sm:pb-0">
           {statusFilters.map((filter) => {
-            const count = filter.value === 'all'
-              ? totalCount
-              : (statusCounts[filter.value] || 0)
+            const count = filter.value === 'all' ? totalCount : statusCounts[filter.value] || 0
             const config = filter.value !== 'all' ? statusConfig[filter.value] : null
             const isActive = statusFilter === filter.value
 
@@ -229,14 +241,18 @@ export function AdminVendors() {
           </div>
         ) : filteredVendors?.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border bg-card p-12 text-center">
-            <Storefront size={64} weight="duotone" className="mx-auto text-muted-foreground/30 mb-6" />
+            <Storefront
+              size={64}
+              weight="duotone"
+              className="mx-auto text-muted-foreground/30 mb-6"
+            />
             <h3 className="text-lg font-semibold mb-2">
-              {statusFilter === 'all' ? 'No vendors yet' : `No ${statusConfig[statusFilter]?.label.toLowerCase()} vendors`}
+              {statusFilter === 'all'
+                ? 'No vendors yet'
+                : `No ${statusConfig[statusFilter]?.label.toLowerCase()} vendors`}
             </h3>
             <p className="text-muted-foreground max-w-sm mx-auto">
-              {searchQuery
-                ? `No vendors match "${searchQuery}"`
-                : `No vendors in this category`}
+              {searchQuery ? `No vendors match "${searchQuery}"` : `No vendors in this category`}
             </p>
           </div>
         ) : (
@@ -375,7 +391,8 @@ export function AdminVendors() {
                 {vendor.status === 'rejected' && vendor.rejectionReason && (
                   <div className="mt-3 pt-3 border-t border-border ml-15">
                     <p className="text-xs text-red-600">
-                      <span className="font-medium">Rejection reason:</span> {vendor.rejectionReason}
+                      <span className="font-medium">Rejection reason:</span>{' '}
+                      {vendor.rejectionReason}
                     </p>
                   </div>
                 )}

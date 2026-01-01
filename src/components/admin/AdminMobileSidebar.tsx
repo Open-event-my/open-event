@@ -23,9 +23,7 @@ const navigationItems = [
   { label: 'AI Usage', icon: Sparkle, path: '/admin/ai-usage' },
 ]
 
-const bottomItems = [
-  { label: 'Settings', icon: Gear, path: '/admin/settings' },
-]
+const bottomItems = [{ label: 'Settings', icon: Gear, path: '/admin/settings' }]
 
 interface AdminMobileSidebarProps {
   open: boolean
@@ -47,10 +45,7 @@ export function AdminMobileSidebar({ open, onClose }: AdminMobileSidebarProps) {
   return (
     <>
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-50 bg-black/50 lg:hidden"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 z-50 bg-black/50 lg:hidden" onClick={onClose} />
 
       {/* Sidebar */}
       <aside className="fixed inset-y-0 left-0 z-50 w-64 bg-background border-r border-border lg:hidden">

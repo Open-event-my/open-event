@@ -33,11 +33,7 @@ export function DemoControls({
           onClick={onPlayPause}
           aria-label={isPlaying ? 'Pause demo' : 'Play demo'}
         >
-          {isPlaying ? (
-            <Pause size={18} weight="duotone" />
-          ) : (
-            <Play size={18} weight="duotone" />
-          )}
+          {isPlaying ? <Pause size={18} weight="duotone" /> : <Play size={18} weight="duotone" />}
         </Button>
         {onClose && (
           <Button

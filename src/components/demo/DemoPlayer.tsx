@@ -24,14 +24,7 @@ interface DemoPlayerProps {
 }
 
 export function DemoPlayer({ onClose }: DemoPlayerProps) {
-  const {
-    currentScene,
-    sceneProgress,
-    isPlaying,
-    play,
-    pause,
-    goToScene,
-  } = useDemoPlayer({
+  const { currentScene, sceneProgress, isPlaying, play, pause, goToScene } = useDemoPlayer({
     sceneDuration: 7000,
     sceneCount: SCENES.length,
     autoPlay: true,

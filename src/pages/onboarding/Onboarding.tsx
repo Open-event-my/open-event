@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useConvexAuth, useMutation, useQuery } from 'convex/react'
+import { useMutation, useQuery, useConvexAuth } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import { TypeformLayout, TypeformTransition } from '@/components/typeform'
 import { useOnboarding } from '@/hooks/use-onboarding'
@@ -29,14 +29,39 @@ const steps = [
 export function Onboarding() {
   const navigate = useNavigate()
   const { isLoading: authLoading, isAuthenticated } = useConvexAuth()
+  const user = useQuery(api.queries.auth.getCurrentUser)
   const saveProfile = useMutation(api.organizerProfiles.saveProfile)
-  
+
+  // #region agent log
+  useEffect(() => {
+    fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'src/pages/onboarding/Onboarding.tsx:35',
+        message: 'Onboarding auth state',
+        data: {
+          isAuthenticated,
+          authLoading,
+          hasUser: !!user,
+          userId: user?._id,
+          userRole: user?.role,
+        },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'onboarding-auth',
+        hypothesisId: 'O1',
+      }),
+    }).catch(() => {})
+  }, [isAuthenticated, authLoading, user])
+  // #endregion
+
   // Only query profile if authenticated
   const existingProfile = useQuery(
     api.organizerProfiles.getMyProfile,
     isAuthenticated ? {} : 'skip'
   )
-  
+
   const hasSavedRef = useRef(false)
 
   const {
@@ -69,7 +94,23 @@ export function Onboarding() {
     if (isComplete && !hasSavedRef.current && isAuthenticated) {
       hasSavedRef.current = true
 
-      // Save profile to Convex
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'src/pages/onboarding/Onboarding.tsx:70',
+          message: 'Saving onboarding profile',
+          data: { isAuthenticated, hasUser: !!user },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'onboarding-save',
+          hypothesisId: 'O2',
+        }),
+      }).catch(() => {})
+      // #endregion
+
+      // Save profile to Convex (no accessToken needed - uses Convex Auth)
       saveProfile({
         organizationName: answers.organizationName,
         organizationType: answers.organizationType,
@@ -80,14 +121,44 @@ export function Onboarding() {
         referralSource: answers.referralSource,
       })
         .then(() => {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              location: 'src/pages/onboarding/Onboarding.tsx:88',
+              message: 'Onboarding profile saved successfully',
+              data: {},
+              timestamp: Date.now(),
+              sessionId: 'debug-session',
+              runId: 'onboarding-save',
+              hypothesisId: 'O3',
+            }),
+          }).catch(() => {})
+          // #endregion
           navigate('/onboarding/complete', { replace: true })
         })
-        .catch(() => {
+        .catch((error) => {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              location: 'src/pages/onboarding/Onboarding.tsx:92',
+              message: 'Onboarding profile save error',
+              data: { error: error instanceof Error ? error.message : String(error) },
+              timestamp: Date.now(),
+              sessionId: 'debug-session',
+              runId: 'onboarding-save',
+              hypothesisId: 'O4',
+            }),
+          }).catch(() => {})
+          // #endregion
           // Navigate anyway - we don't want to block the user
           navigate('/onboarding/complete', { replace: true })
         })
     }
-  }, [isComplete, answers, saveProfile, navigate, isAuthenticated])
+  }, [isComplete, answers, saveProfile, navigate, isAuthenticated, user])
 
   const CurrentStepComponent = steps[currentStep - 1]
 

@@ -172,8 +172,19 @@ export function Hero() {
               <span className="bg-gradient-to-r from-slate-800 via-slate-600 to-slate-800 dark:from-slate-200 dark:via-slate-400 dark:to-slate-200 bg-clip-text text-transparent">
                 reimagined.
               </span>
-              <svg className="absolute -bottom-1 sm:-bottom-2 left-0 w-full" height="8" viewBox="0 0 200 10" preserveAspectRatio="none">
-                <path d="M0 8 Q50 0 100 8 T200 8" stroke="url(#hero-underline)" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+              <svg
+                className="absolute -bottom-1 sm:-bottom-2 left-0 w-full"
+                height="8"
+                viewBox="0 0 200 10"
+                preserveAspectRatio="none"
+              >
+                <path
+                  d="M0 8 Q50 0 100 8 T200 8"
+                  stroke="url(#hero-underline)"
+                  strokeWidth="2.5"
+                  fill="none"
+                  strokeLinecap="round"
+                />
                 <defs>
                   <linearGradient id="hero-underline" x1="0%" y1="0%" x2="100%" y2="0%">
                     <stop offset="0%" stopColor="#6366f1" />
@@ -187,8 +198,8 @@ export function Hero() {
 
           {/* Subheadline */}
           <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed px-2">
-            Plan events with AI. Connect vendors and sponsors.
-            All in one beautiful, open-source platform.
+            Plan events with AI. Connect vendors and sponsors. All in one beautiful, open-source
+            platform.
           </p>
 
           {/* CTA Buttons - Full width on mobile */}
@@ -210,7 +221,11 @@ export function Hero() {
               className="group flex items-center justify-center gap-3 px-6 py-4 text-base font-medium text-foreground hover:bg-muted/50 transition-all rounded-xl border border-border/50 hover:border-border touch-manipulation touch-active"
             >
               <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800/50 flex items-center justify-center group-hover:bg-slate-200 dark:group-hover:bg-slate-700/70 transition-colors">
-                <Play size={14} weight="fill" className="text-slate-700 dark:text-slate-300 ml-0.5" />
+                <Play
+                  size={14}
+                  weight="fill"
+                  className="text-slate-700 dark:text-slate-300 ml-0.5"
+                />
               </div>
               Watch demo
             </button>
@@ -264,8 +279,12 @@ export function Hero() {
               {/* Mock header with workspace name */}
               <div className="flex items-center justify-between mb-6 sm:mb-8">
                 <div>
-                  <div className="text-lg sm:text-xl font-semibold text-foreground">My workspace</div>
-                  <div className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Manage your events</div>
+                  <div className="text-lg sm:text-xl font-semibold text-foreground">
+                    My workspace
+                  </div>
+                  <div className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">
+                    Manage your events
+                  </div>
                 </div>
                 <div className="hidden sm:flex items-center gap-2">
                   <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg">
@@ -302,11 +321,15 @@ export function Hero() {
                           stat.color === 'violet' && 'text-violet-500',
                           stat.color === 'emerald' && 'text-emerald-500',
                           stat.color === 'amber' && 'text-amber-500',
-                          stat.color === 'blue' && 'text-blue-500',
+                          stat.color === 'blue' && 'text-blue-500'
                         )}
                       />
-                      <div className="text-xl sm:text-2xl font-semibold mt-1 sm:mt-2">{stat.value}</div>
-                      <div className="text-[10px] sm:text-xs text-muted-foreground">{stat.label}</div>
+                      <div className="text-xl sm:text-2xl font-semibold mt-1 sm:mt-2">
+                        {stat.value}
+                      </div>
+                      <div className="text-[10px] sm:text-xs text-muted-foreground">
+                        {stat.label}
+                      </div>
                     </div>
                   )
                 })}
@@ -317,7 +340,12 @@ export function Hero() {
                 {[
                   { title: 'Tech Conference 2025', status: 'active', color: 'emerald' },
                   { title: 'Product Launch Event', status: 'planning', color: 'blue' },
-                  { title: 'Annual Company Meetup', status: 'draft', color: 'zinc', hideOnMobile: true },
+                  {
+                    title: 'Annual Company Meetup',
+                    status: 'draft',
+                    color: 'zinc',
+                    hideOnMobile: true,
+                  },
                 ].map((event, i) => (
                   <div
                     key={event.title}
@@ -327,24 +355,40 @@ export function Hero() {
                     )}
                     style={{ opacity: 1 - i * 0.15 }}
                   >
-                    <div className={cn(
-                      'w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0',
-                      event.color === 'emerald' && 'bg-gradient-to-br from-emerald-500 to-green-600',
-                      event.color === 'blue' && 'bg-gradient-to-br from-blue-500 to-indigo-600',
-                      event.color === 'zinc' && 'bg-gradient-to-br from-zinc-400 to-zinc-500',
-                    )}>
-                      <Calendar size={16} weight="fill" className="text-white sm:w-[18px] sm:h-[18px]" />
+                    <div
+                      className={cn(
+                        'w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0',
+                        event.color === 'emerald' &&
+                          'bg-gradient-to-br from-emerald-500 to-green-600',
+                        event.color === 'blue' && 'bg-gradient-to-br from-blue-500 to-indigo-600',
+                        event.color === 'zinc' && 'bg-gradient-to-br from-zinc-400 to-zinc-500'
+                      )}
+                    >
+                      <Calendar
+                        size={16}
+                        weight="fill"
+                        className="text-white sm:w-[18px] sm:h-[18px]"
+                      />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-foreground text-sm sm:text-base truncate">{event.title}</div>
-                      <div className="text-[10px] sm:text-xs text-muted-foreground">Dec 2025 · 500 attendees</div>
+                      <div className="font-medium text-foreground text-sm sm:text-base truncate">
+                        {event.title}
+                      </div>
+                      <div className="text-[10px] sm:text-xs text-muted-foreground">
+                        Dec 2025 · 500 attendees
+                      </div>
                     </div>
-                    <span className={cn(
-                      'px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium capitalize flex-shrink-0',
-                      event.color === 'emerald' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300',
-                      event.color === 'blue' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
-                      event.color === 'zinc' && 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400',
-                    )}>
+                    <span
+                      className={cn(
+                        'px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium capitalize flex-shrink-0',
+                        event.color === 'emerald' &&
+                          'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300',
+                        event.color === 'blue' &&
+                          'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
+                        event.color === 'zinc' &&
+                          'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'
+                      )}
+                    >
                       {event.status}
                     </span>
                   </div>

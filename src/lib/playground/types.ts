@@ -83,11 +83,7 @@ export type NoteCardShape = TLBaseShape<'note-card', NoteCardProps>
 // Union Types
 // ============================================================================
 
-export type PlaygroundCardShape =
-  | EventCardShape
-  | TaskCardShape
-  | BudgetCardShape
-  | NoteCardShape
+export type PlaygroundCardShape = EventCardShape | TaskCardShape | BudgetCardShape | NoteCardShape
 
 export type CardType = 'event-card' | 'task-card' | 'budget-card' | 'note-card'
 
@@ -113,3 +109,39 @@ export const DEFAULT_CARD_SIZE = {
   w: 280,
   h: 200,
 } as const
+
+// ============================================================================
+// Extracted Card Data (with position for proximity linking)
+// ============================================================================
+
+export interface CardPosition {
+  x: number
+  y: number
+}
+
+export interface ExtractedEventCard extends EventCardProps {
+  id: string
+  position: CardPosition
+}
+
+export interface ExtractedTaskCard extends TaskCardProps {
+  id: string
+  position: CardPosition
+}
+
+export interface ExtractedBudgetCard extends BudgetCardProps {
+  id: string
+  position: CardPosition
+}
+
+export interface ExtractedNoteCard extends NoteCardProps {
+  id: string
+  position: CardPosition
+}
+
+export interface PlaygroundCanvasData {
+  eventCards: ExtractedEventCard[]
+  taskCards: ExtractedTaskCard[]
+  budgetCards: ExtractedBudgetCard[]
+  noteCards: ExtractedNoteCard[]
+}

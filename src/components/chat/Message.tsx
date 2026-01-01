@@ -57,16 +57,10 @@ export function Message({
       {status === 'sending' && (
         <CircleNotch size={12} weight="bold" className="text-muted-foreground/60 animate-spin" />
       )}
-      {status === 'sent' && (
-        <Check size={12} weight="bold" className="text-muted-foreground/60" />
-      )}
-      {status === 'delivered' && (
-        <Checks size={12} weight="bold" className="text-primary/70" />
-      )}
+      {status === 'sent' && <Check size={12} weight="bold" className="text-muted-foreground/60" />}
+      {status === 'delivered' && <Checks size={12} weight="bold" className="text-primary/70" />}
       {timestamp && (
-        <span className="text-[10px] text-muted-foreground/50">
-          {formatMessageTime(timestamp)}
-        </span>
+        <span className="text-[10px] text-muted-foreground/50">{formatMessageTime(timestamp)}</span>
       )}
     </div>
   )
@@ -84,20 +78,12 @@ export function Message({
       )}
     >
       {/* Avatar with streaming glow */}
-      <div className={cn(
-        'flex-shrink-0 mt-0.5',
-        isStreaming && 'avatar-streaming'
-      )}>
+      <div className={cn('flex-shrink-0 mt-0.5', isStreaming && 'avatar-streaming')}>
         {avatar || defaultAvatar}
       </div>
 
       {/* Content wrapper */}
-      <div
-        className={cn(
-          'flex-1 flex flex-col gap-0.5 min-w-0',
-          isUser && 'items-end'
-        )}
-      >
+      <div className={cn('flex-1 flex flex-col gap-0.5 min-w-0', isUser && 'items-end')}>
         {/* Message bubble */}
         <div
           className={cn(
@@ -115,12 +101,7 @@ export function Message({
           {children}
 
           {/* Streaming cursor */}
-          {isStreaming && (
-            <span
-              className="streaming-cursor"
-              aria-hidden="true"
-            />
-          )}
+          {isStreaming && <span className="streaming-cursor" aria-hidden="true" />}
         </div>
 
         {/* Status indicator */}
@@ -160,11 +141,7 @@ export interface MessageGroupProps {
 }
 
 export function MessageGroup({ children, className }: MessageGroupProps) {
-  return (
-    <div className={cn('space-y-4', className)}>
-      {children}
-    </div>
-  )
+  return <div className={cn('space-y-4', className)}>{children}</div>
 }
 
 // ============================================================================
@@ -178,13 +155,7 @@ export interface ThinkingIndicatorProps {
 
 export function ThinkingIndicator({ className, text }: ThinkingIndicatorProps) {
   return (
-    <div
-      className={cn(
-        'flex gap-3',
-        'message-entrance',
-        className
-      )}
-    >
+    <div className={cn('flex gap-3', 'message-entrance', className)}>
       {/* Pulsing thinking orb */}
       <div className="thinking-orb-container">
         <div className="thinking-orb" />
@@ -196,9 +167,7 @@ export function ThinkingIndicator({ className, text }: ThinkingIndicatorProps) {
             <span style={{ animationDelay: '150ms' }} />
             <span style={{ animationDelay: '300ms' }} />
           </div>
-          {text && (
-            <span className="thinking-text">{text}</span>
-          )}
+          {text && <span className="thinking-text">{text}</span>}
         </div>
       </div>
     </div>
@@ -215,13 +184,7 @@ export interface TypingIndicatorProps {
 
 export function TypingIndicator({ className }: TypingIndicatorProps) {
   return (
-    <div
-      className={cn(
-        'flex gap-3 items-center',
-        'message-entrance',
-        className
-      )}
-    >
+    <div className={cn('flex gap-3 items-center', 'message-entrance', className)}>
       <div className="avatar-streaming">
         <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shadow-sm">
           <Sparkle size={16} weight="duotone" className="text-primary" />

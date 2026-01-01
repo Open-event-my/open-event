@@ -1,12 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
-import {
-  GithubLogo,
-  ChatCircle,
-  XLogo,
-  EnvelopeSimple,
-  ArrowRight,
-} from '@phosphor-icons/react'
+import { OptimizedImage } from '@/components/ui/optimized-image'
+import { GithubLogo, ChatCircle, XLogo, EnvelopeSimple, ArrowRight } from '@phosphor-icons/react'
 
 const socialLinks = [
   { icon: GithubLogo, label: 'GitHub', href: 'https://github.com/hazlijohar95/open-event' },
@@ -69,7 +64,11 @@ export function Footer() {
               </div>
               <button className="h-11 sm:h-12 px-5 sm:px-6 rounded-lg sm:rounded-xl bg-foreground text-background text-sm font-medium hover:bg-foreground/90 transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 group cursor-pointer touch-manipulation active:scale-[0.98]">
                 Subscribe
-                <ArrowRight size={14} weight="bold" className="transition-transform group-hover:translate-x-0.5" />
+                <ArrowRight
+                  size={14}
+                  weight="bold"
+                  className="transition-transform group-hover:translate-x-0.5"
+                />
               </button>
             </div>
           </div>
@@ -81,17 +80,14 @@ export function Footer() {
           <div className="col-span-2 md:col-span-2">
             <Logo size="lg" className="mb-3 sm:mb-4" />
             <p className="text-xs sm:text-sm text-muted-foreground max-w-xs mb-4 sm:mb-6 leading-relaxed">
-              The open-source event operations platform. Connect with sponsors,
-              manage vendors, and run seamless events.
+              The open-source event operations platform. Connect with sponsors, manage vendors, and
+              run seamless events.
             </p>
             {/* Social Links */}
             <div className="flex items-center gap-2">
               {socialLinks.map(({ icon: Icon, label, href, inactive }) =>
                 inactive ? (
-                  <div
-                    key={label}
-                    className="relative group"
-                  >
+                  <div key={label} className="relative group">
                     <div
                       className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-muted/30 flex items-center justify-center text-muted-foreground/40 cursor-not-allowed"
                       aria-label={`${label} - coming soon`}
@@ -219,9 +215,10 @@ export function Footer() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 font-medium text-foreground hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                 >
-                  <img
+                  <OptimizedImage
                     src="https://github.com/hazlijohar95.png"
                     alt="Hazli"
+                    lazy
                     className="w-4 h-4 sm:w-5 sm:h-5 rounded-full"
                   />
                   Hazli
@@ -234,9 +231,10 @@ export function Footer() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 font-medium text-foreground hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                 >
-                  <img
+                  <OptimizedImage
                     src="https://github.com/azmir32.png"
                     alt="Azmir"
+                    lazy
                     className="w-4 h-4 sm:w-5 sm:h-5 rounded-full"
                   />
                   Azmir

@@ -103,10 +103,7 @@ export function EventTasksPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [isSaving, setIsSaving] = useState(false)
 
-  const event = useQuery(
-    api.events.get,
-    eventId ? { id: eventId as Id<'events'> } : 'skip'
-  )
+  const event = useQuery(api.events.get, eventId ? { id: eventId as Id<'events'> } : 'skip')
 
   const tasks = useQuery(
     api.eventTasks.listByEvent,
@@ -264,19 +261,15 @@ export function EventTasksPage() {
       <div className="text-center py-16">
         <Warning size={64} weight="duotone" className="mx-auto text-muted-foreground/30 mb-6" />
         <h2 className="text-xl font-semibold mb-2">Event not found</h2>
-        <Link
-          to="/dashboard/events"
-          className="text-primary hover:underline"
-        >
+        <Link to="/dashboard/events" className="text-primary hover:underline">
           Back to Events
         </Link>
       </div>
     )
   }
 
-  const filteredTasks = statusFilter === 'all'
-    ? tasks
-    : tasks.filter((task) => task.status === statusFilter)
+  const filteredTasks =
+    statusFilter === 'all' ? tasks : tasks.filter((task) => task.status === statusFilter)
 
   return (
     <div className="space-y-6">
@@ -332,9 +325,7 @@ export function EventTasksPage() {
               <span className="text-xs font-medium">Total Tasks</span>
             </div>
             <p className="text-2xl font-bold font-mono">{summary.total}</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {summary.completionRate}% complete
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">{summary.completionRate}% complete</p>
           </div>
 
           <div className="p-4 rounded-xl border border-border bg-card">
@@ -342,10 +333,10 @@ export function EventTasksPage() {
               <Clock size={16} weight="bold" />
               <span className="text-xs font-medium">In Progress</span>
             </div>
-            <p className="text-2xl font-bold font-mono text-blue-600">{summary.byStatus.in_progress}</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {summary.byStatus.todo} to do
+            <p className="text-2xl font-bold font-mono text-blue-600">
+              {summary.byStatus.in_progress}
             </p>
+            <p className="text-xs text-muted-foreground mt-1">{summary.byStatus.todo} to do</p>
           </div>
 
           <div className="p-4 rounded-xl border border-border bg-card">
@@ -353,7 +344,9 @@ export function EventTasksPage() {
               <CheckCircle size={16} weight="bold" />
               <span className="text-xs font-medium">Completed</span>
             </div>
-            <p className="text-2xl font-bold font-mono text-green-600">{summary.byStatus.completed}</p>
+            <p className="text-2xl font-bold font-mono text-green-600">
+              {summary.byStatus.completed}
+            </p>
           </div>
 
           <div className="p-4 rounded-xl border border-border bg-card">
@@ -361,10 +354,14 @@ export function EventTasksPage() {
               <Warning size={16} weight="bold" className="text-red-500" />
               <span className="text-xs font-medium">Overdue</span>
             </div>
-            <p className={cn(
-              'text-2xl font-bold font-mono',
-              summary.overdue > 0 ? 'text-red-500' : ''
-            )}>{summary.overdue}</p>
+            <p
+              className={cn(
+                'text-2xl font-bold font-mono',
+                summary.overdue > 0 ? 'text-red-500' : ''
+              )}
+            >
+              {summary.overdue}
+            </p>
           </div>
 
           <div className="p-4 rounded-xl border border-border bg-card">
@@ -372,10 +369,14 @@ export function EventTasksPage() {
               <Lightning size={16} weight="bold" className="text-orange-500" />
               <span className="text-xs font-medium">Urgent</span>
             </div>
-            <p className={cn(
-              'text-2xl font-bold font-mono',
-              summary.urgent > 0 ? 'text-orange-500' : ''
-            )}>{summary.urgent}</p>
+            <p
+              className={cn(
+                'text-2xl font-bold font-mono',
+                summary.urgent > 0 ? 'text-orange-500' : ''
+              )}
+            >
+              {summary.urgent}
+            </p>
             <p className="text-xs text-muted-foreground mt-1">
               {summary.dueThisWeek} due this week
             </p>
@@ -419,7 +420,11 @@ export function EventTasksPage() {
       {/* Tasks List */}
       {filteredTasks.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border bg-card p-12 text-center">
-          <ListChecks size={64} weight="duotone" className="mx-auto text-muted-foreground/30 mb-6" />
+          <ListChecks
+            size={64}
+            weight="duotone"
+            className="mx-auto text-muted-foreground/30 mb-6"
+          />
           <h3 className="text-lg font-semibold mb-2">
             {tasks.length === 0 ? 'No tasks yet' : 'No tasks match filter'}
           </h3>
@@ -487,29 +492,34 @@ export function EventTasksPage() {
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <h3 className={cn(
-                        'font-medium',
-                        isComplete && 'line-through text-muted-foreground'
-                      )}>
+                      <h3
+                        className={cn(
+                          'font-medium',
+                          isComplete && 'line-through text-muted-foreground'
+                        )}
+                      >
                         {task.title}
                       </h3>
                       {PriorityIcon && (
                         <PriorityIcon
                           size={14}
                           weight="fill"
-                          className={task.priority === 'urgent' ? 'text-red-500' : 'text-orange-500'}
+                          className={
+                            task.priority === 'urgent' ? 'text-red-500' : 'text-orange-500'
+                          }
                         />
                       )}
-                      <span className={cn(
-                        'px-2 py-0.5 rounded text-xs font-medium',
-                        priority?.color
-                      )}>
+                      <span
+                        className={cn('px-2 py-0.5 rounded text-xs font-medium', priority?.color)}
+                      >
                         {priority?.label}
                       </span>
                     </div>
 
                     {task.description && (
-                      <p className="text-sm text-muted-foreground mb-2 line-clamp-1">{task.description}</p>
+                      <p className="text-sm text-muted-foreground mb-2 line-clamp-1">
+                        {task.description}
+                      </p>
                     )}
 
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -517,10 +527,12 @@ export function EventTasksPage() {
                         <span className="px-2 py-0.5 rounded bg-muted">{category.label}</span>
                       )}
                       {task.dueDate && (
-                        <span className={cn(
-                          'flex items-center gap-1',
-                          !isComplete && isOverdue(task.dueDate) && 'text-red-500 font-medium'
-                        )}>
+                        <span
+                          className={cn(
+                            'flex items-center gap-1',
+                            !isComplete && isOverdue(task.dueDate) && 'text-red-500 font-medium'
+                          )}
+                        >
                           <CalendarBlank size={12} />
                           {formatDueDate(task.dueDate)}
                         </span>
@@ -578,9 +590,7 @@ export function EventTasksPage() {
               <CheckSquare size={20} weight="duotone" className="text-primary" />
               {editingTask ? 'Edit Task' : 'Add Task'}
             </DialogTitle>
-            <DialogDescription>
-              Add a task to your event planning checklist.
-            </DialogDescription>
+            <DialogDescription>Add a task to your event planning checklist.</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
@@ -638,7 +648,9 @@ export function EventTasksPage() {
                 <Label>Priority</Label>
                 <Select
                   value={form.priority}
-                  onValueChange={(value) => setForm({ ...form, priority: value as TaskForm['priority'] })}
+                  onValueChange={(value) =>
+                    setForm({ ...form, priority: value as TaskForm['priority'] })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -659,7 +671,9 @@ export function EventTasksPage() {
                 <Label>Status</Label>
                 <Select
                   value={form.status}
-                  onValueChange={(value) => setForm({ ...form, status: value as TaskForm['status'] })}
+                  onValueChange={(value) =>
+                    setForm({ ...form, status: value as TaskForm['status'] })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />

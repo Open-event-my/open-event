@@ -51,7 +51,10 @@ export function AgenticStreamingText({
         const code = lines.slice(1).join('\n')
 
         return (
-          <div key={i} className="my-4 rounded-2xl overflow-hidden border border-border/40 bg-zinc-950 shadow-lg">
+          <div
+            key={i}
+            className="my-4 rounded-2xl overflow-hidden border border-border/40 bg-zinc-950 shadow-lg"
+          >
             <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-900/80 border-b border-border/30">
               <span className="text-xs text-zinc-400 font-mono">{language}</span>
               <button
@@ -116,7 +119,13 @@ export function AgenticStreamingText({
       if (typeof part !== 'string') return part
       const boldParts = part.split(/\*\*(.*?)\*\*/g)
       return boldParts.map((p, j) =>
-        j % 2 === 1 ? <strong key={`bold-${i}-${j}`} className="font-semibold">{p}</strong> : p
+        j % 2 === 1 ? (
+          <strong key={`bold-${i}-${j}`} className="font-semibold">
+            {p}
+          </strong>
+        ) : (
+          p
+        )
       )
     })
 
@@ -126,10 +135,15 @@ export function AgenticStreamingText({
       const codeParts = part.split(/`([^`]+)`/g)
       return codeParts.map((p, j) =>
         j % 2 === 1 ? (
-          <code key={`code-${i}-${j}`} className="px-1.5 py-0.5 rounded-md bg-muted/80 font-mono text-[0.875em] text-primary/90">
+          <code
+            key={`code-${i}-${j}`}
+            className="px-1.5 py-0.5 rounded-md bg-muted/80 font-mono text-[0.875em] text-primary/90"
+          >
             {p}
           </code>
-        ) : p
+        ) : (
+          p
+        )
       )
     })
 

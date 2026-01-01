@@ -109,10 +109,7 @@ export function EventEditPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
 
-  const event = useQuery(
-    api.events.get,
-    eventId ? { id: eventId as Id<'events'> } : 'skip'
-  )
+  const event = useQuery(api.events.get, eventId ? { id: eventId as Id<'events'> } : 'skip')
 
   const updateEvent = useMutation(api.events.update)
 
@@ -467,9 +464,7 @@ export function EventEditPage() {
                 placeholder="e.g., America/New_York"
                 className="mt-1.5"
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                Auto-detected from your browser
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">Auto-detected from your browser</p>
             </div>
           </div>
         </div>
@@ -634,7 +629,12 @@ export function EventEditPage() {
               { key: 'av', label: 'AV Equipment', icon: '🎤', desc: 'Audio/visual setup' },
               { key: 'photography', label: 'Photography', icon: '📸', desc: 'Photo & video' },
               { key: 'security', label: 'Security', icon: '🔒', desc: 'Event security' },
-              { key: 'transportation', label: 'Transportation', icon: '🚗', desc: 'Guest transport' },
+              {
+                key: 'transportation',
+                label: 'Transportation',
+                icon: '🚗',
+                desc: 'Guest transport',
+              },
               { key: 'decoration', label: 'Decoration', icon: '🎨', desc: 'Venue styling' },
             ].map((req) => (
               <div

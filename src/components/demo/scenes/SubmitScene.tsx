@@ -57,15 +57,15 @@ export function SubmitScene({ progress }: SubmitSceneProps) {
           >
             <label className="text-xs font-medium text-muted-foreground">Company Name</label>
             <div className="h-9 px-3 rounded-md border bg-background flex items-center">
-              <span className={cn(
-                'font-mono text-sm transition-all',
-                companyComplete ? 'text-foreground' : 'text-muted-foreground'
-              )}>
+              <span
+                className={cn(
+                  'font-mono text-sm transition-all',
+                  companyComplete ? 'text-foreground' : 'text-muted-foreground'
+                )}
+              >
                 {companyComplete ? 'Acme Corp' : typingCompany ? 'Acme Co|' : ''}
               </span>
-              {typingCompany && (
-                <span className="animate-pulse ml-0.5 w-0.5 h-4 bg-primary" />
-              )}
+              {typingCompany && <span className="animate-pulse ml-0.5 w-0.5 h-4 bg-primary" />}
             </div>
           </div>
 
@@ -77,14 +77,18 @@ export function SubmitScene({ progress }: SubmitSceneProps) {
             )}
           >
             <label className="text-xs font-medium text-muted-foreground">Sponsorship Tier</label>
-            <div className={cn(
-              'h-9 px-3 rounded-md border bg-background flex items-center justify-between transition-colors',
-              tierSelected && 'border-primary'
-            )}>
-              <span className={cn(
-                'text-sm transition-all',
-                tierSelected ? 'text-foreground font-medium' : 'text-muted-foreground'
-              )}>
+            <div
+              className={cn(
+                'h-9 px-3 rounded-md border bg-background flex items-center justify-between transition-colors',
+                tierSelected && 'border-primary'
+              )}
+            >
+              <span
+                className={cn(
+                  'text-sm transition-all',
+                  tierSelected ? 'text-foreground font-medium' : 'text-muted-foreground'
+                )}
+              >
                 {tierSelected ? 'Gold Tier' : 'Select tier...'}
               </span>
               <CaretDown size={14} className="text-muted-foreground" />
@@ -100,10 +104,12 @@ export function SubmitScene({ progress }: SubmitSceneProps) {
           >
             <label className="text-xs font-medium text-muted-foreground">Budget</label>
             <div className="h-9 px-3 rounded-md border bg-background flex items-center">
-              <span className={cn(
-                'font-mono text-sm',
-                budgetComplete ? 'text-foreground' : 'text-muted-foreground'
-              )}>
+              <span
+                className={cn(
+                  'font-mono text-sm',
+                  budgetComplete ? 'text-foreground' : 'text-muted-foreground'
+                )}
+              >
                 {budgetComplete ? '$50,000' : '$'}
               </span>
             </div>
@@ -118,8 +124,12 @@ export function SubmitScene({ progress }: SubmitSceneProps) {
           >
             <label className="text-xs font-medium text-muted-foreground">Interests</label>
             <div className="flex gap-2">
-              <Badge variant="secondary" className="text-xs">Tech</Badge>
-              <Badge variant="secondary" className="text-xs">Innovation</Badge>
+              <Badge variant="secondary" className="text-xs">
+                Tech
+              </Badge>
+              <Badge variant="secondary" className="text-xs">
+                Innovation
+              </Badge>
             </div>
           </div>
 

@@ -92,16 +92,14 @@ export const getSummary = query({
     ).length
 
     const dueThisWeek = tasks.filter(
-      (t) => t.dueDate && t.dueDate >= todayTs && t.dueDate <= weekFromNow && t.status !== 'completed'
+      (t) =>
+        t.dueDate && t.dueDate >= todayTs && t.dueDate <= weekFromNow && t.status !== 'completed'
     ).length
 
-    const urgent = tasks.filter(
-      (t) => t.priority === 'urgent' && t.status !== 'completed'
-    ).length
+    const urgent = tasks.filter((t) => t.priority === 'urgent' && t.status !== 'completed').length
 
-    const completionRate = tasks.length > 0
-      ? Math.round((byStatus.completed / tasks.length) * 100)
-      : 0
+    const completionRate =
+      tasks.length > 0 ? Math.round((byStatus.completed / tasks.length) * 100) : 0
 
     return {
       total: tasks.length,
@@ -121,8 +119,17 @@ export const create = mutation({
     title: v.string(),
     description: v.optional(v.string()),
     category: v.optional(v.string()),
-    priority: v.optional(v.union(v.literal('low'), v.literal('medium'), v.literal('high'), v.literal('urgent'))),
-    status: v.optional(v.union(v.literal('todo'), v.literal('in_progress'), v.literal('blocked'), v.literal('completed'))),
+    priority: v.optional(
+      v.union(v.literal('low'), v.literal('medium'), v.literal('high'), v.literal('urgent'))
+    ),
+    status: v.optional(
+      v.union(
+        v.literal('todo'),
+        v.literal('in_progress'),
+        v.literal('blocked'),
+        v.literal('completed')
+      )
+    ),
     dueDate: v.optional(v.number()),
     linkedVendorId: v.optional(v.id('vendors')),
     linkedSponsorId: v.optional(v.id('sponsors')),
@@ -171,8 +178,17 @@ export const update = mutation({
     title: v.optional(v.string()),
     description: v.optional(v.string()),
     category: v.optional(v.string()),
-    priority: v.optional(v.union(v.literal('low'), v.literal('medium'), v.literal('high'), v.literal('urgent'))),
-    status: v.optional(v.union(v.literal('todo'), v.literal('in_progress'), v.literal('blocked'), v.literal('completed'))),
+    priority: v.optional(
+      v.union(v.literal('low'), v.literal('medium'), v.literal('high'), v.literal('urgent'))
+    ),
+    status: v.optional(
+      v.union(
+        v.literal('todo'),
+        v.literal('in_progress'),
+        v.literal('blocked'),
+        v.literal('completed')
+      )
+    ),
     dueDate: v.optional(v.number()),
     linkedVendorId: v.optional(v.id('vendors')),
     linkedSponsorId: v.optional(v.id('sponsors')),
@@ -204,8 +220,10 @@ export const update = mutation({
     if (updates.status !== undefined) cleanUpdates.status = updates.status
     if (updates.dueDate !== undefined) cleanUpdates.dueDate = updates.dueDate
     if (updates.linkedVendorId !== undefined) cleanUpdates.linkedVendorId = updates.linkedVendorId
-    if (updates.linkedSponsorId !== undefined) cleanUpdates.linkedSponsorId = updates.linkedSponsorId
-    if (updates.linkedBudgetItemId !== undefined) cleanUpdates.linkedBudgetItemId = updates.linkedBudgetItemId
+    if (updates.linkedSponsorId !== undefined)
+      cleanUpdates.linkedSponsorId = updates.linkedSponsorId
+    if (updates.linkedBudgetItemId !== undefined)
+      cleanUpdates.linkedBudgetItemId = updates.linkedBudgetItemId
     if (updates.sortOrder !== undefined) cleanUpdates.sortOrder = updates.sortOrder
     if (updates.notes !== undefined) cleanUpdates.notes = updates.notes
 
@@ -291,11 +309,18 @@ export const createFromTemplate = mutation({
     }
 
     // Template tasks based on event type
-    const templates: Record<string, Array<{ title: string; category: string; priority: 'low' | 'medium' | 'high' | 'urgent' }>> = {
+    const templates: Record<
+      string,
+      Array<{ title: string; category: string; priority: 'low' | 'medium' | 'high' | 'urgent' }>
+    > = {
       conference: [
         { title: 'Secure venue and sign contract', category: 'venue', priority: 'urgent' },
         { title: 'Create event budget breakdown', category: 'budget', priority: 'high' },
-        { title: 'Research and contact potential sponsors', category: 'sponsors', priority: 'high' },
+        {
+          title: 'Research and contact potential sponsors',
+          category: 'sponsors',
+          priority: 'high',
+        },
         { title: 'Book catering vendor', category: 'vendors', priority: 'high' },
         { title: 'Hire AV equipment provider', category: 'vendors', priority: 'medium' },
         { title: 'Set up registration platform', category: 'registration', priority: 'high' },

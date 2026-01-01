@@ -70,11 +70,13 @@ const toolConfig: Record<string, { icon: typeof Wrench; label: string; confirmTi
 }
 
 function getToolConfig(name: string) {
-  return toolConfig[name] || {
-    icon: Wrench,
-    label: name.replace(/([A-Z])/g, ' $1').trim(),
-    confirmTitle: 'Proceed with this action?',
-  }
+  return (
+    toolConfig[name] || {
+      icon: Wrench,
+      label: name.replace(/([A-Z])/g, ' $1').trim(),
+      confirmTitle: 'Proceed with this action?',
+    }
+  )
 }
 
 // Format a key name to be human-readable
@@ -126,9 +128,7 @@ export function Confirmation({
         </div>
         <div className="flex-1">
           <h3 className="font-semibold text-foreground">{config.confirmTitle}</h3>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Please review the details below
-          </p>
+          <p className="text-sm text-muted-foreground mt-0.5">Please review the details below</p>
         </div>
       </div>
 
@@ -137,9 +137,7 @@ export function Confirmation({
         <div className="mb-4 p-3 rounded-lg bg-muted/30 border border-border/50">
           <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border/50">
             <Icon size={16} weight="duotone" className="text-primary" />
-            <span className="text-sm font-medium text-foreground">
-              {config.label}
-            </span>
+            <span className="text-sm font-medium text-foreground">{config.label}</span>
           </div>
           <div className="space-y-2">
             {Object.entries(args).map(([key, value]) => (
@@ -147,9 +145,7 @@ export function Confirmation({
                 <span className="text-muted-foreground min-w-[100px] capitalize">
                   {formatKey(key)}
                 </span>
-                <span className="text-foreground font-medium flex-1">
-                  {formatValue(value)}
-                </span>
+                <span className="text-foreground font-medium flex-1">{formatValue(value)}</span>
               </div>
             ))}
           </div>

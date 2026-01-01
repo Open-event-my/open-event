@@ -41,7 +41,7 @@ async function hashApiKey(key: string): Promise<string> {
   const data = encoder.encode(key)
   const hashBuffer = await crypto.subtle.digest('SHA-256', data)
   const hashArray = Array.from(new Uint8Array(hashBuffer))
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
 // ----------------------------------------------------------------------------
@@ -84,11 +84,13 @@ export async function validateApiKey(
 ): Promise<AuthValidationResult> {
   // Extract API key from request
   const apiKey = extractApiKey(request)
-  
+
   if (!apiKey) {
     return {
       success: false,
-      response: ApiErrors.unauthorized('API key required. Provide via X-API-Key header or Authorization: Bearer token.'),
+      response: ApiErrors.unauthorized(
+        'API key required. Provide via X-API-Key header or Authorization: Bearer token.'
+      ),
     }
   }
 
@@ -140,12 +142,13 @@ export async function validateApiKey(
   await ctx.runMutation(internal.apiKeys.incrementRateLimit, {
     keyId: keyInfo._id,
   })
-  
+
   // Get client IP if available
-  const ip = request.headers.get('X-Forwarded-For')?.split(',')[0]?.trim() ||
-             request.headers.get('CF-Connecting-IP') ||
-             undefined
-  
+  const ip =
+    request.headers.get('X-Forwarded-For')?.split(',')[0]?.trim() ||
+    request.headers.get('CF-Connecting-IP') ||
+    undefined
+
   await ctx.runMutation(internal.apiKeys.updateLastUsed, {
     keyId: keyInfo._id,
     ip,
@@ -170,14 +173,9 @@ export async function validateApiKey(
  * Check if the API key has the required permission
  * Returns an error response if permission is denied
  */
-export function requirePermission(
-  keyInfo: ApiKeyInfo,
-  required: string
-): Response | null {
+export function requirePermission(keyInfo: ApiKeyInfo, required: string): Response | null {
   if (!hasPermission(keyInfo.permissions, required)) {
-    return ApiErrors.forbidden(
-      `This API key does not have the '${required}' permission`
-    )
+    return ApiErrors.forbidden(`This API key does not have the '${required}' permission`)
   }
   return null
 }
@@ -185,15 +183,10 @@ export function requirePermission(
 /**
  * Check multiple permissions (all required)
  */
-export function requireAllPermissions(
-  keyInfo: ApiKeyInfo,
-  required: string[]
-): Response | null {
+export function requireAllPermissions(keyInfo: ApiKeyInfo, required: string[]): Response | null {
   for (const perm of required) {
     if (!hasPermission(keyInfo.permissions, perm)) {
-      return ApiErrors.forbidden(
-        `This API key does not have the '${perm}' permission`
-      )
+      return ApiErrors.forbidden(`This API key does not have the '${perm}' permission`)
     }
   }
   return null
@@ -202,11 +195,8 @@ export function requireAllPermissions(
 /**
  * Check multiple permissions (any one is sufficient)
  */
-export function requireAnyPermission(
-  keyInfo: ApiKeyInfo,
-  anyOf: string[]
-): Response | null {
-  const hasAny = anyOf.some(perm => hasPermission(keyInfo.permissions, perm))
+export function requireAnyPermission(keyInfo: ApiKeyInfo, anyOf: string[]): Response | null {
+  const hasAny = anyOf.some((perm) => hasPermission(keyInfo.permissions, perm))
   if (!hasAny) {
     return ApiErrors.forbidden(
       `This API key requires one of these permissions: ${anyOf.join(', ')}`
@@ -224,29 +214,28 @@ export const PERMISSIONS = {
   EVENTS_READ: 'events:read',
   EVENTS_WRITE: 'events:write',
   EVENTS_DELETE: 'events:delete',
-  
+
   // Vendors
   VENDORS_READ: 'vendors:read',
-  
+
   // Sponsors
   SPONSORS_READ: 'sponsors:read',
-  
+
   // Tasks
   TASKS_READ: 'tasks:read',
   TASKS_WRITE: 'tasks:write',
-  
+
   // Budget
   BUDGET_READ: 'budget:read',
   BUDGET_WRITE: 'budget:write',
-  
+
   // Analytics
   ANALYTICS_READ: 'analytics:read',
-  
+
   // User profile
   PROFILE_READ: 'profile:read',
   PROFILE_WRITE: 'profile:write',
-  
+
   // Full access
   ADMIN: '*',
 } as const
-

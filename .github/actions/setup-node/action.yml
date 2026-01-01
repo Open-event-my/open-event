@@ -1,0 +1,111 @@
+name: 'Setup Node.js Environment'
+description: 'Setup Node.js with optimized dependency and Playwright caching for CI'
+
+inputs:
+  install-deps:
+    description: 'Whether to install dependencies'
+    required: false
+    default: 'true'
+  install-playwright:
+    description: 'Whether to install Playwright browsers'
+    required: false
+    default: 'false'
+  playwright-browsers:
+    description: 'Which Playwright browsers to install (chromium, firefox, webkit, all)'
+    required: false
+    default: 'chromium'
+
+outputs:
+  cache-hit:
+    description: 'Whether node_modules was restored from cache'
+    value: ${{ steps.cache-modules.outputs.cache-hit }}
+  playwright-cache-hit:
+    description: 'Whether Playwright browsers were restored from cache'
+    value: ${{ steps.playwright-cache.outputs.cache-hit }}
+  node-version:
+    description: 'The installed Node.js version'
+    value: ${{ steps.setup-node.outputs.node-version }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      id: setup-node
+      uses: actions/setup-node@v4
+      with:
+        node-version-file: '.nvmrc'
+        cache: 'npm'
+
+    - name: Cache node_modules
+      id: cache-modules
+      uses: actions/cache@v4
+      with:
+        path: node_modules
+        key: ${{ runner.os }}-node-${{ steps.setup-node.outputs.node-version }}-modules-${{ hashFiles('package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-${{ steps.setup-node.outputs.node-version }}-modules-
+
+    - name: Install dependencies
+      if: inputs.install-deps == 'true' && steps.cache-modules.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        npm ci --prefer-offline --no-audit
+        echo "::notice::Dependencies installed successfully"
+
+    - name: Verify node_modules exists
+      if: inputs.install-deps == 'true' && steps.cache-modules.outputs.cache-hit == 'true'
+      shell: bash
+      run: |
+        if [ ! -d "node_modules" ]; then
+          echo "::warning::Cache restored but node_modules missing, reinstalling..."
+          npm ci --prefer-offline --no-audit
+        fi
+
+    # Playwright setup (optional)
+    - name: Get Playwright version
+      if: inputs.install-playwright == 'true'
+      id: playwright-version
+      shell: bash
+      run: |
+        # Extract version from package-lock.json for reliability
+        VERSION=$(node -p "require('./package-lock.json').packages['node_modules/@playwright/test']?.version || 'unknown'")
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        echo "::notice::Playwright version: ${VERSION}"
+
+    - name: Cache Playwright browsers
+      if: inputs.install-playwright == 'true'
+      uses: actions/cache@v4
+      id: playwright-cache
+      with:
+        path: ~/.cache/ms-playwright
+        key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}-${{ inputs.playwright-browsers }}
+        restore-keys: |
+          ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}-
+          ${{ runner.os }}-playwright-
+
+    - name: Install Playwright browsers
+      if: inputs.install-playwright == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        if [ "${{ inputs.playwright-browsers }}" = "all" ]; then
+          npx playwright install --with-deps
+        else
+          npx playwright install --with-deps ${{ inputs.playwright-browsers }}
+        fi
+
+    - name: Install Playwright system dependencies
+      if: inputs.install-playwright == 'true' && steps.playwright-cache.outputs.cache-hit == 'true'
+      shell: bash
+      run: |
+        if [ "${{ inputs.playwright-browsers }}" = "all" ]; then
+          npx playwright install-deps
+        else
+          npx playwright install-deps ${{ inputs.playwright-browsers }}
+        fi
+
+    - name: Display environment info
+      shell: bash
+      run: |
+        echo "Node.js: $(node --version)"
+        echo "npm: $(npm --version)"
+        echo "Cache hit: ${{ steps.cache-modules.outputs.cache-hit }}"

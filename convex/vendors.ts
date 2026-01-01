@@ -1,6 +1,7 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { assertRole } from './lib/auth'
+import { isValidEmail } from './lib/emailValidation'
 
 // ============================================================================
 // Public Queries (for organizers)
@@ -94,9 +95,7 @@ export const getByEvent = query({
     const vendors = await Promise.all(vendorPromises)
 
     // Create lookup map
-    const vendorMap = new Map(
-      vendors.filter(Boolean).map((v) => [v!._id, v!])
-    )
+    const vendorMap = new Map(vendors.filter(Boolean).map((v) => [v!._id, v!]))
 
     // Merge using map (no additional queries)
     return eventVendors
@@ -141,11 +140,8 @@ export const create = mutation({
     }
 
     // Validate email format if provided
-    if (args.contactEmail) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!emailRegex.test(args.contactEmail)) {
-        throw new Error('Invalid email format')
-      }
+    if (args.contactEmail && !isValidEmail(args.contactEmail)) {
+      throw new Error('Invalid email format')
     }
 
     // Validate website URL format if provided

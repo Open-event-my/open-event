@@ -3,14 +3,23 @@ import { api } from '../../../convex/_generated/api'
 import { cn } from '@/lib/utils'
 import { Buildings, CaretUpDown, Check, Plus } from '@phosphor-icons/react'
 import { useState, useRef, useEffect } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
+import { CreateOrganizationModal } from '@/components/organizations'
+import { useNavigate } from 'react-router-dom'
 
 interface OrganizationSwitcherProps {
   collapsed?: boolean
 }
 
 export function OrganizationSwitcher({ collapsed }: OrganizationSwitcherProps) {
-  const profile = useQuery(api.organizerProfiles.getMyProfile)
+  const { accessToken } = useAuth()
+  const navigate = useNavigate()
+  const profile = useQuery(
+    api.organizerProfiles.getMyProfile,
+    accessToken ? { accessToken } : 'skip'
+  )
   const [open, setOpen] = useState(false)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -90,7 +99,7 @@ export function OrganizationSwitcher({ collapsed }: OrganizationSwitcherProps) {
           <button
             onClick={() => {
               setOpen(false)
-              // TODO: Open create org modal
+              setCreateModalOpen(true)
             }}
             className="w-full flex items-center gap-3 px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
           >
@@ -102,7 +111,7 @@ export function OrganizationSwitcher({ collapsed }: OrganizationSwitcherProps) {
           <button
             onClick={() => {
               setOpen(false)
-              // TODO: Navigate to org settings
+              navigate('/dashboard/settings?tab=organizations')
             }}
             className="w-full flex items-center gap-3 px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
           >
@@ -111,6 +120,14 @@ export function OrganizationSwitcher({ collapsed }: OrganizationSwitcherProps) {
           </button>
         </div>
       )}
+
+      <CreateOrganizationModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
+        onSuccess={(_organizationId, slug) => {
+          navigate(`/dashboard/organizations/${slug}`)
+        }}
+      />
     </div>
   )
 }

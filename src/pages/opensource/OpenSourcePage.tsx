@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { OptimizedImage } from '@/components/ui/optimized-image'
 import { useGitHubData } from '@/hooks/use-github-data'
 import {
   ArrowLeft,
@@ -104,9 +105,7 @@ export function OpenSourcePage() {
 
         {/* Title */}
         <div className="mb-12">
-          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-2">
-            Contributors
-          </h1>
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-2">Contributors</h1>
           <p className="text-muted-foreground">
             Built by the community. Free forever, MIT licensed.
           </p>
@@ -122,10 +121,12 @@ export function OpenSourcePage() {
           >
             <div className="flex items-center gap-2 mb-1">
               <Star size={14} weight="fill" className="text-amber-500" />
-              <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">Stars</span>
+              <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+                Stars
+              </span>
             </div>
             <span className="text-2xl font-semibold tabular-nums">
-              {loading ? '—' : repo?.stargazers_count ?? 0}
+              {loading ? '—' : (repo?.stargazers_count ?? 0)}
             </span>
           </a>
           <a
@@ -136,10 +137,12 @@ export function OpenSourcePage() {
           >
             <div className="flex items-center gap-2 mb-1">
               <GitFork size={14} className="text-muted-foreground" />
-              <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">Forks</span>
+              <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+                Forks
+              </span>
             </div>
             <span className="text-2xl font-semibold tabular-nums">
-              {loading ? '—' : repo?.forks_count ?? 0}
+              {loading ? '—' : (repo?.forks_count ?? 0)}
             </span>
           </a>
           <a
@@ -150,7 +153,9 @@ export function OpenSourcePage() {
           >
             <div className="flex items-center gap-2 mb-1">
               <GitCommit size={14} className="text-muted-foreground" />
-              <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">Commits</span>
+              <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+                Commits
+              </span>
             </div>
             <span className="text-2xl font-semibold tabular-nums">
               {loading ? '—' : commits.length > 0 ? '100+' : '50+'}
@@ -191,42 +196,47 @@ export function OpenSourcePage() {
               </div>
               {/* Contributor cards */}
               <div className="space-y-2 mb-4">
-                {loading ? (
-                  Array.from({ length: 2 }).map((_, i) => (
-                    <div key={i} className="flex items-center gap-3 p-3 rounded-lg border border-border/40">
-                      <div className="w-10 h-10 rounded-full bg-muted animate-pulse" />
-                      <div className="flex-1 space-y-1.5">
-                        <div className="h-4 w-24 bg-muted rounded animate-pulse" />
-                        <div className="h-3 w-16 bg-muted rounded animate-pulse" />
+                {loading
+                  ? Array.from({ length: 2 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center gap-3 p-3 rounded-lg border border-border/40"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-muted animate-pulse" />
+                        <div className="flex-1 space-y-1.5">
+                          <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+                          <div className="h-3 w-16 bg-muted rounded animate-pulse" />
+                        </div>
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  contributors.slice(0, 5).map((c) => (
-                    <a
-                      key={c.login}
-                      href={c.html_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-3 rounded-lg border border-border/40 hover:border-border hover:bg-muted/20 transition-all group"
-                    >
-                      <img
-                        src={c.avatar_url}
-                        alt={c.login}
-                        className="w-10 h-10 rounded-full"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                          {c.login}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {c.contributions} contributions
-                        </p>
-                      </div>
-                      <ArrowUpRight size={14} className="text-muted-foreground/30 group-hover:text-muted-foreground transition-colors" />
-                    </a>
-                  ))
-                )}
+                    ))
+                  : contributors.slice(0, 5).map((c) => (
+                      <a
+                        key={c.login}
+                        href={c.html_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-3 rounded-lg border border-border/40 hover:border-border hover:bg-muted/20 transition-all group"
+                      >
+                        <OptimizedImage
+                          src={c.avatar_url}
+                          alt={c.login}
+                          lazy
+                          className="w-10 h-10 rounded-full"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                            {c.login}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {c.contributions} contributions
+                          </p>
+                        </div>
+                        <ArrowUpRight
+                          size={14}
+                          className="text-muted-foreground/30 group-hover:text-muted-foreground transition-colors"
+                        />
+                      </a>
+                    ))}
               </div>
               {/* More contributors avatars */}
               {!loading && contributors.length > 5 && (
@@ -240,9 +250,10 @@ export function OpenSourcePage() {
                         rel="noopener noreferrer"
                         title={c.login}
                       >
-                        <img
+                        <OptimizedImage
                           src={c.avatar_url}
                           alt={c.login}
+                          lazy
                           className="w-6 h-6 rounded-full ring-2 ring-background hover:ring-border hover:z-10 relative transition-all"
                         />
                       </a>
@@ -288,9 +299,10 @@ export function OpenSourcePage() {
                       className="flex items-start gap-3 py-2.5 group hover:bg-muted/30 -mx-2 px-2 rounded-lg transition-colors"
                     >
                       {commit.author ? (
-                        <img
+                        <OptimizedImage
                           src={commit.author.avatar_url}
                           alt={commit.author.login}
+                          lazy
                           className="w-5 h-5 rounded-full mt-0.5"
                         />
                       ) : (
@@ -303,7 +315,8 @@ export function OpenSourcePage() {
                           {commit.commit.message.split('\n')[0]}
                         </p>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {commit.author?.login || commit.commit.author.name} · {formatRelativeTime(commit.commit.author.date)}
+                          {commit.author?.login || commit.commit.author.name} ·{' '}
+                          {formatRelativeTime(commit.commit.author.date)}
                         </p>
                       </div>
                     </a>
@@ -394,7 +407,10 @@ export function OpenSourcePage() {
                           </span>
                         )}
                       </div>
-                      <ArrowUpRight size={12} className="text-muted-foreground/50 group-hover:text-muted-foreground" />
+                      <ArrowUpRight
+                        size={12}
+                        className="text-muted-foreground/50 group-hover:text-muted-foreground"
+                      />
                     </a>
                   ))}
                 </div>
@@ -437,7 +453,10 @@ export function OpenSourcePage() {
                   </div>
                   <ul className="space-y-1.5 pl-3.5">
                     {roadmap.next.map((item) => (
-                      <li key={item.title} className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <li
+                        key={item.title}
+                        className="flex items-center gap-2 text-xs text-muted-foreground"
+                      >
                         <Circle size={12} className="text-muted-foreground/30" />
                         {item.title}
                       </li>
@@ -451,7 +470,10 @@ export function OpenSourcePage() {
                   </div>
                   <ul className="space-y-1.5 pl-3.5">
                     {roadmap.later.map((item) => (
-                      <li key={item.title} className="flex items-center gap-2 text-xs text-muted-foreground/60">
+                      <li
+                        key={item.title}
+                        className="flex items-center gap-2 text-xs text-muted-foreground/60"
+                      >
                         <Circle size={12} className="text-muted-foreground/20" />
                         {item.title}
                       </li>
@@ -466,8 +488,14 @@ export function OpenSourcePage() {
               <h2 className="text-sm font-medium text-foreground mb-4">Quick links</h2>
               <div className="space-y-1">
                 {[
-                  { label: 'View repository', href: `https://github.com/${REPO_OWNER}/${REPO_NAME}` },
-                  { label: 'Report an issue', href: `https://github.com/${REPO_OWNER}/${REPO_NAME}/issues/new` },
+                  {
+                    label: 'View repository',
+                    href: `https://github.com/${REPO_OWNER}/${REPO_NAME}`,
+                  },
+                  {
+                    label: 'Report an issue',
+                    href: `https://github.com/${REPO_OWNER}/${REPO_NAME}/issues/new`,
+                  },
                   { label: 'Read the docs', href: '/docs', internal: true },
                 ].map((link) =>
                   link.internal ? (
@@ -477,7 +505,10 @@ export function OpenSourcePage() {
                       className="flex items-center justify-between py-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
                     >
                       {link.label}
-                      <ArrowUpRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <ArrowUpRight
+                        size={12}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      />
                     </Link>
                   ) : (
                     <a
@@ -488,7 +519,10 @@ export function OpenSourcePage() {
                       className="flex items-center justify-between py-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
                     >
                       {link.label}
-                      <ArrowUpRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <ArrowUpRight
+                        size={12}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      />
                     </a>
                   )
                 )}

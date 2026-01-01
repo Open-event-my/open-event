@@ -33,10 +33,13 @@ const components: TLComponents = {
 export function PlaygroundCanvas({ onSelectionChange, onEditorReady }: PlaygroundCanvasProps) {
   const [editor, setEditor] = useState<Editor | null>(null)
 
-  const handleMount = useCallback((editorInstance: Editor) => {
-    setEditor(editorInstance)
-    onEditorReady?.(editorInstance)
-  }, [onEditorReady])
+  const handleMount = useCallback(
+    (editorInstance: Editor) => {
+      setEditor(editorInstance)
+      onEditorReady?.(editorInstance)
+    },
+    [onEditorReady]
+  )
 
   // Listen for selection changes
   useEffect(() => {

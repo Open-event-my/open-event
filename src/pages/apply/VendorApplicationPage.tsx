@@ -3,6 +3,7 @@ import { useMutation, useQuery } from 'convex/react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../../../convex/_generated/api'
 import { cn } from '@/lib/utils'
+import { isValidEmail } from '@/lib/validation'
 import {
   TypeformLayout,
   TypeformTransition,
@@ -124,8 +125,7 @@ export function VendorApplicationPage() {
           setError('Email is required')
           return false
         }
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (!emailRegex.test(formData.contactEmail)) {
+        if (!isValidEmail(formData.contactEmail)) {
           setError('Please enter a valid email address')
           return false
         }
@@ -219,10 +219,7 @@ export function VendorApplicationPage() {
               error={error || undefined}
               autoFocus
             />
-            <TypeformNavigation
-              onNext={nextStep}
-              canGoNext={canProceed()}
-            />
+            <TypeformNavigation onNext={nextStep} canGoNext={canProceed()} />
           </div>
         )
 
@@ -240,10 +237,7 @@ export function VendorApplicationPage() {
               onChange={(e) => updateField('description', e.target.value)}
               rows={4}
             />
-            <TypeformNavigation
-              onPrevious={prevStep}
-              onNext={nextStep}
-            />
+            <TypeformNavigation onPrevious={prevStep} onNext={nextStep} />
           </div>
         )
 
@@ -266,10 +260,7 @@ export function VendorApplicationPage() {
               value={formData.website}
               onChange={(e) => updateField('website', e.target.value)}
             />
-            <TypeformNavigation
-              onPrevious={prevStep}
-              onNext={nextStep}
-            />
+            <TypeformNavigation onPrevious={prevStep} onNext={nextStep} />
           </div>
         )
 
@@ -294,11 +285,7 @@ export function VendorApplicationPage() {
               ))}
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
-            <TypeformNavigation
-              onPrevious={prevStep}
-              onNext={nextStep}
-              canGoNext={canProceed()}
-            />
+            <TypeformNavigation onPrevious={prevStep} onNext={nextStep} canGoNext={canProceed()} />
           </div>
         )
 
@@ -328,10 +315,7 @@ export function VendorApplicationPage() {
                 </button>
               ))}
             </div>
-            <TypeformNavigation
-              onPrevious={prevStep}
-              onNext={nextStep}
-            />
+            <TypeformNavigation onPrevious={prevStep} onNext={nextStep} />
           </div>
         )
 
@@ -353,10 +337,7 @@ export function VendorApplicationPage() {
               value={formData.location}
               onChange={(e) => updateField('location', e.target.value)}
             />
-            <TypeformNavigation
-              onPrevious={prevStep}
-              onNext={nextStep}
-            />
+            <TypeformNavigation onPrevious={prevStep} onNext={nextStep} />
           </div>
         )
 
@@ -383,10 +364,7 @@ export function VendorApplicationPage() {
                 />
               ))}
             </div>
-            <TypeformNavigation
-              onPrevious={prevStep}
-              onNext={nextStep}
-            />
+            <TypeformNavigation onPrevious={prevStep} onNext={nextStep} />
           </div>
         )
 
@@ -404,10 +382,7 @@ export function VendorApplicationPage() {
               onChange={(e) => updateField('pastExperience', e.target.value)}
               rows={5}
             />
-            <TypeformNavigation
-              onPrevious={prevStep}
-              onNext={nextStep}
-            />
+            <TypeformNavigation onPrevious={prevStep} onNext={nextStep} />
           </div>
         )
 
@@ -425,10 +400,7 @@ export function VendorApplicationPage() {
               onChange={(e) => updateField('additionalNotes', e.target.value)}
               rows={4}
             />
-            <TypeformNavigation
-              onPrevious={prevStep}
-              onNext={nextStep}
-            />
+            <TypeformNavigation onPrevious={prevStep} onNext={nextStep} />
           </div>
         )
 
@@ -451,10 +423,7 @@ export function VendorApplicationPage() {
                 </option>
               ))}
             </TypeformSelect>
-            <TypeformNavigation
-              onPrevious={prevStep}
-              onNext={nextStep}
-            />
+            <TypeformNavigation onPrevious={prevStep} onNext={nextStep} />
           </div>
         )
 
@@ -477,11 +446,7 @@ export function VendorApplicationPage() {
               error={error || undefined}
               autoFocus
             />
-            <TypeformNavigation
-              onPrevious={prevStep}
-              onNext={nextStep}
-              canGoNext={canProceed()}
-            />
+            <TypeformNavigation onPrevious={prevStep} onNext={nextStep} canGoNext={canProceed()} />
           </div>
         )
 
@@ -505,11 +470,7 @@ export function VendorApplicationPage() {
               error={error || undefined}
               autoFocus
             />
-            <TypeformNavigation
-              onPrevious={prevStep}
-              onNext={nextStep}
-              canGoNext={canProceed()}
-            />
+            <TypeformNavigation onPrevious={prevStep} onNext={nextStep} canGoNext={canProceed()} />
           </div>
         )
 
@@ -531,10 +492,7 @@ export function VendorApplicationPage() {
               value={formData.contactPhone}
               onChange={(e) => updateField('contactPhone', e.target.value)}
             />
-            <TypeformNavigation
-              onPrevious={prevStep}
-              onNext={nextStep}
-            />
+            <TypeformNavigation onPrevious={prevStep} onNext={nextStep} />
           </div>
         )
 

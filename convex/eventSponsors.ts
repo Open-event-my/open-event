@@ -190,13 +190,15 @@ export const listForEvent = query({
         const sponsor = await ctx.db.get(es.sponsorId)
         return {
           ...es,
-          sponsor: sponsor ? {
-            id: sponsor._id,
-            name: sponsor.name,
-            industry: sponsor.industry,
-            budgetMin: sponsor.budgetMin,
-            budgetMax: sponsor.budgetMax,
-          } : null,
+          sponsor: sponsor
+            ? {
+                id: sponsor._id,
+                name: sponsor.name,
+                industry: sponsor.industry,
+                budgetMin: sponsor.budgetMin,
+                budgetMax: sponsor.budgetMax,
+              }
+            : null,
         }
       })
     )

@@ -1,17 +1,17 @@
 import { defineSchema, defineTable } from 'convex/server'
-import { authTables } from '@convex-dev/auth/server'
 import { v } from 'convex/values'
+import { authTables } from '@convex-dev/auth/server'
 
 export default defineSchema({
-  // Convex Auth tables (authAccounts, authSessions, authRefreshTokens, authVerificationCodes, authVerifiers, authRateLimits)
+  // Include Convex Auth tables (authAccounts, authSessions, authRefreshTokens, etc.)
   ...authTables,
-
-  // Users - Extended with app-specific fields
-  // Convex Auth manages: name, email, image, emailVerificationTime, phone, phoneVerificationTime, isAnonymous
+  // Users - Custom auth system
   users: defineTable({
-    // Auth fields (managed by Convex Auth)
+    // Auth fields
     name: v.optional(v.string()),
     email: v.optional(v.string()),
+    emailVerified: v.optional(v.boolean()), // Email verification status
+    passwordHash: v.optional(v.string()), // For email/password auth
     image: v.optional(v.string()),
     emailVerificationTime: v.optional(v.number()),
     phone: v.optional(v.string()),
@@ -19,19 +19,21 @@ export default defineSchema({
     isAnonymous: v.optional(v.boolean()),
 
     // App-specific fields
-    role: v.optional(
-      v.union(v.literal('superadmin'), v.literal('admin'), v.literal('organizer'))
-    ),
+    role: v.optional(v.union(v.literal('superadmin'), v.literal('admin'), v.literal('organizer'))),
 
     // Account status for moderation
-    status: v.optional(
-      v.union(v.literal('active'), v.literal('suspended'), v.literal('pending'))
-    ),
+    status: v.optional(v.union(v.literal('active'), v.literal('suspended'), v.literal('pending'))),
 
     // Suspension tracking
     suspendedAt: v.optional(v.number()),
     suspendedReason: v.optional(v.string()),
     suspendedBy: v.optional(v.id('users')),
+
+    // Two-Factor Authentication (2FA)
+    twoFactorEnabled: v.optional(v.boolean()), // Whether 2FA is enabled
+    twoFactorSecret: v.optional(v.string()), // Encrypted TOTP secret
+    twoFactorBackupCodes: v.optional(v.array(v.string())), // Hashed backup codes
+    twoFactorVerifiedAt: v.optional(v.number()), // When 2FA was last verified
 
     createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
@@ -39,6 +41,42 @@ export default defineSchema({
     .index('email', ['email'])
     .index('by_role', ['role'])
     .index('by_status', ['status']),
+
+  // Sessions - Custom session management with refresh token rotation
+  // Note: Old fields (token, expiresAt) kept optional for backward compatibility during migration
+  sessions: defineTable({
+    userId: v.id('users'),
+    // New schema fields
+    accessToken: v.optional(v.string()), // Short-lived access token (15 min)
+    refreshToken: v.optional(v.string()), // Long-lived refresh token (7 days)
+    accessTokenExpiresAt: v.optional(v.number()), // Unix timestamp
+    refreshTokenExpiresAt: v.optional(v.number()), // Unix timestamp
+    // Old schema fields (for backward compatibility during migration)
+    token: v.optional(v.string()),
+    expiresAt: v.optional(v.number()),
+    // Common fields
+    createdAt: v.number(),
+    userAgent: v.optional(v.string()), // Browser/device info
+    ipAddress: v.optional(v.string()), // Client IP for security
+  })
+    .index('by_access_token', ['accessToken'])
+    .index('by_refresh_token', ['refreshToken'])
+    .index('by_user', ['userId'])
+    .index('by_token', ['token']), // Index for old token field
+
+  // Verification Tokens - Email verification and password reset
+  verificationTokens: defineTable({
+    userId: v.id('users'),
+    token: v.string(), // UUID token
+    type: v.string(), // 'email_verification' or 'password_reset'
+    expiresAt: v.number(), // Unix timestamp
+    used: v.boolean(), // Whether token has been used
+    usedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index('by_token', ['token'])
+    .index('by_user_type', ['userId', 'type'])
+    .index('by_type_used', ['type', 'used']),
 
   // Organizer Profiles - Stores onboarding data for personalization
   organizerProfiles: defineTable({
@@ -54,9 +92,150 @@ export default defineSchema({
     updatedAt: v.optional(v.number()),
   }).index('by_user', ['userId']),
 
+  // ============================================================================
+  // Organizations & Teams - Multi-tenancy support
+  // ============================================================================
+
+  // Organizations - Company/team accounts
+  organizations: defineTable({
+    // Basic info
+    name: v.string(),
+    slug: v.string(), // Unique URL-friendly identifier (e.g., 'acme-corp')
+    description: v.optional(v.string()),
+    logoUrl: v.optional(v.string()),
+    website: v.optional(v.string()),
+
+    // Owner (can transfer ownership)
+    ownerId: v.id('users'),
+
+    // Subscription/Plan
+    plan: v.union(
+      v.literal('free'), // Limited features
+      v.literal('pro'), // Standard paid features
+      v.literal('business'), // Advanced features
+      v.literal('enterprise') // Custom features + support
+    ),
+    planExpiresAt: v.optional(v.number()), // When current plan expires
+    maxMembers: v.number(), // Maximum team members allowed
+    maxEvents: v.optional(v.number()), // Maximum events allowed (null = unlimited)
+
+    // Settings
+    settings: v.optional(
+      v.object({
+        defaultEventVisibility: v.optional(v.string()), // 'public' | 'private' | 'team'
+        requireEventApproval: v.optional(v.boolean()), // Events need admin approval
+        allowMemberInvites: v.optional(v.boolean()), // Can members invite others
+        notifyOnNewMember: v.optional(v.boolean()),
+        notifyOnNewEvent: v.optional(v.boolean()),
+      })
+    ),
+
+    // Billing info (for Stripe)
+    stripeCustomerId: v.optional(v.string()),
+    stripeSubscriptionId: v.optional(v.string()),
+
+    // Status
+    status: v.union(
+      v.literal('active'),
+      v.literal('suspended'),
+      v.literal('pending') // Awaiting payment/verification
+    ),
+
+    // Suspension info (for admin moderation)
+    suspendedAt: v.optional(v.number()),
+    suspendedReason: v.optional(v.string()),
+    suspendedBy: v.optional(v.id('users')),
+
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  })
+    .index('by_slug', ['slug'])
+    .index('by_owner', ['ownerId'])
+    .index('by_status', ['status'])
+    .index('by_plan', ['plan']),
+
+  // Organization Members - Team membership
+  organizationMembers: defineTable({
+    organizationId: v.id('organizations'),
+    userId: v.id('users'),
+
+    // Role within the organization
+    role: v.union(
+      v.literal('owner'), // Full control, can delete org
+      v.literal('admin'), // Manage members, settings
+      v.literal('manager'), // Manage events, vendors, sponsors
+      v.literal('member'), // View and participate
+      v.literal('viewer') // Read-only access
+    ),
+
+    // Invitation tracking
+    invitedBy: v.optional(v.id('users')),
+    invitedAt: v.optional(v.number()),
+    joinedAt: v.number(),
+
+    // Status
+    status: v.union(
+      v.literal('active'),
+      v.literal('invited'), // Pending acceptance
+      v.literal('suspended') // Temporarily disabled
+    ),
+
+    // Custom permissions override (optional)
+    customPermissions: v.optional(
+      v.object({
+        canCreateEvents: v.optional(v.boolean()),
+        canManageVendors: v.optional(v.boolean()),
+        canManageSponsors: v.optional(v.boolean()),
+        canViewAnalytics: v.optional(v.boolean()),
+        canManageBudget: v.optional(v.boolean()),
+        canInviteMembers: v.optional(v.boolean()),
+      })
+    ),
+
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  })
+    .index('by_organization', ['organizationId'])
+    .index('by_user', ['userId'])
+    .index('by_org_user', ['organizationId', 'userId'])
+    .index('by_status', ['status']),
+
+  // Organization Invitations - Pending invites
+  organizationInvitations: defineTable({
+    organizationId: v.id('organizations'),
+
+    // Invitee info (may not have account yet)
+    email: v.string(),
+    role: v.string(), // Role they'll have when they join
+
+    // Invitation details
+    invitedBy: v.id('users'),
+    token: v.string(), // Unique token for accepting invite
+    message: v.optional(v.string()), // Custom invite message
+
+    // Status
+    status: v.union(
+      v.literal('pending'),
+      v.literal('accepted'),
+      v.literal('expired'),
+      v.literal('revoked')
+    ),
+
+    expiresAt: v.number(), // When invitation expires
+    acceptedAt: v.optional(v.number()),
+
+    createdAt: v.number(),
+  })
+    .index('by_organization', ['organizationId'])
+    .index('by_email', ['email'])
+    .index('by_token', ['token'])
+    .index('by_status', ['status']),
+
   // Events - Full event management
   events: defineTable({
     organizerId: v.id('users'),
+    // Organization support - events can belong to an org
+    organizationId: v.optional(v.id('organizations')),
     title: v.string(),
     description: v.optional(v.string()),
     eventType: v.optional(v.string()), // Conference, Hackathon, Workshop, etc.
@@ -110,13 +289,24 @@ export default defineSchema({
       })
     ),
 
+    // Moderation/Flagging fields
+    flagged: v.optional(v.boolean()),
+    flaggedAt: v.optional(v.number()),
+    flaggedReason: v.optional(v.string()),
+    flaggedSeverity: v.optional(v.union(v.literal('low'), v.literal('medium'), v.literal('high'))),
+    flaggedBy: v.optional(v.id('users')),
+
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
   })
     .index('by_organizer', ['organizerId'])
+    .index('by_organization', ['organizationId'])
+    .index('by_org_status', ['organizationId', 'status'])
     .index('by_status', ['status'])
     .index('by_date', ['startDate'])
-    .index('by_public', ['isPublic']),
+    .index('by_public', ['isPublic'])
+    .index('by_flagged', ['flagged'])
+    .index('by_flagged_severity', ['flagged', 'flaggedSeverity']),
 
   // Vendors - Service providers for events
   vendors: defineTable({
@@ -362,18 +552,18 @@ export default defineSchema({
 
     // Application status
     status: v.union(
-      v.literal('pending'),      // Awaiting organizer review
+      v.literal('pending'), // Awaiting organizer review
       v.literal('under_review'), // Organizer is reviewing
-      v.literal('accepted'),     // Accepted by organizer
-      v.literal('rejected'),     // Rejected by organizer
-      v.literal('withdrawn')     // Withdrawn by applicant (admin)
+      v.literal('accepted'), // Accepted by organizer
+      v.literal('rejected'), // Rejected by organizer
+      v.literal('withdrawn') // Withdrawn by applicant (admin)
     ),
 
     // Application details
-    message: v.optional(v.string()),       // Cover letter/pitch
+    message: v.optional(v.string()), // Cover letter/pitch
     proposedServices: v.optional(v.array(v.string())), // What they're offering
     proposedBudget: v.optional(v.number()), // Budget ask or offer
-    proposedTier: v.optional(v.string()),   // For sponsors: tier they want
+    proposedTier: v.optional(v.string()), // For sponsors: tier they want
 
     // Contact info for this application (may differ from main profile)
     contactName: v.optional(v.string()),
@@ -443,10 +633,10 @@ export default defineSchema({
     estimatedAmount: v.number(),
     actualAmount: v.optional(v.number()),
     status: v.union(
-      v.literal('planned'),    // Budget allocated but not spent
-      v.literal('committed'),  // Contract signed, committed to spend
-      v.literal('paid'),       // Payment made
-      v.literal('cancelled')   // Budget item cancelled
+      v.literal('planned'), // Budget allocated but not spent
+      v.literal('committed'), // Contract signed, committed to spend
+      v.literal('paid'), // Payment made
+      v.literal('cancelled') // Budget item cancelled
     ),
     // Vendor/sponsor association (optional)
     vendorId: v.optional(v.id('vendors')),
@@ -531,6 +721,9 @@ export default defineSchema({
       v.literal('event_flagged'),
       v.literal('event_unflagged'),
       v.literal('event_removed'),
+      // Organization moderation
+      v.literal('organization_suspended'),
+      v.literal('organization_activated'),
       // Public applications
       v.literal('application_reviewed'),
       v.literal('application_converted'),
@@ -543,7 +736,8 @@ export default defineSchema({
       v.literal('vendor'),
       v.literal('sponsor'),
       v.literal('event'),
-      v.literal('application')
+      v.literal('application'),
+      v.literal('organization')
     ),
     targetId: v.string(), // ID of the target entity
 
@@ -556,6 +750,44 @@ export default defineSchema({
     .index('by_admin', ['adminId'])
     .index('by_target', ['targetType', 'targetId'])
     .index('by_action', ['action'])
+    .index('by_date', ['createdAt']),
+
+  // Admin Notifications - Notifications for admins about platform events
+  adminNotifications: defineTable({
+    // Notification type
+    type: v.union(
+      v.literal('security_alert'), // Failed logins, rate limits hit, suspicious activity
+      v.literal('new_application'), // New vendor/sponsor application
+      v.literal('flagged_content'), // Event flagged for review
+      v.literal('user_report'), // User-submitted report
+      v.literal('system_alert') // System errors, performance issues
+    ),
+
+    // Content
+    title: v.string(),
+    message: v.string(),
+    severity: v.union(v.literal('low'), v.literal('medium'), v.literal('high')),
+
+    // Related entity (optional)
+    targetType: v.optional(v.string()), // 'user' | 'event' | 'vendor' | 'sponsor' | 'application'
+    targetId: v.optional(v.string()),
+
+    // Status
+    read: v.boolean(),
+    readAt: v.optional(v.number()),
+    readBy: v.optional(v.id('users')),
+
+    // Email delivery
+    emailSent: v.boolean(),
+    emailSentAt: v.optional(v.number()),
+
+    // Metadata
+    metadata: v.optional(v.any()),
+    createdAt: v.number(),
+  })
+    .index('by_read', ['read'])
+    .index('by_type', ['type'])
+    .index('by_severity', ['severity'])
     .index('by_date', ['createdAt']),
 
   // Public Applications - Vendor/Sponsor applications from public forms (no auth required)
@@ -627,15 +859,14 @@ export default defineSchema({
     dailyLimit: v.optional(v.number()), // Override default limit (e.g., for premium)
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
-  })
-    .index('by_user', ['userId']),
+  }).index('by_user', ['userId']),
 
   // ============================================================================
   // PUBLIC API INFRASTRUCTURE
   // ============================================================================
 
   // API Keys - For external API access
-  // Keys are stored as hashed values for security
+  // Keys are stored as encrypted values for security (or hashed for legacy keys)
   apiKeys: defineTable({
     // Owner of this API key
     userId: v.id('users'),
@@ -644,8 +875,14 @@ export default defineSchema({
     name: v.string(), // "My Production App", "Testing Key"
     description: v.optional(v.string()),
 
-    // Security - NEVER store the actual key, only the hash
-    keyHash: v.string(), // SHA-256 hash of the full key
+    // Security - Store encrypted key data (new approach)
+    encryptedKey: v.optional(v.string()), // Encrypted API key ciphertext (base64)
+    encryptionIV: v.optional(v.string()), // Initialization vector (base64)
+    encryptionTag: v.optional(v.string()), // Authentication tag (base64)
+    encryptionSalt: v.optional(v.string()), // Salt for key derivation (base64)
+
+    // Legacy security - Hash-based storage (deprecated, for backward compatibility)
+    keyHash: v.optional(v.string()), // SHA-256 hash of the full key (legacy)
     keyPrefix: v.string(), // First 8 chars for identification (e.g., "oe_live_")
 
     // Permissions - what this key can do
@@ -655,11 +892,7 @@ export default defineSchema({
     rateLimit: v.optional(v.number()), // Custom rate limit (requests per hour), null = default
 
     // Status
-    status: v.union(
-      v.literal('active'),
-      v.literal('revoked'),
-      v.literal('expired')
-    ),
+    status: v.union(v.literal('active'), v.literal('revoked'), v.literal('expired')),
 
     // Usage tracking
     lastUsedAt: v.optional(v.number()),
@@ -799,4 +1032,457 @@ export default defineSchema({
     .index('by_user', ['userId'])
     .index('by_status', ['status'])
     .index('by_date', ['createdAt']),
+
+  // ============================================================================
+  // ATTENDEE MANAGEMENT
+  // ============================================================================
+
+  // Attendees - Event attendee/participant tracking
+  attendees: defineTable({
+    eventId: v.id('events'),
+
+    // Basic info
+    email: v.string(),
+    name: v.string(),
+    phone: v.optional(v.string()),
+
+    // Ticket info
+    ticketType: v.optional(v.string()), // VIP, General, Early Bird, etc.
+    ticketNumber: v.string(), // Unique ticket ID for QR codes
+
+    // Status
+    status: v.union(
+      v.literal('registered'),
+      v.literal('confirmed'),
+      v.literal('checked_in'),
+      v.literal('cancelled'),
+      v.literal('no_show')
+    ),
+
+    // Check-in tracking
+    checkedInAt: v.optional(v.number()),
+    checkedInBy: v.optional(v.id('users')),
+    checkInMethod: v.optional(v.string()), // 'qr_scan', 'manual', 'self_check_in'
+
+    // Special requirements
+    dietaryRestrictions: v.optional(v.string()),
+    accessibilityNeeds: v.optional(v.string()),
+    specialRequests: v.optional(v.string()),
+
+    // Additional info
+    organization: v.optional(v.string()), // Company/org they represent
+    jobTitle: v.optional(v.string()),
+    notes: v.optional(v.string()), // Internal notes
+
+    // Registration source
+    registrationSource: v.optional(v.string()), // 'manual', 'csv_import', 'form', 'api'
+
+    // Payment reference (for future integration)
+    paymentStatus: v.optional(v.string()), // 'paid', 'pending', 'refunded', 'free'
+    paymentReference: v.optional(v.string()),
+
+    // Metadata
+    customFields: v.optional(v.any()), // For event-specific custom data
+
+    registeredAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  })
+    .index('by_event', ['eventId'])
+    .index('by_email', ['email'])
+    .index('by_event_email', ['eventId', 'email'])
+    .index('by_ticket', ['ticketNumber'])
+    .index('by_status', ['status'])
+    .index('by_event_status', ['eventId', 'status']),
+
+  // ============================================================================
+  // TICKETING & PAYMENTS
+  // ============================================================================
+
+  // Ticket Types - Define ticket tiers for events
+  ticketTypes: defineTable({
+    eventId: v.id('events'),
+
+    // Basic info
+    name: v.string(), // "General Admission", "VIP", "Early Bird"
+    description: v.optional(v.string()),
+
+    // Pricing
+    price: v.number(), // Price in cents (e.g., 1000 = $10.00)
+    currency: v.string(), // "usd", "myr", etc.
+
+    // Availability
+    quantity: v.optional(v.number()), // Total available (null = unlimited)
+    soldCount: v.number(), // Number sold
+    reservedCount: v.optional(v.number()), // Reserved but not yet paid (prevents overselling)
+    maxPerOrder: v.optional(v.number()), // Max tickets per order (default 10)
+
+    // Sales window
+    salesStartAt: v.optional(v.number()), // When tickets go on sale
+    salesEndAt: v.optional(v.number()), // When sales close
+
+    // Status
+    isActive: v.boolean(),
+    isHidden: v.boolean(), // Hidden from public but still purchasable via link
+
+    // Display order
+    sortOrder: v.number(),
+
+    // Perks/benefits for this ticket type
+    perks: v.optional(v.array(v.string())),
+
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  })
+    .index('by_event', ['eventId'])
+    .index('by_event_active', ['eventId', 'isActive']),
+
+  // Orders - Track ticket purchases
+  orders: defineTable({
+    eventId: v.id('events'),
+    buyerEmail: v.string(),
+    buyerName: v.string(),
+    buyerPhone: v.optional(v.string()),
+
+    // Order items (ticket types and quantities)
+    items: v.array(
+      v.object({
+        ticketTypeId: v.id('ticketTypes'),
+        ticketTypeName: v.string(),
+        quantity: v.number(),
+        unitPrice: v.number(),
+        subtotal: v.number(),
+      })
+    ),
+
+    // Totals
+    subtotal: v.number(), // Sum of items
+    discount: v.optional(v.number()), // Promo code discount amount
+    fees: v.number(), // Platform/processing fees
+    total: v.number(), // Final amount charged
+    currency: v.string(),
+
+    // Promo code (if applied)
+    promoCodeId: v.optional(v.id('promoCodes')),
+    promoCodeCode: v.optional(v.string()), // Store the code for display
+
+    // Payment info
+    paymentStatus: v.union(
+      v.literal('pending'),
+      v.literal('processing'),
+      v.literal('completed'),
+      v.literal('failed'),
+      v.literal('refunded'),
+      v.literal('cancelled')
+    ),
+    paymentMethod: v.optional(v.string()), // 'card', 'fpx', etc.
+
+    // Stripe references
+    stripePaymentIntentId: v.optional(v.string()),
+    stripeSessionId: v.optional(v.string()),
+    stripeCustomerId: v.optional(v.string()),
+
+    // Order metadata
+    orderNumber: v.string(), // Human-readable order number (ORD-XXXXXX)
+    notes: v.optional(v.string()),
+
+    // Refund tracking
+    refundId: v.optional(v.string()), // Stripe refund ID
+    refundAmount: v.optional(v.number()), // Amount refunded (cents)
+    refundReason: v.optional(v.string()),
+    isPartialRefund: v.optional(v.boolean()),
+
+    // Timestamps
+    createdAt: v.number(),
+    paidAt: v.optional(v.number()),
+    refundedAt: v.optional(v.number()),
+    expiresAt: v.optional(v.number()), // For pending orders
+  })
+    .index('by_event', ['eventId'])
+    .index('by_email', ['buyerEmail'])
+    .index('by_order_number', ['orderNumber'])
+    .index('by_stripe_session', ['stripeSessionId'])
+    .index('by_stripe_intent', ['stripePaymentIntentId'])
+    .index('by_status', ['paymentStatus'])
+    .index('by_event_status', ['eventId', 'paymentStatus']),
+
+  // Promo Codes - Discount codes for ticket purchases
+  promoCodes: defineTable({
+    eventId: v.optional(v.id('events')), // If null, applies to all events by this organizer
+    organizerId: v.id('users'),
+
+    // Code details
+    code: v.string(), // The actual promo code (uppercase)
+    description: v.optional(v.string()),
+
+    // Discount type
+    discountType: v.union(v.literal('percentage'), v.literal('fixed')),
+    discountValue: v.number(), // Percentage (0-100) or fixed amount in cents
+
+    // Usage limits
+    maxUses: v.optional(v.number()), // Total uses allowed (null = unlimited)
+    usedCount: v.number(), // Times used
+    maxUsesPerEmail: v.optional(v.number()), // Per customer limit
+
+    // Minimum requirements
+    minOrderAmount: v.optional(v.number()), // Min order amount in cents
+
+    // Validity period
+    validFrom: v.optional(v.number()), // Unix timestamp
+    validUntil: v.optional(v.number()), // Unix timestamp
+
+    // Status
+    isActive: v.boolean(),
+
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  })
+    .index('by_event', ['eventId'])
+    .index('by_organizer', ['organizerId'])
+    .index('by_code', ['code'])
+    .index('by_active', ['isActive']),
+
+  // Webhook Events - Idempotency tracking for Stripe webhooks
+  webhookEvents: defineTable({
+    eventId: v.string(), // Stripe event ID
+    eventType: v.string(), // checkout.session.completed, etc.
+    processedAt: v.number(),
+  }).index('by_event_id', ['eventId']),
+
+  // Payment Idempotency - Prevent duplicate payment operations
+  paymentIdempotency: defineTable({
+    idempotencyKey: v.string(), // Unique key for the operation
+    orderId: v.string(), // Order ID (stored as string for flexibility)
+    operation: v.union(v.literal('checkout'), v.literal('refund'), v.literal('capture')),
+    status: v.union(v.literal('pending'), v.literal('completed'), v.literal('failed')),
+    stripeIdempotencyKey: v.optional(v.string()), // Key sent to Stripe
+    result: v.optional(v.string()), // JSON-serialized result for returning on duplicate requests
+    errorMessage: v.optional(v.string()), // Error message if failed
+    createdAt: v.number(),
+    completedAt: v.optional(v.number()),
+    expiresAt: v.number(), // TTL for cleanup (24 hours from creation)
+  })
+    .index('by_idempotency_key', ['idempotencyKey'])
+    .index('by_order_operation', ['orderId', 'operation'])
+    .index('by_expires_at', ['expiresAt']),
+
+  // Notes - Playground notes and general event notes
+  notes: defineTable({
+    eventId: v.optional(v.id('events')), // Optional link to event
+    organizerId: v.id('users'), // Note creator
+    title: v.string(),
+    content: v.string(), // Markdown content
+    color: v.string(), // 'yellow' | 'purple' | 'green' | 'blue' | 'pink'
+    tags: v.optional(v.array(v.string())), // Optional tags for organization
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_organizer', ['organizerId'])
+    .index('by_event', ['eventId']),
+
+  // Notification Preferences - User settings for notifications
+  notificationPreferences: defineTable({
+    userId: v.id('users'),
+
+    // Email notification settings
+    emailEnabled: v.boolean(), // Master switch for all email notifications
+    emailVendorApplications: v.boolean(), // Vendor applications
+    emailSponsorApplications: v.boolean(), // Sponsor applications
+    emailEventReminders: v.boolean(), // Event reminders
+    emailTaskDeadlines: v.boolean(), // Task deadlines
+    emailBudgetAlerts: v.boolean(), // Budget threshold alerts
+
+    // In-app notification settings
+    inAppEnabled: v.boolean(), // Master switch for in-app notifications
+    inAppVendorApplications: v.boolean(),
+    inAppSponsorApplications: v.boolean(),
+    inAppEventReminders: v.boolean(),
+    inAppTaskDeadlines: v.boolean(),
+    inAppBudgetAlerts: v.boolean(),
+
+    // Timing preferences
+    dailyDigest: v.boolean(), // Send daily summary instead of individual emails
+    digestTime: v.optional(v.string()), // Time for daily digest (e.g., "09:00")
+
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  }).index('by_user', ['userId']),
+
+  // Notifications - In-app and email notifications
+  notifications: defineTable({
+    userId: v.id('users'), // Recipient
+    type: v.string(), // Notification type: 'event_reminder', 'task_deadline', 'vendor_application', etc.
+    title: v.string(), // Notification title
+    message: v.string(), // Notification message/body
+
+    // Related entity references (optional)
+    eventId: v.optional(v.id('events')),
+    taskId: v.optional(v.id('tasks')),
+    applicationId: v.optional(v.id('vendorApplications')),
+
+    // Status tracking
+    read: v.boolean(), // Whether notification has been read
+    readAt: v.optional(v.number()), // When it was read
+
+    // Delivery tracking
+    emailSent: v.boolean(), // Whether email notification was sent
+    emailSentAt: v.optional(v.number()),
+    pushSent: v.boolean(), // Whether push notification was sent
+    pushSentAt: v.optional(v.number()),
+
+    // Optional action link
+    actionUrl: v.optional(v.string()), // URL to navigate to when clicked
+    actionLabel: v.optional(v.string()), // Label for action button
+
+    createdAt: v.number(),
+  })
+    .index('by_user', ['userId', 'createdAt'])
+    .index('by_user_read', ['userId', 'read', 'createdAt'])
+    .index('by_type', ['type'])
+    .index('by_date', ['createdAt']),
+
+  // ============================================================================
+  // Account Security
+  // ============================================================================
+
+  // CSRF Tokens - Cross-Site Request Forgery protection
+  csrfTokens: defineTable({
+    userId: v.string(), // User ID from auth identity
+    token: v.string(), // Random token value
+    expiresAt: v.number(), // Unix timestamp when token expires
+    createdAt: v.number(), // Unix timestamp when token was created
+  })
+    .index('by_user', ['userId'])
+    .index('by_user_token', ['userId', 'token'])
+    .index('by_expiration', ['expiresAt']),
+
+  // Tracks failed login attempts for account lockout
+  failedLoginAttempts: defineTable({
+    identifier: v.string(), // Email or IP address
+    attempts: v.array(v.number()), // Timestamps of failed attempts
+    lockedUntil: v.optional(v.number()), // Lockout expiry timestamp
+    createdAt: v.number(),
+  }).index('by_identifier', ['identifier']),
+
+  // Global rate limiting - IP-based protection for all endpoints
+  globalRateLimits: defineTable({
+    identifier: v.string(), // IP address or combined IP:endpoint key
+    type: v.string(), // 'auth' | 'api' | 'ai' | 'default'
+    requestCount: v.number(), // Number of requests in current window
+    windowStart: v.number(), // Start of current time window
+    lastRequestAt: v.number(), // Timestamp of last request
+  })
+    .index('by_identifier', ['identifier'])
+    .index('by_identifier_type', ['identifier', 'type'])
+    .index('by_window', ['windowStart']),
+
+  // Audit logs - Track all significant actions for security review
+  auditLogs: defineTable({
+    // Who performed the action
+    userId: v.optional(v.id('users')), // Null for anonymous/system actions
+    userEmail: v.optional(v.string()), // Captured at time of action
+
+    // What action was performed
+    action: v.string(), // 'login', 'logout', 'create_event', 'delete_user', etc.
+    resource: v.string(), // 'user', 'event', 'vendor', 'sponsor', etc.
+    resourceId: v.optional(v.string()), // ID of affected resource
+
+    // Request context
+    ipAddress: v.optional(v.string()),
+    userAgent: v.optional(v.string()),
+    endpoint: v.optional(v.string()), // API endpoint path
+
+    // Additional details
+    metadata: v.optional(v.any()), // Action-specific data
+    status: v.union(v.literal('success'), v.literal('failure'), v.literal('blocked')),
+    errorMessage: v.optional(v.string()),
+
+    createdAt: v.number(),
+  })
+    .index('by_user', ['userId', 'createdAt'])
+    .index('by_action', ['action', 'createdAt'])
+    .index('by_resource', ['resource', 'resourceId'])
+    .index('by_date', ['createdAt'])
+    .index('by_status', ['status', 'createdAt']),
+
+  // ============================================================================
+  // Platform Settings - Configuration managed by superadmins
+  // ============================================================================
+
+  platformSettings: defineTable({
+    // Setting identification
+    key: v.string(), // Unique setting key (e.g., 'ai.dailyLimit', 'registration.mode')
+    category: v.string(), // Category for grouping (e.g., 'ai', 'registration', 'features')
+
+    // Setting value (stored as JSON-compatible value)
+    value: v.any(),
+    valueType: v.union(
+      v.literal('string'),
+      v.literal('number'),
+      v.literal('boolean'),
+      v.literal('json')
+    ),
+
+    // Metadata
+    label: v.string(), // Human-readable label
+    description: v.optional(v.string()), // Explanation of the setting
+    defaultValue: v.optional(v.any()), // Default value if not set
+
+    // Audit trail
+    lastModifiedBy: v.optional(v.id('users')),
+    lastModifiedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index('by_key', ['key'])
+    .index('by_category', ['category']),
+
+  // ============================================================================
+  // Compliance - Terms of Service Acceptance
+  // ============================================================================
+
+  // Terms Acceptance - Track user acceptance of terms of service
+  termsAcceptance: defineTable({
+    userId: v.id('users'),
+    version: v.string(), // Terms version (e.g., "1.0", "2024-01-15")
+    acceptedAt: v.number(), // Unix timestamp when terms were accepted
+    ipAddress: v.optional(v.string()), // IP address at time of acceptance
+    userAgent: v.optional(v.string()), // Browser/device info
+  })
+    .index('by_user', ['userId'])
+    .index('by_user_version', ['userId', 'version'])
+    .index('by_version', ['version'])
+    .index('by_date', ['acceptedAt']),
+
+  // ============================================================================
+  // Backup & Disaster Recovery
+  // ============================================================================
+
+  // Backups - Backup metadata and tracking
+  backups: defineTable({
+    backupId: v.string(), // Unique backup identifier
+    timestamp: v.number(), // Unix timestamp when backup was created
+    size: v.number(), // Backup size in bytes
+    location: v.string(), // Storage location path
+    checksum: v.string(), // SHA-256 checksum for integrity verification
+    encrypted: v.boolean(), // Whether backup data is encrypted
+    status: v.union(v.literal('pending'), v.literal('completed'), v.literal('failed')),
+    expiresAt: v.number(), // Unix timestamp when backup should be deleted
+    errorMessage: v.optional(v.string()), // Error message if backup failed
+  })
+    .index('by_backup_id', ['backupId'])
+    .index('by_status', ['status'])
+    .index('by_timestamp', ['timestamp'])
+    .index('by_expiration', ['expiresAt']),
+
+  // Backup Verification - Track backup verification tests
+  backupVerifications: defineTable({
+    backupId: v.id('backups'),
+    verifiedAt: v.number(), // Unix timestamp when verification was performed
+    success: v.boolean(), // Whether verification succeeded
+    errors: v.optional(v.array(v.string())), // List of errors if verification failed
+    verificationMethod: v.optional(v.string()), // Method used for verification
+    notes: v.optional(v.string()), // Additional notes about verification
+  })
+    .index('by_backup', ['backupId'])
+    .index('by_date', ['verifiedAt'])
+    .index('by_success', ['success']),
 })

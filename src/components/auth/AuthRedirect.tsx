@@ -1,7 +1,8 @@
-import { useConvexAuth, useQuery } from 'convex/react'
+import { useQuery } from 'convex/react'
 import { Navigate } from 'react-router-dom'
 import { api } from '../../../convex/_generated/api'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { useAuth } from '@/contexts/AuthContext'
 
 /**
  * Smart redirect component that routes users based on their role:
@@ -10,22 +11,16 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
  * - organizer (existing) → /dashboard
  */
 export function AuthRedirect() {
-  const { isLoading: authLoading, isAuthenticated } = useConvexAuth()
-  
-  // Always query user data when authenticated
-  const user = useQuery(
-    api.queries.auth.getCurrentUser,
-    isAuthenticated ? {} : 'skip'
-  )
+  const { isLoading: authLoading, isAuthenticated, user, accessToken } = useAuth()
 
   // Determine role for profile query
   const role = user?.role || 'organizer'
   const isOrganizer = role === 'organizer'
-  
+
   // Always query profile for organizers - we need this to decide the redirect
   const organizerProfile = useQuery(
     api.organizerProfiles.getMyProfile,
-    isAuthenticated && user && isOrganizer ? {} : 'skip'
+    isAuthenticated && user && isOrganizer && accessToken ? { accessToken } : 'skip'
   )
 
   // Still loading auth

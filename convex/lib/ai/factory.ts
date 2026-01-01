@@ -6,6 +6,7 @@
  */
 
 import { OpenAIProvider } from './providers/openai'
+import { AnthropicProvider } from './providers/anthropic'
 import type { AIProvider, ProviderType, ProviderCredentials } from './types'
 
 /**
@@ -20,10 +21,7 @@ import type { AIProvider, ProviderType, ProviderCredentials } from './types'
  *   openai: process.env.OPENAI_API_KEY,
  * })
  */
-export function createAIProvider(
-  type: ProviderType,
-  credentials: ProviderCredentials
-): AIProvider {
+export function createAIProvider(type: ProviderType, credentials: ProviderCredentials): AIProvider {
   switch (type) {
     case 'openai': {
       if (!credentials.openai) {
@@ -33,17 +31,15 @@ export function createAIProvider(
     }
 
     case 'anthropic': {
-      // TODO: Implement Anthropic provider
-      throw new Error(
-        'Anthropic provider not yet implemented. Coming soon!'
-      )
+      if (!credentials.anthropic) {
+        throw new Error('Anthropic API key is required')
+      }
+      return new AnthropicProvider(credentials.anthropic)
     }
 
     case 'groq': {
       // TODO: Implement Groq provider
-      throw new Error(
-        'Groq provider not yet implemented. Coming soon!'
-      )
+      throw new Error('Groq provider not yet implemented. Coming soon!')
     }
 
     default: {
@@ -56,10 +52,7 @@ export function createAIProvider(
 /**
  * Check if a provider is available (has credentials).
  */
-export function isProviderAvailable(
-  type: ProviderType,
-  credentials: ProviderCredentials
-): boolean {
+export function isProviderAvailable(type: ProviderType, credentials: ProviderCredentials): boolean {
   switch (type) {
     case 'openai':
       return !!credentials.openai
@@ -76,9 +69,7 @@ export function isProviderAvailable(
  * Get the default provider based on available credentials.
  * Priority: OpenAI > Anthropic > Groq
  */
-export function getDefaultProvider(
-  credentials: ProviderCredentials
-): ProviderType | null {
+export function getDefaultProvider(credentials: ProviderCredentials): ProviderType | null {
   if (credentials.openai) return 'openai'
   if (credentials.anthropic) return 'anthropic'
   if (credentials.groq) return 'groq'

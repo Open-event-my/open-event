@@ -49,12 +49,7 @@ export interface UseDemoPlayerReturn {
  * ```
  */
 export function useDemoPlayer(options: UseDemoPlayerOptions = {}): UseDemoPlayerReturn {
-  const {
-    sceneDuration = 7000,
-    sceneCount = 5,
-    autoPlay = true,
-    loop = true,
-  } = options
+  const { sceneDuration = 7000, sceneCount = 5, autoPlay = true, loop = true } = options
 
   // Initialize playing state respecting reduced motion preference
   const [isPlaying, setIsPlaying] = useState(() => {
@@ -128,18 +123,20 @@ export function useDemoPlayer(options: UseDemoPlayerOptions = {}): UseDemoPlayer
     }
   }, [isPlaying])
 
-
   const play = useCallback(() => setIsPlaying(true), [])
   const pause = useCallback(() => setIsPlaying(false), [])
   const reset = useCallback(() => {
     setElapsed(0)
     lastTimeRef.current = null
   }, [])
-  const goToScene = useCallback((scene: number) => {
-    const clampedScene = Math.max(0, Math.min(scene, sceneCount - 1))
-    setElapsed(clampedScene * sceneDuration)
-    lastTimeRef.current = null
-  }, [sceneDuration, sceneCount])
+  const goToScene = useCallback(
+    (scene: number) => {
+      const clampedScene = Math.max(0, Math.min(scene, sceneCount - 1))
+      setElapsed(clampedScene * sceneDuration)
+      lastTimeRef.current = null
+    },
+    [sceneDuration, sceneCount]
+  )
 
   return {
     currentScene,

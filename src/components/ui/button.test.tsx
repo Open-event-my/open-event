@@ -68,7 +68,7 @@ describe('Button', () => {
     it('should render ghost variant', () => {
       render(<Button variant="ghost">Ghost</Button>)
       const button = screen.getByRole('button')
-      expect(button.className).toContain('hover:bg-accent')
+      expect(button.className).toContain('hover:bg-muted')
     })
 
     it('should render link variant', () => {
@@ -82,7 +82,7 @@ describe('Button', () => {
     it('should render default size', () => {
       render(<Button size="default">Default</Button>)
       const button = screen.getByRole('button')
-      expect(button.className).toContain('h-9')
+      expect(button.className).toContain('h-10')
     })
 
     it('should render sm size', () => {
@@ -94,13 +94,13 @@ describe('Button', () => {
     it('should render lg size', () => {
       render(<Button size="lg">Large</Button>)
       const button = screen.getByRole('button')
-      expect(button.className).toContain('h-10')
+      expect(button.className).toContain('h-11')
     })
 
     it('should render icon size', () => {
       render(<Button size="icon">Icon</Button>)
       const button = screen.getByRole('button')
-      expect(button.className).toContain('size-9')
+      expect(button.className).toContain('size-10')
     })
   })
 

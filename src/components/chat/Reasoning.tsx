@@ -73,9 +73,7 @@ export function Reasoning({
             )}
           </div>
           {!isExpanded && contentPreview && (
-            <p className="text-xs text-muted-foreground mt-0.5 truncate">
-              {contentPreview}
-            </p>
+            <p className="text-xs text-muted-foreground mt-0.5 truncate">{contentPreview}</p>
           )}
         </div>
 
@@ -136,13 +134,7 @@ export function ReasoningStep({
   className,
 }: ReasoningStepProps) {
   return (
-    <div
-      className={cn(
-        'flex gap-3',
-        isActive && 'animate-pulse',
-        className
-      )}
-    >
+    <div className={cn('flex gap-3', isActive && 'animate-pulse', className)}>
       {/* Step number */}
       <div
         className={cn(
@@ -168,9 +160,7 @@ export function ReasoningStep({
         >
           {label}
         </p>
-        {content && (
-          <p className="text-xs text-muted-foreground mt-1">{content}</p>
-        )}
+        {content && <p className="text-xs text-muted-foreground mt-1">{content}</p>}
       </div>
     </div>
   )
@@ -186,11 +176,7 @@ export interface InsightCardProps {
   className?: string
 }
 
-export function InsightCard({
-  content,
-  type = 'info',
-  className,
-}: InsightCardProps) {
+export function InsightCard({ content, type = 'info', className }: InsightCardProps) {
   const styles = {
     info: 'border-blue-500/20 bg-blue-500/5 text-blue-700 dark:text-blue-400',
     suggestion: 'border-green-500/20 bg-green-500/5 text-green-700 dark:text-green-400',
@@ -198,13 +184,7 @@ export function InsightCard({
   }
 
   return (
-    <div
-      className={cn(
-        'flex items-start gap-3 p-3 rounded-lg border',
-        styles[type],
-        className
-      )}
-    >
+    <div className={cn('flex items-start gap-3 p-3 rounded-lg border', styles[type], className)}>
       <Lightbulb size={16} weight="duotone" className="flex-shrink-0 mt-0.5" />
       <p className="text-sm">{content}</p>
     </div>

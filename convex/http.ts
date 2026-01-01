@@ -34,7 +34,7 @@ async function callOpenAIWithRetry(
         if (error.status === 429) {
           // Rate limit - wait longer
           const waitTime = Math.pow(2, attempt) * 2000
-          await new Promise(r => setTimeout(r, waitTime))
+          await new Promise((r) => setTimeout(r, waitTime))
           continue
         }
       }
@@ -42,7 +42,7 @@ async function callOpenAIWithRetry(
       // For other errors, exponential backoff
       if (attempt < maxRetries - 1) {
         const waitTime = Math.pow(2, attempt) * 1000
-        await new Promise(r => setTimeout(r, waitTime))
+        await new Promise((r) => setTimeout(r, waitTime))
       }
     }
   }
@@ -92,16 +92,19 @@ import {
   apiSuccess,
   ApiErrors,
   handleCors,
+  handleAuthCors,
+  authCorsHeaders,
   parseBody,
   getPagination,
   paginationMeta,
   getLastPathSegment,
+  validateRequestSize,
 } from './api/helpers'
-import {
-  validateApiKey,
-  requirePermission,
-  PERMISSIONS,
-} from './api/auth'
+import { validateApiKey, requirePermission, PERMISSIONS } from './api/auth'
+// Account lockout utilities - ENABLED for brute force protection
+import { formatLockoutDuration } from './accountLockout'
+// Global rate limiting - IP-based protection
+import { getClientIP, rateLimitResponse, rateLimitHeaders } from './globalRateLimit'
 
 // ============================================================================
 // HTTP Router
@@ -129,6 +132,81 @@ http.route({
   }),
 })
 
+// Configuration health check endpoint
+// Returns detailed status of all configuration settings
+http.route({
+  path: '/api/health/config',
+  method: 'GET',
+  handler: httpAction(async () => {
+    const checks: Array<{
+      name: string
+      status: 'pass' | 'fail' | 'warn'
+      message: string
+      required: boolean
+    }> = []
+
+    // Check required environment variables
+    const openaiKey = process.env.OPENAI_API_KEY
+    checks.push({
+      name: 'OPENAI_API_KEY',
+      status: openaiKey ? 'pass' : 'warn',
+      message: openaiKey
+        ? 'OpenAI API key configured'
+        : 'OpenAI API key not configured - AI features disabled',
+      required: false,
+    })
+
+    const siteUrl = process.env.SITE_URL
+    checks.push({
+      name: 'SITE_URL',
+      status: siteUrl ? 'pass' : 'warn',
+      message: siteUrl
+        ? 'Site URL configured'
+        : 'Site URL not configured - OAuth redirects may fail',
+      required: false,
+    })
+
+    const stripeKey = process.env.STRIPE_SECRET_KEY
+    checks.push({
+      name: 'STRIPE_SECRET_KEY',
+      status: stripeKey ? 'pass' : 'warn',
+      message: stripeKey
+        ? 'Stripe secret key configured'
+        : 'Stripe not configured - payments disabled',
+      required: false,
+    })
+
+    const resendKey = process.env.AUTH_RESEND_KEY
+    checks.push({
+      name: 'AUTH_RESEND_KEY',
+      status: resendKey ? 'pass' : 'warn',
+      message: resendKey
+        ? 'Resend API key configured'
+        : 'Resend not configured - email features disabled',
+      required: false,
+    })
+
+    // Determine overall health
+    const hasFailures = checks.some((c) => c.status === 'fail' && c.required)
+    // Note: hasWarnings could be used for degraded status in future
+    // Note: warnings are tracked in checks array but not separately flagged
+    // const hasWarnings = checks.some((c) => c.status === 'warn')
+
+    return apiSuccess({
+      healthy: !hasFailures,
+      environment: process.env.NODE_ENV || 'development',
+      timestamp: Date.now(),
+      checks,
+      summary: {
+        total: checks.length,
+        passed: checks.filter((c) => c.status === 'pass').length,
+        warnings: checks.filter((c) => c.status === 'warn').length,
+        failed: checks.filter((c) => c.status === 'fail').length,
+      },
+    })
+  }),
+})
+
 // API info endpoint
 http.route({
   path: '/api/v1',
@@ -147,6 +225,494 @@ http.route({
     })
   }),
 })
+
+// ============================================================================
+// Cookie Auth Endpoints
+// ============================================================================
+
+const IS_PRODUCTION = process.env.NODE_ENV === 'production'
+
+// Cookie options based on environment
+const getCookieOptions = (maxAge: number) => {
+  const base = `Path=/; Max-Age=${maxAge}; SameSite=Strict`
+  return IS_PRODUCTION ? `${base}; HttpOnly; Secure` : `${base}; HttpOnly`
+}
+
+// Parse cookies from request header
+function parseCookies(cookieHeader: string | null): Record<string, string> {
+  if (!cookieHeader) return {}
+  return Object.fromEntries(
+    cookieHeader.split(';').map((c) => {
+      const [key, ...val] = c.trim().split('=')
+      return [key, val.join('=')]
+    })
+  )
+}
+
+// Create cookie headers for auth response
+function createAuthCookies(accessToken: string, refreshToken: string) {
+  return [
+    `access_token=${accessToken}; ${getCookieOptions(900)}`, // 15 minutes
+    `refresh_token=${refreshToken}; ${getCookieOptions(604800)}`, // 7 days
+  ]
+}
+
+// Clear cookies on logout
+function createClearCookies() {
+  return [`access_token=; Path=/; Max-Age=0`, `refresh_token=; Path=/; Max-Age=0`]
+}
+
+// CORS preflight for auth endpoints (with credentials)
+http.route({
+  path: '/api/auth/login',
+  method: 'OPTIONS',
+  handler: httpAction(async (_, request) => handleAuthCors(request)),
+})
+
+http.route({
+  path: '/api/auth/signup',
+  method: 'OPTIONS',
+  handler: httpAction(async (_, request) => handleAuthCors(request)),
+})
+
+http.route({
+  path: '/api/auth/logout',
+  method: 'OPTIONS',
+  handler: httpAction(async (_, request) => handleAuthCors(request)),
+})
+
+http.route({
+  path: '/api/auth/refresh',
+  method: 'OPTIONS',
+  handler: httpAction(async (_, request) => handleAuthCors(request)),
+})
+
+http.route({
+  path: '/api/auth/me',
+  method: 'OPTIONS',
+  handler: httpAction(async (_, request) => handleAuthCors(request)),
+})
+
+// POST /api/auth/login - Login with email/password
+// Account lockout protection ENABLED - prevents brute force attacks
+// Global rate limiting ENABLED - IP-based protection
+http.route({
+  path: '/api/auth/login',
+  method: 'POST',
+  handler: httpAction(async (ctx, request) => {
+    const origin = request.headers.get('Origin')
+    const clientIP = getClientIP(request)
+    const userAgent = request.headers.get('User-Agent') || undefined
+
+    try {
+      // Validate request size (1MB limit for JSON)
+      const sizeError = validateRequestSize(request, 1 * 1024 * 1024)
+      if (sizeError) {
+        return sizeError
+      }
+
+      // Check IP-based rate limit first (before parsing body)
+      const ipRateLimit = await ctx.runMutation(internal.globalRateLimit.checkAndIncrement, {
+        identifier: clientIP,
+        type: 'auth',
+      })
+
+      if (!ipRateLimit.allowed) {
+        // Log rate limited attempt
+        await ctx.runMutation(internal.auditLog.log, {
+          action: 'rate_limited',
+          resource: 'auth',
+          ipAddress: clientIP,
+          userAgent,
+          endpoint: '/api/auth/login',
+          status: 'blocked',
+          metadata: { reason: 'IP rate limit exceeded' },
+        })
+
+        return rateLimitResponse(ipRateLimit, corsHeaders(origin))
+      }
+
+      const body = await parseBody(request)
+      const { email, password } = body as { email: string; password: string }
+
+      if (!email || !password) {
+        return new Response(JSON.stringify({ error: 'Email and password are required' }), {
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            ...rateLimitHeaders(ipRateLimit),
+            ...corsHeaders(origin),
+          },
+        })
+      }
+
+      // Check if account is locked out due to too many failed attempts
+      const lockoutStatus = await ctx.runQuery(internal.accountLockout.checkLockoutStatus, {
+        identifier: email,
+      })
+
+      if (lockoutStatus.isLocked) {
+        const duration = formatLockoutDuration(lockoutStatus.lockoutDuration || 60000)
+
+        // Log account lockout
+        await ctx.runMutation(internal.auditLog.log, {
+          userEmail: email,
+          action: 'account_locked',
+          resource: 'auth',
+          ipAddress: clientIP,
+          userAgent,
+          endpoint: '/api/auth/login',
+          status: 'blocked',
+          metadata: { lockedUntil: lockoutStatus.lockedUntil },
+        })
+
+        return new Response(
+          JSON.stringify({
+            error: 'Account temporarily locked',
+            message: `Too many failed login attempts. Please try again in ${duration}.`,
+            lockedUntil: lockoutStatus.lockedUntil,
+          }),
+          {
+            status: 429,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) },
+          }
+        )
+      }
+
+      const result = await ctx.runAction(internal.customAuth.signInInternal, {
+        email,
+        password,
+        userAgent,
+        ipAddress: clientIP,
+      })
+
+      if (!result.success) {
+        // Record failed attempt for lockout tracking
+        const newLockoutStatus = await ctx.runMutation(
+          internal.accountLockout.recordFailedAttempt,
+          {
+            identifier: email,
+          }
+        )
+
+        // Log failed login attempt
+        await ctx.runMutation(internal.auditLog.log, {
+          userEmail: email,
+          action: 'login_failed',
+          resource: 'auth',
+          ipAddress: clientIP,
+          userAgent,
+          endpoint: '/api/auth/login',
+          status: 'failure',
+          metadata: {
+            remainingAttempts: newLockoutStatus.remainingAttempts,
+            isLocked: newLockoutStatus.isLocked,
+          },
+        })
+
+        // Provide warning about remaining attempts
+        let errorMessage = 'Invalid email or password'
+        if (newLockoutStatus.isLocked) {
+          const duration = formatLockoutDuration(newLockoutStatus.lockoutDuration || 60000)
+          errorMessage = `Account locked due to too many failed attempts. Try again in ${duration}.`
+        } else if (newLockoutStatus.remainingAttempts <= 2) {
+          errorMessage = `Invalid credentials. ${newLockoutStatus.remainingAttempts} attempt(s) remaining before lockout.`
+        }
+
+        return new Response(
+          JSON.stringify({
+            error: errorMessage,
+            remainingAttempts: newLockoutStatus.remainingAttempts,
+            isLocked: newLockoutStatus.isLocked,
+          }),
+          {
+            status: newLockoutStatus.isLocked ? 429 : 401,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) },
+          }
+        )
+      }
+
+      // Clear failed attempts on successful login
+      await ctx.runMutation(internal.accountLockout.clearFailedAttempts, { identifier: email })
+
+      // Log successful login
+      await ctx.runMutation(internal.auditLog.log, {
+        userId: result.user?._id,
+        userEmail: email,
+        action: 'login',
+        resource: 'auth',
+        ipAddress: clientIP,
+        userAgent,
+        endpoint: '/api/auth/login',
+        status: 'success',
+      })
+
+      // At this point, result.success is true so tokens are guaranteed to exist
+      const cookies = createAuthCookies(result.accessToken!, result.refreshToken!)
+
+      // Return accessToken in body for Convex queries (stored in memory, not localStorage)
+      return new Response(
+        JSON.stringify({
+          success: true,
+          user: result.user,
+          accessToken: result.accessToken!, // For Convex WebSocket queries
+        }),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Set-Cookie': cookies.join(', '),
+            ...corsHeaders(origin),
+          },
+        }
+      )
+    } catch (error) {
+      console.error('Login error:', error)
+      // Generic error message for security
+      return new Response(JSON.stringify({ error: 'Authentication failed' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) },
+      })
+    }
+  }),
+})
+
+// POST /api/auth/signup - Create new account
+http.route({
+  path: '/api/auth/signup',
+  method: 'POST',
+  handler: httpAction(async (ctx, request) => {
+    const origin = request.headers.get('Origin')
+    const clientIP = getClientIP(request)
+    const userAgent = request.headers.get('User-Agent') || undefined
+
+    try {
+      // Validate request size (1MB limit for JSON)
+      const sizeError = validateRequestSize(request, 1 * 1024 * 1024)
+      if (sizeError) {
+        return sizeError
+      }
+
+      const body = await parseBody(request)
+      const { email, password, name } = body as { email: string; password: string; name?: string }
+
+      if (!email || !password) {
+        return new Response(JSON.stringify({ error: 'Email and password are required' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) },
+        })
+      }
+
+      // Call signup action (which now includes logging)
+      const result = await ctx.runAction(api.customAuth.signup, {
+        email,
+        password,
+        name,
+        userAgent,
+        ipAddress: clientIP,
+      })
+
+      const cookies = createAuthCookies(result.accessToken, result.refreshToken)
+
+      // Return accessToken in body for Convex queries (stored in memory, not localStorage)
+      return new Response(
+        JSON.stringify({
+          success: true,
+          user: result.user,
+          accessToken: result.accessToken, // For Convex WebSocket queries
+        }),
+        {
+          status: 201,
+          headers: {
+            'Content-Type': 'application/json',
+            'Set-Cookie': cookies.join(', '),
+            ...corsHeaders(origin),
+          },
+        }
+      )
+    } catch (error: unknown) {
+      console.error('Signup error:', error)
+      const message = error instanceof Error ? error.message : 'Signup failed'
+      return new Response(JSON.stringify({ error: message }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) },
+      })
+    }
+  }),
+})
+
+// POST /api/auth/logout - Clear session and cookies
+http.route({
+  path: '/api/auth/logout',
+  method: 'POST',
+  handler: httpAction(async (ctx, request) => {
+    const origin = request.headers.get('Origin')
+    const clientIP = getClientIP(request)
+    const userAgent = request.headers.get('User-Agent') || undefined
+
+    try {
+      const cookies = parseCookies(request.headers.get('Cookie'))
+      const refreshToken = cookies.refresh_token
+
+      if (refreshToken) {
+        // Get session info before deleting for logging
+        const session = await ctx.runQuery(internal.customAuth.getSessionByRefreshToken, {
+          refreshToken,
+        })
+
+        // Delete session from database
+        await ctx.runMutation(internal.customAuth.deleteSessionByRefreshToken, {
+          refreshToken,
+        })
+
+        // Log logout
+        if (session) {
+          await ctx.runMutation(internal.auditLog.log, {
+            userId: session.userId,
+            action: 'logout',
+            resource: 'auth',
+            ipAddress: clientIP,
+            userAgent,
+            endpoint: '/api/auth/logout',
+            status: 'success',
+          })
+        }
+      }
+
+      const clearCookies = createClearCookies()
+
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Set-Cookie': clearCookies.join(', '),
+          ...corsHeaders(origin),
+        },
+      })
+    } catch (error) {
+      console.error('Logout error:', error)
+      // Still clear cookies even if DB operation fails
+      const clearCookies = createClearCookies()
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Set-Cookie': clearCookies.join(', '),
+          ...corsHeaders(origin),
+        },
+      })
+    }
+  }),
+})
+
+// POST /api/auth/refresh - Rotate tokens
+http.route({
+  path: '/api/auth/refresh',
+  method: 'POST',
+  handler: httpAction(async (ctx, request) => {
+    const origin = request.headers.get('Origin')
+    try {
+      const cookies = parseCookies(request.headers.get('Cookie'))
+      const refreshToken = cookies.refresh_token
+
+      if (!refreshToken) {
+        return new Response(JSON.stringify({ error: 'No refresh token' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) },
+        })
+      }
+
+      const userAgent = request.headers.get('User-Agent') || undefined
+      const ipAddress = request.headers.get('X-Forwarded-For')?.split(',')[0] || undefined
+
+      const result = await ctx.runMutation(internal.customAuth.refreshSessionInternal, {
+        refreshToken,
+        userAgent,
+        ipAddress,
+      })
+
+      if (!result.success) {
+        const clearCookies = createClearCookies()
+        return new Response(JSON.stringify({ error: result.error }), {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+            'Set-Cookie': clearCookies.join(', '),
+            ...corsHeaders(origin),
+          },
+        })
+      }
+
+      // At this point, result.success is true so tokens are guaranteed to exist
+      const newCookies = createAuthCookies(result.accessToken!, result.refreshToken!)
+
+      // Return new accessToken for Convex queries
+      return new Response(
+        JSON.stringify({
+          success: true,
+          user: result.user,
+          accessToken: result.accessToken!, // For Convex WebSocket queries
+        }),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Set-Cookie': newCookies.join(', '),
+            ...corsHeaders(origin),
+          },
+        }
+      )
+    } catch (error) {
+      console.error('Refresh error:', error)
+      return new Response(JSON.stringify({ error: 'Token refresh failed' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) },
+      })
+    }
+  }),
+})
+
+// GET /api/auth/me - Get current user from cookie
+http.route({
+  path: '/api/auth/me',
+  method: 'GET',
+  handler: httpAction(async (ctx, request) => {
+    const origin = request.headers.get('Origin')
+    try {
+      const cookies = parseCookies(request.headers.get('Cookie'))
+      const accessToken = cookies.access_token
+
+      if (!accessToken) {
+        return new Response(JSON.stringify({ user: null }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) },
+        })
+      }
+
+      const user = await ctx.runQuery(internal.customAuth.getUserByAccessToken, {
+        accessToken,
+      })
+
+      // Return accessToken for Convex queries (if user is valid)
+      return new Response(JSON.stringify({ user, accessToken: user ? accessToken : null }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) },
+      })
+    } catch (error) {
+      console.error('Get user error:', error)
+      return new Response(JSON.stringify({ user: null, accessToken: null }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) },
+      })
+    }
+  }),
+})
+
+// Helper for CORS headers (for auth endpoints)
+// Note: Uses authCorsHeaders from helpers.ts for consistent CORS handling
+function corsHeaders(origin?: string | null) {
+  return authCorsHeaders(origin)
+}
 
 // ============================================================================
 // CORS Preflight Handlers
@@ -226,6 +792,12 @@ http.route({
   path: '/api/v1/events',
   method: 'POST',
   handler: httpAction(async (ctx, request) => {
+    // Validate request size (1MB limit for JSON)
+    const sizeError = validateRequestSize(request, 1 * 1024 * 1024)
+    if (sizeError) {
+      return sizeError
+    }
+
     // Validate API key - STRICT CHECK
     const authResult = await validateApiKey(ctx, request)
     if (!authResult.success) {
@@ -292,9 +864,7 @@ http.route({
       return apiSuccess({ eventId }, { created: true }, 201)
     } catch (error) {
       console.error('API Error:', error)
-      return ApiErrors.badRequest(
-        error instanceof Error ? error.message : 'Failed to create event'
-      )
+      return ApiErrors.badRequest(error instanceof Error ? error.message : 'Failed to create event')
     }
   }),
 })
@@ -324,7 +894,7 @@ http.route({
 
     try {
       // Use internal query with ownership check
-      const event = await ctx.runQuery(internal.api.mutations.getEventById, { 
+      const event = await ctx.runQuery(internal.api.mutations.getEventById, {
         userId: authResult.keyInfo.userId,
         eventId: eventId as Id<'events'>,
       })
@@ -348,6 +918,12 @@ http.route({
   pathPrefix: '/api/v1/events/',
   method: 'PATCH',
   handler: httpAction(async (ctx, request) => {
+    // Validate request size (1MB limit for JSON)
+    const sizeError = validateRequestSize(request, 1 * 1024 * 1024)
+    if (sizeError) {
+      return sizeError
+    }
+
     // Validate API key - STRICT CHECK
     const authResult = await validateApiKey(ctx, request)
     if (!authResult.success) {
@@ -404,9 +980,7 @@ http.route({
       return apiSuccess({ updated: true })
     } catch (error) {
       console.error('API Error:', error)
-      return ApiErrors.badRequest(
-        error instanceof Error ? error.message : 'Failed to update event'
-      )
+      return ApiErrors.badRequest(error instanceof Error ? error.message : 'Failed to update event')
     }
   }),
 })
@@ -444,9 +1018,7 @@ http.route({
       return apiSuccess({ deleted: true })
     } catch (error) {
       console.error('API Error:', error)
-      return ApiErrors.badRequest(
-        error instanceof Error ? error.message : 'Failed to delete event'
-      )
+      return ApiErrors.badRequest(error instanceof Error ? error.message : 'Failed to delete event')
     }
   }),
 })
@@ -577,7 +1149,7 @@ http.route({
     try {
       const url = new URL(request.url)
       const { page, limit, offset } = getPagination(url)
-      
+
       const eventType = url.searchParams.get('eventType') || undefined
       const locationType = url.searchParams.get('locationType') || undefined
       const seekingVendors = url.searchParams.get('seekingVendors') === 'true' || undefined
@@ -614,7 +1186,7 @@ http.route({
     try {
       const url = new URL(request.url)
       const { page, limit, offset } = getPagination(url)
-      
+
       const category = url.searchParams.get('category') || undefined
       const search = url.searchParams.get('search') || undefined
 
@@ -629,7 +1201,7 @@ http.route({
       const paginatedVendors = allVendors.slice(offset, offset + limit)
 
       // Return only public-safe fields (no contact details, internal notes, etc.)
-      const publicVendors = paginatedVendors.map(vendor => ({
+      const publicVendors = paginatedVendors.map((vendor: (typeof allVendors)[number]) => ({
         _id: vendor._id,
         name: vendor.name,
         description: vendor.description,
@@ -712,6 +1284,12 @@ http.route({
   path: '/api/v1/webhooks',
   method: 'POST',
   handler: httpAction(async (ctx, request) => {
+    // Validate request size (1MB limit for JSON)
+    const sizeError = validateRequestSize(request, 1 * 1024 * 1024)
+    if (sizeError) {
+      return sizeError
+    }
+
     // Validate API key
     const authResult = await validateApiKey(ctx, request)
     if (!authResult.success) {
@@ -806,6 +1384,12 @@ http.route({
   pathPrefix: '/api/v1/webhooks/',
   method: 'PATCH',
   handler: httpAction(async (ctx, request) => {
+    // Validate request size (1MB limit for JSON)
+    const sizeError = validateRequestSize(request, 1 * 1024 * 1024)
+    if (sizeError) {
+      return sizeError
+    }
+
     // Validate API key
     const authResult = await validateApiKey(ctx, request)
     if (!authResult.success) {
@@ -1124,7 +1708,7 @@ http.route({
 // Streaming Chat Endpoint
 // ============================================================================
 
-const SYSTEM_PROMPT = `You are an AI event creation assistant for Open Event. Your PRIMARY job is to quickly help users CREATE events.
+const SYSTEM_PROMPT = `You are an AI event creation assistant for Open Event. Your PRIMARY job is to quickly help users CREATE events and find the RIGHT vendors/sponsors.
 
 ## Your Approach:
 
@@ -1144,12 +1728,26 @@ When a user wants to create an event:
 - Approximate date (required)
 - Everything else can use defaults or be added later
 
+## Vendor & Sponsor Recommendations:
+
+When recommending vendors or sponsors, ALWAYS explain WHY they're a good fit:
+- Use getRecommendedVendors/getRecommendedSponsors - they return matchReasons and whyRecommended
+- Present recommendations with their specific match reasons (location, rating, budget fit, etc.)
+- Example: "I recommend ABC Catering - they're verified, highly rated (4.8★), and located near your venue."
+
+When displaying recommendations:
+- Show the vendor/sponsor name with 1-2 key reasons why they match
+- Mention location if it's relevant to the event
+- Highlight verified status and ratings when available
+- Explain budget fit if the event has budget info
+
 ## Response Style:
 
 - SHORT responses (1-3 sentences)
 - NO bullet lists of tips or suggestions unless asked
 - NO lengthy explanations of what info you need
 - DIRECT action: "I'll create that for you now" or "What date works for you?"
+- EXPLAIN match reasons when recommending vendors/sponsors
 
 ## Example Good Responses:
 
@@ -1164,21 +1762,30 @@ User: "Conference in January for 200 people"
 Good: "Creating your conference for January with 200 expected attendees."
 [Then call createEvent with title, date, expectedAttendees]
 
+User: "Find me a caterer for my event"
+Good: [Call getRecommendedVendors with category: catering]
+Then: "I found 3 catering options. Top pick: Gourmet Events - they're verified, have a 4.7★ rating, and are located in your area."
+
+User: "Why should I choose this vendor?"
+Good: "ABC Catering is recommended because: they're verified, have excellent reviews (4.8★), their mid-range pricing fits your budget, and they're located near your venue in San Francisco."
+
 ## What NOT to do:
 
 - DON'T list 10 things the user could tell you
 - DON'T give generic event planning advice
 - DON'T explain all your capabilities
 - DON'T ask multiple questions at once
+- DON'T recommend vendors without explaining WHY they match
 
 ## Tools Available:
 
 - createEvent: Create events (requires confirmation)
-- searchVendors/searchSponsors: Find service providers
-- getRecommendedVendors/getRecommendedSponsors: Get AI-matched recommendations
-- getUserProfile: Get user context
+- searchVendors/searchSponsors: Find service providers by category/filters
+- getRecommendedVendors/getRecommendedSponsors: Get AI-matched recommendations with match reasons
+- addVendorToEvent/addSponsorToEvent: Connect vendors/sponsors to events
+- getUserProfile: Get user context for better matching
 
-Remember: Your job is to CREATE events quickly, not to be an event planning consultant.`
+Remember: Your job is to CREATE events quickly and help users find the BEST vendors/sponsors with clear explanations of why they're a good fit.`
 
 // ============================================================================
 // CORS Configuration
@@ -1240,6 +1847,12 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const headers = { ...getCorsHeaders(request), 'Content-Type': 'application/json' }
 
+    // Validate request size (1MB limit for JSON)
+    const sizeError = validateRequestSize(request, 1 * 1024 * 1024)
+    if (sizeError) {
+      return sizeError
+    }
+
     // Parse and validate request body
     let body: unknown
     try {
@@ -1264,19 +1877,26 @@ http.route({
 
     const { toolName, toolArguments } = parsed.data
 
-    // Get user identity from the Authorization header
+    // Get user identity - try Convex Auth first, then fall back to custom session tokens
+    let user = null
+
+    // Try Convex Auth (JWT tokens from ConvexAuthProvider)
     const identity = await ctx.auth.getUserIdentity()
-    if (!identity) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers,
-      })
+    if (identity) {
+      user = await ctx.runQuery(api.queries.auth.getCurrentUser)
     }
 
-    // Get the user from the database
-    const user = await ctx.runQuery(api.queries.auth.getCurrentUser)
+    // Fall back to custom session token (from custom HTTP auth)
     if (!user) {
-      return new Response(JSON.stringify({ error: 'User not found' }), {
+      const authHeader = request.headers.get('Authorization')
+      if (authHeader?.startsWith('Bearer ')) {
+        const accessToken = authHeader.substring(7)
+        user = await ctx.runQuery(internal.customAuth.getUserByAccessToken, { accessToken })
+      }
+    }
+
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers,
       })
@@ -1323,11 +1943,63 @@ http.route({
   }),
 })
 
+// ============================================================================
+// Stripe Webhook Endpoint
+// ============================================================================
+
+// POST /api/stripe/webhook - Handle Stripe webhook events
+http.route({
+  path: '/api/stripe/webhook',
+  method: 'POST',
+  handler: httpAction(async (ctx, request) => {
+    try {
+      // Validate request size (10MB limit for webhooks - they can be large)
+      const sizeError = validateRequestSize(request, 10 * 1024 * 1024)
+      if (sizeError) {
+        return sizeError
+      }
+
+      const signature = request.headers.get('stripe-signature')
+      if (!signature) {
+        return new Response(JSON.stringify({ error: 'Missing stripe-signature header' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+
+      const payload = await request.text()
+
+      // Call the webhook handler action
+      const result = await ctx.runAction(api.stripe.handleWebhook, {
+        payload,
+        signature,
+      })
+
+      return new Response(JSON.stringify(result), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    } catch (error) {
+      console.error('Stripe webhook error:', error)
+      return new Response(
+        JSON.stringify({ error: error instanceof Error ? error.message : 'Webhook failed' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+  }),
+})
+
 http.route({
   path: '/api/chat/stream',
   method: 'POST',
   handler: httpAction(async (ctx, request) => {
     const headers = { ...getCorsHeaders(request), 'Content-Type': 'application/json' }
+
+    // Validate request size (1MB limit for JSON)
+    const sizeError = validateRequestSize(request, 1 * 1024 * 1024)
+    if (sizeError) {
+      return sizeError
+    }
 
     // Parse and validate request body
     let body: unknown
@@ -1353,31 +2025,42 @@ http.route({
 
     const { messages: clientMessages, userMessage, confirmedToolCalls } = parsed.data
 
-    // Get user identity from the Authorization header (Bearer token)
+    // Get user identity - try Convex Auth first, then fall back to custom session tokens
+    let user = null
+
+    // Try Convex Auth (JWT tokens from ConvexAuthProvider)
     const identity = await ctx.auth.getUserIdentity()
-    if (!identity) {
+    if (identity) {
+      user = await ctx.runQuery(api.queries.auth.getCurrentUser)
+    }
+
+    // Fall back to custom session token (from custom HTTP auth)
+    if (!user) {
+      const authHeader = request.headers.get('Authorization')
+      if (authHeader?.startsWith('Bearer ')) {
+        const accessToken = authHeader.substring(7)
+        user = await ctx.runQuery(internal.customAuth.getUserByAccessToken, { accessToken })
+      }
+    }
+
+    if (!user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers,
       })
     }
 
-    // Get the user from the database using the identity subject (user ID)
-    const user = await ctx.runQuery(api.queries.auth.getCurrentUser)
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'User not found' }), {
-        status: 401,
-        headers,
-      })
-    }
-
     // Atomic check AND increment - prevents race conditions
-    const rateLimit = await ctx.runMutation(internal.aiUsage.checkAndIncrementUsage, { userId: user._id })
+    const rateLimit = await ctx.runMutation(internal.aiUsage.checkAndIncrementUsage, {
+      userId: user._id,
+    })
     if (!rateLimit.allowed) {
       return new Response(
         JSON.stringify({
           error: 'Rate limit exceeded',
-          message: rateLimit.reason || `You've used all ${rateLimit.limit} AI prompts for today. Your limit resets at midnight UTC.`,
+          message:
+            rateLimit.reason ||
+            `You've used all ${rateLimit.limit} AI prompts for today. Your limit resets at midnight UTC.`,
           remaining: 0,
           limit: rateLimit.limit,
         }),
@@ -1392,7 +2075,8 @@ http.route({
     const currentRateLimit = rateLimit
 
     // Get user profile for context
-    const profile = await ctx.runQuery(api.organizerProfiles.getMyProfile)
+    // Note: getCurrentUser in lib/auth.ts now supports both Convex Auth and custom session tokens
+    const profile = await ctx.runQuery(api.organizerProfiles.getMyProfile, {})
 
     // Build message history for OpenAI
     // Include current date so AI uses correct year for dates
@@ -1499,7 +2183,8 @@ http.route({
                   }
                   if (tc.id) currentToolCalls[index].id = tc.id
                   if (tc.function?.name) currentToolCalls[index].function.name += tc.function.name
-                  if (tc.function?.arguments) currentToolCalls[index].function.arguments += tc.function.arguments
+                  if (tc.function?.arguments)
+                    currentToolCalls[index].function.arguments += tc.function.arguments
                 }
               }
             }
@@ -1618,7 +2303,8 @@ http.route({
                   ...currentMessages,
                   {
                     role: 'user',
-                    content: 'The action requires user confirmation. Please explain what you are about to do and ask for confirmation.',
+                    content:
+                      'The action requires user confirmation. Please explain what you are about to do and ask for confirmation.',
                   },
                 ],
                 temperature: 0.7,

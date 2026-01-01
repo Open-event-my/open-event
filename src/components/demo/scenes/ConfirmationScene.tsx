@@ -139,7 +139,12 @@ export function ConfirmationScene({ progress }: ConfirmationSceneProps) {
       >
         <Confetti size={20} weight="duotone" className="animate-bounce" />
         <span className="font-medium">Workflow Complete</span>
-        <Confetti size={20} weight="duotone" className="animate-bounce" style={{ animationDelay: '0.1s' }} />
+        <Confetti
+          size={20}
+          weight="duotone"
+          className="animate-bounce"
+          style={{ animationDelay: '0.1s' }}
+        />
       </div>
     </div>
   )

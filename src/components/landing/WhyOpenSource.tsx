@@ -36,9 +36,7 @@ export function WhyOpenSource() {
             Organizers need full control with zero lock-in.
           </p>
 
-          <p>
-            Open-Event is fully open-source, with an open API and a public roadmap.
-          </p>
+          <p>Open-Event is fully open-source, with an open API and a public roadmap.</p>
         </div>
 
         {/* Action items */}

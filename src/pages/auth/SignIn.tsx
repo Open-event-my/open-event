@@ -1,75 +1,338 @@
-import { useAuthActions } from '@convex-dev/auth/react'
-import { useConvexAuth } from 'convex/react'
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Logo } from '@/components/ui/logo'
+import { OptimizedImage } from '@/components/ui/optimized-image'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
+import { useAuthActions, useAuthToken } from '@convex-dev/auth/react'
+import { useConvexAuth, useQuery } from 'convex/react'
+import { api } from '../../../convex/_generated/api'
+import { getErrorMessage } from '@/types/errors'
+import { isValidEmail } from '@/lib/validation'
+import { cn } from '@/lib/utils'
 import {
   Envelope,
   Lock,
-  GoogleLogo,
   CircleNotch,
   ArrowRight,
   Calendar,
   Sparkle,
   Users,
   CheckCircle,
+  Eye,
+  EyeSlash,
 } from '@phosphor-icons/react'
 
 export function SignIn() {
   const { signIn } = useAuthActions()
-  const { isAuthenticated, isLoading } = useConvexAuth()
+  const { isAuthenticated, isLoading: authLoading } = useConvexAuth()
+  const authToken = useAuthToken()
   const navigate = useNavigate()
+
+  // Query user to check role for redirect
+  const user = useQuery(api.queries.auth.getCurrentUser, isAuthenticated || authToken ? {} : 'skip')
+
+  // #region agent log
+  useEffect(() => {
+    if (isAuthenticated || authToken) {
+      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'src/pages/auth/SignIn.tsx:35',
+          message: 'User query state',
+          data: {
+            isAuthenticated,
+            hasAuthToken: !!authToken,
+            userState: user === undefined ? 'loading' : user === null ? 'null' : 'loaded',
+            hasUser: !!user,
+            userRole: user?.role,
+          },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'signin-user-query',
+          hypothesisId: 'U1',
+        }),
+      }).catch(() => {})
+    }
+  }, [isAuthenticated, authToken, user])
+  // #endregion
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
   const [loading, setLoading] = useState(false)
   const [redirecting, setRedirecting] = useState(false)
 
-  // Redirect if already authenticated (e.g., after OAuth callback)
+  // Redirect if already authenticated or if we have an auth token (token presence means we're authenticated)
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      setRedirecting(true)
-      navigate('/auth/redirect', { replace: true })
-    }
-  }, [isAuthenticated, isLoading, navigate])
+    // Check both isAuthenticated and authToken - token presence means we're authenticated even if state hasn't updated
+    if (!authLoading && (isAuthenticated || authToken)) {
+      // Wait for user data to load if we're authenticated
+      if (user === undefined) {
+        // Still loading user data - wait a bit longer
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            location: 'src/pages/auth/SignIn.tsx:48',
+            message: 'Waiting for user query to complete',
+            data: { isAuthenticated, hasAuthToken: !!authToken, userState: 'loading' },
+            timestamp: Date.now(),
+            sessionId: 'debug-session',
+            runId: 'signin-redirect',
+            hypothesisId: 'R0',
+          }),
+        }).catch(() => {})
+        // #endregion
+        return
+      }
 
-  // Show loading screen while checking auth or redirecting
-  if (isLoading || redirecting) {
-    return (
-      <LoadingSpinner
-        message={redirecting ? 'Signing you in...' : 'Loading...'}
-        fullScreen
-      />
-    )
+      // User query completed
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'src/pages/auth/SignIn.tsx:55',
+          message: 'Redirect decision based on role',
+          data: {
+            isAuthenticated,
+            hasAuthToken: !!authToken,
+            hasUser: !!user,
+            userRole: user?.role,
+            userState: user === null ? 'null' : 'loaded',
+            willRedirectToAdmin: user?.role === 'admin' || user?.role === 'superadmin',
+          },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'signin-redirect',
+          hypothesisId: 'R1',
+        }),
+      }).catch(() => {})
+      // #endregion
+
+      // If user is null but we have authToken, there might be an auth error
+      // Wait a bit longer and retry, or redirect to dashboard as fallback
+      if (user === null && authToken) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            location: 'src/pages/auth/SignIn.tsx:62',
+            message: 'User query returned null despite authToken - possible auth error',
+            data: { isAuthenticated, hasAuthToken: !!authToken },
+            timestamp: Date.now(),
+            sessionId: 'debug-session',
+            runId: 'signin-redirect',
+            hypothesisId: 'R3',
+          }),
+        }).catch(() => {})
+        // #endregion
+        // Fallback: redirect to dashboard if user query fails
+        // This might happen if there's an OIDC verification error
+        setRedirecting(true)
+        navigate('/dashboard', { replace: true })
+        return
+      }
+
+      setRedirecting(true)
+      // Redirect to /admin if user is admin or superadmin, otherwise /dashboard
+      const redirectPath =
+        user?.role === 'admin' || user?.role === 'superadmin' ? '/admin' : '/dashboard'
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'src/pages/auth/SignIn.tsx:72',
+          message: 'Navigating after role check',
+          data: { redirectPath, userRole: user?.role },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'signin-redirect',
+          hypothesisId: 'R2',
+        }),
+      }).catch(() => {})
+      // #endregion
+      navigate(redirectPath, { replace: true })
+    }
+  }, [isAuthenticated, authLoading, authToken, user, navigate])
+
+  // Show loading screen while checking auth, loading user data, or redirecting
+  if (authLoading || redirecting || ((isAuthenticated || authToken) && user === undefined)) {
+    return <LoadingSpinner message={redirecting ? 'Signing you in...' : 'Loading...'} fullScreen />
   }
 
   const handlePasswordSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!email || !password) {
-      toast.error('Please enter email and password')
+    const newErrors: { email?: string; password?: string } = {}
+
+    if (!email) {
+      newErrors.email = 'Email is required'
+    } else if (!isValidEmail(email)) {
+      newErrors.email = 'Please enter a valid email'
+    }
+
+    if (!password) {
+      newErrors.password = 'Password is required'
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
       return
     }
-    setLoading(true)
-    try {
-      await signIn('password', { email, password, flow: 'signIn' })
-      navigate('/auth/redirect')
-    } catch {
-      toast.error('Invalid email or password')
-    } finally {
-      setLoading(false)
-    }
-  }
 
-  const handleGoogleSignIn = async () => {
+    setErrors({})
     setLoading(true)
     try {
-      await signIn('google', { redirectTo: '/auth/redirect' })
-    } catch {
-      toast.error('Failed to sign in with Google')
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'src/pages/auth/SignIn.tsx:73',
+          message: 'Before signIn call',
+          data: { email, hasPassword: !!password },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'signin-attempt',
+          hypothesisId: 'E',
+        }),
+      }).catch(() => {})
+      // #endregion
+      await signIn('password', { email, password, flow: 'signIn' })
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'src/pages/auth/SignIn.tsx:90',
+          message: 'signIn success',
+          data: { email, isAuthenticated, isLoading: authLoading, hasAuthToken: !!authToken },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'signin-attempt',
+          hypothesisId: 'F',
+        }),
+      }).catch(() => {})
+      // #endregion
+      toast.success('Welcome back!')
+      // Wait for auth state to update before navigating
+      // The useEffect hook will handle navigation when isAuthenticated becomes true or authToken is available
+      setRedirecting(true)
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'src/pages/auth/SignIn.tsx:95',
+          message: 'Set redirecting=true, waiting for auth state update',
+          data: { email, isAuthenticated, isLoading: authLoading, hasAuthToken: !!authToken },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'signin-attempt',
+          hypothesisId: 'N1',
+        }),
+      }).catch(() => {})
+      // #endregion
+
+      // Fallback: If auth state doesn't update within 2 seconds, navigate anyway if we have a token
+      // This handles cases where useConvexAuth() is slow to update
+      setTimeout(() => {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            location: 'src/pages/auth/SignIn.tsx:100',
+            message: 'Fallback timeout check',
+            data: {
+              email,
+              isAuthenticated,
+              isLoading: authLoading,
+              hasAuthToken: !!authToken,
+              hasUser: !!user,
+              userRole: user?.role,
+              willNavigate: !!authToken,
+            },
+            timestamp: Date.now(),
+            sessionId: 'debug-session',
+            runId: 'signin-attempt',
+            hypothesisId: 'T1',
+          }),
+        }).catch(() => {})
+        // #endregion
+        if (authToken && !isAuthenticated) {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              location: 'src/pages/auth/SignIn.tsx:103',
+              message: 'Fallback navigation - token exists but isAuthenticated is false',
+              data: { email, hasAuthToken: !!authToken, hasUser: !!user, userRole: user?.role },
+              timestamp: Date.now(),
+              sessionId: 'debug-session',
+              runId: 'signin-attempt',
+              hypothesisId: 'T2',
+            }),
+          }).catch(() => {})
+          // #endregion
+          // Check user role for redirect path
+          const redirectPath =
+            user?.role === 'admin' || user?.role === 'superadmin' ? '/admin' : '/dashboard'
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              location: 'src/pages/auth/SignIn.tsx:107',
+              message: 'Fallback navigation with role check',
+              data: { redirectPath, userRole: user?.role },
+              timestamp: Date.now(),
+              sessionId: 'debug-session',
+              runId: 'signin-attempt',
+              hypothesisId: 'T3',
+            }),
+          }).catch(() => {})
+          // #endregion
+          navigate(redirectPath, { replace: true })
+        }
+      }, 2000)
+    } catch (error: unknown) {
+      // #region agent log
+      const errorMsg = error instanceof Error ? error.message : String(error)
+      const errorStack = error instanceof Error ? error.stack : undefined
+      const isPkcs8Error = errorMsg.includes('pkcs8') || errorMsg.includes('PKCS')
+      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'src/pages/auth/SignIn.tsx:82',
+          message: 'signIn error',
+          data: {
+            error: errorMsg,
+            errorName: error instanceof Error ? error.name : 'unknown',
+            isPkcs8Error,
+            hasStack: !!errorStack,
+            email,
+          },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'signin-attempt',
+          hypothesisId: 'G',
+        }),
+      }).catch(() => {})
+      // #endregion
+      toast.error(getErrorMessage(error) || 'Invalid email or password')
+    } finally {
       setLoading(false)
     }
   }
@@ -110,8 +373,19 @@ export function SignIn() {
                 <span className="bg-gradient-to-r from-slate-800 via-slate-600 to-slate-800 dark:from-slate-200 dark:via-slate-400 dark:to-slate-200 bg-clip-text text-transparent">
                   we missed you.
                 </span>
-                <svg className="absolute -bottom-1 left-0 w-full" height="8" viewBox="0 0 200 10" preserveAspectRatio="none">
-                  <path d="M0 8 Q50 0 100 8 T200 8" stroke="url(#signin-underline)" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+                <svg
+                  className="absolute -bottom-1 left-0 w-full"
+                  height="8"
+                  viewBox="0 0 200 10"
+                  preserveAspectRatio="none"
+                >
+                  <path
+                    d="M0 8 Q50 0 100 8 T200 8"
+                    stroke="url(#signin-underline)"
+                    strokeWidth="2.5"
+                    fill="none"
+                    strokeLinecap="round"
+                  />
                   <defs>
                     <linearGradient id="signin-underline" x1="0%" y1="0%" x2="100%" y2="0%">
                       <stop offset="0%" stopColor="#6366f1" />
@@ -149,14 +423,16 @@ export function SignIn() {
           {/* Bottom social proof - the team */}
           <div className="flex items-center gap-4">
             <div className="flex -space-x-2">
-              <img
+              <OptimizedImage
                 src="https://github.com/hazlijohar95.png"
                 alt="Hazli"
+                lazy
                 className="w-8 h-8 rounded-full border-2 border-background shadow-sm"
               />
-              <img
+              <OptimizedImage
                 src="https://github.com/azmir32.png"
                 alt="Azmir"
+                lazy
                 className="w-8 h-8 rounded-full border-2 border-background shadow-sm"
               />
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 border-2 border-background shadow-sm flex items-center justify-center text-white text-xs font-medium">
@@ -180,7 +456,10 @@ export function SignIn() {
 
         {/* Header */}
         <header className="flex items-center justify-between px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex-shrink-0">
-          <Link to="/" className="lg:opacity-0 lg:pointer-events-none hover:opacity-80 transition-opacity">
+          <Link
+            to="/"
+            className="lg:opacity-0 lg:pointer-events-none hover:opacity-80 transition-opacity"
+          >
             <Logo />
           </Link>
           <ThemeToggle />
@@ -198,89 +477,118 @@ export function SignIn() {
                 </p>
               </div>
 
-              {/* Google OAuth Button */}
-              <button
-                onClick={handleGoogleSignIn}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-3 border border-border bg-background hover:bg-muted rounded-xl py-2.5 px-4 font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-4 group"
-              >
-                <GoogleLogo size={18} weight="bold" className="text-foreground" />
-                <span className="text-sm">Continue with Google</span>
-              </button>
-
-              {/* Divider */}
-              <div className="relative mb-4">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-3 text-muted-foreground">
-                    Or continue with
-                  </span>
-                </div>
-              </div>
-
               <form onSubmit={handlePasswordSignIn} className="space-y-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="email" className="text-sm font-medium">Email</Label>
-                    <div className="relative">
-                      <Envelope
-                        size={16}
-                        weight="duotone"
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                      />
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="you@example.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10 h-10 rounded-xl text-sm"
-                        required
-                      />
-                    </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="email" className="text-sm font-medium">
+                    Email
+                  </Label>
+                  <div className="relative">
+                    <Envelope
+                      size={16}
+                      weight="duotone"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                    />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value)
+                        if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }))
+                      }}
+                      className={cn(
+                        'pl-10 h-10 rounded-xl text-sm',
+                        errors.email && 'border-destructive'
+                      )}
+                      aria-invalid={!!errors.email}
+                      aria-describedby={errors.email ? 'email-error' : undefined}
+                      aria-required
+                    />
                   </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="password" className="text-sm font-medium">Password</Label>
-                    <div className="relative">
-                      <Lock
-                        size={16}
-                        weight="duotone"
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                      />
-                      <Input
-                        id="password"
-                        type="password"
-                        placeholder="Enter your password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10 h-10 rounded-xl text-sm"
-                        required
-                      />
-                    </div>
+                  {errors.email && (
+                    <p id="email-error" role="alert" className="text-sm text-destructive">
+                      {errors.email}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password" className="text-sm font-medium">
+                      Password
+                    </Label>
+                    <Link
+                      to="/forgot-password"
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Forgot password?
+                    </Link>
                   </div>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-foreground hover:bg-foreground/90 text-background py-2.5 px-4 rounded-xl font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-xl group text-sm"
-                  >
-                    {loading ? (
-                      <>
-                        <CircleNotch
-                          size={18}
-                          weight="bold"
-                          className="animate-spin"
-                        />
-                        Signing in...
-                      </>
-                    ) : (
-                      <>
-                        Sign In
-                        <ArrowRight size={18} weight="bold" className="transition-transform group-hover:translate-x-1" />
-                      </>
-                    )}
-                  </button>
-                </form>
+                  <div className="relative">
+                    <Lock
+                      size={16}
+                      weight="duotone"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground z-10"
+                    />
+                    <Input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Enter your password"
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value)
+                        if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }))
+                      }}
+                      className={cn(
+                        'pl-10 pr-10 h-10 rounded-xl text-sm',
+                        errors.password && 'border-destructive'
+                      )}
+                      aria-invalid={!!errors.password}
+                      aria-describedby={errors.password ? 'password-error' : undefined}
+                      aria-required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      tabIndex={-1}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? (
+                        <EyeSlash size={16} weight="duotone" />
+                      ) : (
+                        <Eye size={16} weight="duotone" />
+                      )}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p id="password-error" role="alert" className="text-sm text-destructive">
+                      {errors.password}
+                    </p>
+                  )}
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-foreground hover:bg-foreground/90 text-background py-2.5 px-4 rounded-xl font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-xl group text-sm"
+                >
+                  {loading ? (
+                    <>
+                      <CircleNotch size={18} weight="bold" className="animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    <>
+                      Sign In
+                      <ArrowRight
+                        size={18}
+                        weight="bold"
+                        className="transition-transform group-hover:translate-x-1"
+                      />
+                    </>
+                  )}
+                </button>
+              </form>
 
               <p className="text-center text-sm text-muted-foreground mt-4">
                 Don't have an account?{' '}

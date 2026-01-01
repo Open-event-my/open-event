@@ -24,7 +24,13 @@ export type { AgenticThinkingProps, ThinkingStep, InlineThinkingProps } from './
 
 // Tools
 export { AgenticTool, AgenticToolList } from './AgenticTool'
-export type { AgenticToolProps, AgenticToolListProps, ToolCall, ToolResult, ToolStatus } from './AgenticTool'
+export type {
+  AgenticToolProps,
+  AgenticToolListProps,
+  ToolCall,
+  ToolResult,
+  ToolStatus,
+} from './AgenticTool'
 
 // Confirmation
 export { AgenticConfirmation } from './AgenticConfirmation'

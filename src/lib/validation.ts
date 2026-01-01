@@ -3,8 +3,12 @@
  * These mirror the backend validation logic for client-side validation
  */
 
-// Email regex pattern
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+// Email regex pattern - improved to:
+// - Require proper TLD (min 2 chars)
+// - Allow only valid local part characters
+// - Prevent consecutive dots and leading/trailing dots
+const EMAIL_REGEX =
+  /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/
 
 // URL regex pattern (basic)
 const URL_REGEX = /^https?:\/\/.+/
@@ -67,7 +71,57 @@ export function isValidDateRange(startDate: number, endDate: number): boolean {
 }
 
 /**
- * Password validation
+ * Password validation requirements
+ * Must match convex/lib/passwordValidation.ts
+ */
+export const PASSWORD_REQUIREMENTS = {
+  minLength: 12,
+  requireUppercase: true,
+  requireLowercase: true,
+  requireNumber: true,
+  requireSpecial: true,
+}
+
+export interface PasswordValidationResult {
+  isValid: boolean
+  errors: string[]
+  strength: 'weak' | 'medium' | 'strong'
+}
+
+/**
+ * Comprehensive password validation matching backend requirements
+ */
+export function validatePasswordStrength(password: string): PasswordValidationResult {
+  const errors: string[] = []
+
+  if (password.length < PASSWORD_REQUIREMENTS.minLength) {
+    errors.push(`At least ${PASSWORD_REQUIREMENTS.minLength} characters`)
+  }
+  if (PASSWORD_REQUIREMENTS.requireUppercase && !/[A-Z]/.test(password)) {
+    errors.push('At least 1 uppercase letter')
+  }
+  if (PASSWORD_REQUIREMENTS.requireLowercase && !/[a-z]/.test(password)) {
+    errors.push('At least 1 lowercase letter')
+  }
+  if (PASSWORD_REQUIREMENTS.requireNumber && !/[0-9]/.test(password)) {
+    errors.push('At least 1 number')
+  }
+  if (
+    PASSWORD_REQUIREMENTS.requireSpecial &&
+    !/[!@#$%^&*(),.?":{}|<>[\]\\;'`~_+=-]/.test(password)
+  ) {
+    errors.push('At least 1 special character')
+  }
+
+  const strength: 'weak' | 'medium' | 'strong' =
+    errors.length === 0 ? 'strong' : errors.length <= 2 ? 'medium' : 'weak'
+
+  return { isValid: errors.length === 0, errors, strength }
+}
+
+/**
+ * Simple password validation (legacy - 8 char minimum)
+ * @deprecated Use validatePasswordStrength for comprehensive validation
  */
 export function isValidPassword(password: string): { valid: boolean; message?: string } {
   if (password.length < 8) {
@@ -92,7 +146,10 @@ export function validateEventTitle(title: string): { valid: boolean; message?: s
 /**
  * Event description validation
  */
-export function validateEventDescription(description: string): { valid: boolean; message?: string } {
+export function validateEventDescription(description: string): {
+  valid: boolean
+  message?: string
+} {
   if (!isWithinLength(description, 10000)) {
     return { valid: false, message: 'Description must be 10000 characters or less' }
   }

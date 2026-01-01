@@ -45,9 +45,7 @@ export function AgenticThinking({
           </span>
         </div>
 
-        {description && (
-          <p className="agentic-thinking-v2-text">{description}</p>
-        )}
+        {description && <p className="agentic-thinking-v2-text">{description}</p>}
 
         {steps && steps.length > 0 && (
           <div className="agentic-thinking-steps">

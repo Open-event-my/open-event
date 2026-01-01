@@ -1,12 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
-import {
-  CheckCircle,
-  Confetti,
-  ArrowRight,
-  House,
-} from '@phosphor-icons/react'
+import { CheckCircle, Confetti, ArrowRight, House } from '@phosphor-icons/react'
 
 export function OnboardingComplete() {
   const navigate = useNavigate()
@@ -81,11 +76,7 @@ export function OnboardingComplete() {
           </div>
 
           {/* CTA */}
-          <Button
-            size="lg"
-            className="w-full"
-            onClick={() => navigate('/dashboard')}
-          >
+          <Button size="lg" className="w-full" onClick={() => navigate('/dashboard')}>
             Go to Dashboard
             <ArrowRight size={18} weight="duotone" className="ml-2" />
           </Button>

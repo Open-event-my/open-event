@@ -1,8 +1,5 @@
-// Original AgenticChat (V1)
-export { AgenticChat } from './AgenticChat'
-
-// Enhanced AgenticChat V2 - Futuristic UI System
-// Use this for the improved agentic experience with:
+// AgenticChat V2 - Futuristic UI System
+// Features:
 // - Neural thinking orb animations
 // - Glass morphism message bubbles
 // - Smooth streaming text reveal
@@ -10,3 +7,6 @@ export { AgenticChat } from './AgenticChat'
 // - Page enter/exit transitions
 export { AgenticChatV2 } from '../agentic-v2'
 export * from '../agentic-v2'
+
+// Re-export V2 as default AgenticChat for backwards compatibility
+export { AgenticChatV2 as AgenticChat } from '../agentic-v2'

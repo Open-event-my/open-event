@@ -15,10 +15,7 @@ export function AdminLayout() {
         <AdminSidebar />
 
         {/* Mobile Sidebar */}
-        <AdminMobileSidebar
-          open={mobileMenuOpen}
-          onClose={() => setMobileMenuOpen(false)}
-        />
+        <AdminMobileSidebar open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
 
         {/* Main Content */}
         <div className="lg:pl-64">

@@ -1,6 +1,7 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { assertRole } from './lib/auth'
+import { isValidEmail } from './lib/emailValidation'
 
 // ============================================================================
 // Public Queries (for organizers)
@@ -94,9 +95,7 @@ export const getByEvent = query({
     const sponsors = await Promise.all(sponsorPromises)
 
     // Create lookup map
-    const sponsorMap = new Map(
-      sponsors.filter(Boolean).map((s) => [s!._id, s!])
-    )
+    const sponsorMap = new Map(sponsors.filter(Boolean).map((s) => [s!._id, s!]))
 
     // Merge using map (no additional queries)
     return eventSponsors
@@ -150,16 +149,17 @@ export const create = mutation({
     if (args.budgetMax !== undefined && args.budgetMax < 0) {
       throw new Error('Maximum budget cannot be negative')
     }
-    if (args.budgetMin !== undefined && args.budgetMax !== undefined && args.budgetMin > args.budgetMax) {
+    if (
+      args.budgetMin !== undefined &&
+      args.budgetMax !== undefined &&
+      args.budgetMin > args.budgetMax
+    ) {
       throw new Error('Minimum budget cannot exceed maximum budget')
     }
 
     // Validate email format if provided
-    if (args.contactEmail) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!emailRegex.test(args.contactEmail)) {
-        throw new Error('Invalid email format')
-      }
+    if (args.contactEmail && !isValidEmail(args.contactEmail)) {
+      throw new Error('Invalid email format')
     }
 
     // Validate website URL format if provided

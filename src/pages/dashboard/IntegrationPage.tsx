@@ -31,9 +31,7 @@ export function IntegrationPage() {
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-purple/10 mb-4">
           <Plugs size={32} weight="duotone" className="text-purple" />
         </div>
-        <h1 className="text-2xl font-semibold text-foreground mb-2">
-          Integrations
-        </h1>
+        <h1 className="text-2xl font-semibold text-foreground mb-2">Integrations</h1>
         <p className="text-muted-foreground">
           Connect open-event with your favorite tools and services
         </p>

@@ -1,9 +1,18 @@
 import { usePWA } from '@/hooks/use-pwa'
 import { cn } from '@/lib/utils'
-import { X, DeviceMobile, Lightning, WifiHigh, ArrowRight, Export, PlusSquare } from '@phosphor-icons/react'
+import {
+  X,
+  DeviceMobile,
+  Lightning,
+  WifiHigh,
+  ArrowRight,
+  Export,
+  PlusSquare,
+} from '@phosphor-icons/react'
 
 export function InstallPrompt() {
-  const { showPrompt, isInstalled, isInstallable, promptInstall, dismissPrompt, platform } = usePWA()
+  const { showPrompt, isInstalled, isInstallable, promptInstall, dismissPrompt, platform } =
+    usePWA()
 
   // Don't show if already installed
   if (!showPrompt || isInstalled) {

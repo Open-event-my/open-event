@@ -18,11 +18,17 @@ import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { formatDate } from '@/lib/constants'
 import { useState } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
+import { NotificationTestHelper } from '@/components/notifications/NotificationTestHelper'
 
 type ViewMode = 'list' | 'grid'
 
 export function DashboardOverview() {
-  const profile = useQuery(api.organizerProfiles.getMyProfile)
+  const { accessToken } = useAuth()
+  const profile = useQuery(
+    api.organizerProfiles.getMyProfile,
+    accessToken ? { accessToken } : 'skip'
+  )
   const stats = useQuery(api.events.getMyStats)
   const upcomingEvents = useQuery(api.events.getUpcoming, { limit: 6 })
 
@@ -44,10 +50,16 @@ export function DashboardOverview() {
           </h1>
           <button className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground shrink-0 hidden sm:block">
             <span className="sr-only">More options</span>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="3" cy="8" r="1.5" fill="currentColor"/>
-              <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
-              <circle cx="13" cy="8" r="1.5" fill="currentColor"/>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <circle cx="3" cy="8" r="1.5" fill="currentColor" />
+              <circle cx="8" cy="8" r="1.5" fill="currentColor" />
+              <circle cx="13" cy="8" r="1.5" fill="currentColor" />
             </svg>
           </button>
         </div>
@@ -86,8 +98,8 @@ export function DashboardOverview() {
             <Lightbulb size={16} weight="duotone" className="text-amber-600 dark:text-amber-400" />
           </div>
           <p className="flex-1 text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">Tip:</span>{' '}
-            Add vendors and sponsors to your events to unlock analytics and collaboration features.
+            <span className="font-medium text-foreground">Tip:</span> Add vendors and sponsors to
+            your events to unlock analytics and collaboration features.
           </p>
           <button className="flex-shrink-0 px-3 py-1.5 text-sm font-medium text-foreground bg-background border border-border hover:bg-muted rounded-lg transition-colors">
             Learn more
@@ -110,15 +122,15 @@ export function DashboardOverview() {
               key={stat.label}
               className="p-4 sm:p-5 rounded-xl bg-card border border-border/50 hover:border-border transition-colors"
             >
-              <Icon
-                size={20}
-                weight="duotone"
-                className="text-muted-foreground mb-3"
-              />
-              <p className={cn(
-                "text-2xl sm:text-3xl font-semibold tracking-tight text-foreground",
-                displayValue === '—' && "text-muted-foreground/40"
-              )}>{displayValue}</p>
+              <Icon size={20} weight="duotone" className="text-muted-foreground mb-3" />
+              <p
+                className={cn(
+                  'text-2xl sm:text-3xl font-semibold tracking-tight text-foreground',
+                  displayValue === '—' && 'text-muted-foreground/40'
+                )}
+              >
+                {displayValue}
+              </p>
               <p className="text-sm text-muted-foreground mt-1">{stat.label}</p>
             </div>
           )
@@ -142,14 +154,13 @@ export function DashboardOverview() {
 
         {/* Loading State */}
         {upcomingEvents === undefined ? (
-          <div className={cn(
-            viewMode === 'grid' ? 'grid md:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-3'
-          )}>
+          <div
+            className={cn(
+              viewMode === 'grid' ? 'grid md:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-3'
+            )}
+          >
             {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="rounded-xl border border-border/50 bg-card p-5 animate-pulse"
-              >
+              <div key={i} className="rounded-xl border border-border/50 bg-card p-5 animate-pulse">
                 <div className="h-4 bg-muted rounded w-2/3 mb-3" />
                 <div className="h-3 bg-muted rounded w-1/3" />
               </div>
@@ -205,7 +216,9 @@ export function DashboardOverview() {
                 </div>
                 <div>
                   <p className="font-medium text-foreground">start from scratch</p>
-                  <p className="text-sm text-muted-foreground">you know what you're doing. probably.</p>
+                  <p className="text-sm text-muted-foreground">
+                    you know what you're doing. probably.
+                  </p>
                 </div>
               </Link>
             </div>
@@ -274,9 +287,7 @@ export function DashboardOverview() {
                   </span>
                 </div>
 
-                <h3 className="font-semibold text-foreground mb-3 line-clamp-2">
-                  {event.title}
-                </h3>
+                <h3 className="font-semibold text-foreground mb-3 line-clamp-2">{event.title}</h3>
 
                 <div className="space-y-2 text-sm text-muted-foreground">
                   <div className="flex items-center gap-2">
@@ -313,6 +324,9 @@ export function DashboardOverview() {
           </div>
         )}
       </div>
+
+      {/* Test Helper - Only visible in development */}
+      <NotificationTestHelper />
     </div>
   )
 }

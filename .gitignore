@@ -28,6 +28,17 @@ dist-ssr
 *.sln
 *.sw?
 
+# Sensitive keys and credentials
+JWT_KEY_SINGLE_LINE.txt
+KEYS_TO_COPY.txt
+KEYS_FOR_CONVEX.md
+
+# Debug and test artifacts
+debug-signup-page.png
+nul
+test-results/
+playwright-report/
+
 # Claude Code local settings
 .claude/
 .clinerules/byterover-rules.md

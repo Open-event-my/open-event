@@ -23,8 +23,16 @@ export function LogoCloud() {
         {/* Fun header with honest messaging */}
         <div className="text-center mb-6 sm:mb-8">
           <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-amber-100/50 dark:bg-amber-900/20 border border-amber-200/50 dark:border-amber-800/30 mb-3 sm:mb-4">
-            <RocketLaunch size={12} className="sm:hidden text-amber-600 dark:text-amber-400" weight="fill" />
-            <RocketLaunch size={14} className="hidden sm:block text-amber-600 dark:text-amber-400" weight="fill" />
+            <RocketLaunch
+              size={12}
+              className="sm:hidden text-amber-600 dark:text-amber-400"
+              weight="fill"
+            />
+            <RocketLaunch
+              size={14}
+              className="hidden sm:block text-amber-600 dark:text-amber-400"
+              weight="fill"
+            />
             <span className="text-[10px] sm:text-xs font-medium text-amber-700 dark:text-amber-300">
               just launched
             </span>
@@ -49,8 +57,8 @@ export function LogoCloud() {
           <div className="flex overflow-hidden">
             <div
               className={cn(
-                "flex gap-4 sm:gap-8 md:gap-12 animate-scroll",
-                isHovered && "pause-animation"
+                'flex gap-4 sm:gap-8 md:gap-12 animate-scroll',
+                isHovered && 'pause-animation'
               )}
               style={{
                 animation: 'scroll 25s linear infinite',
@@ -62,7 +70,9 @@ export function LogoCloud() {
                   key={`${logo.name}-${i}`}
                   className="flex items-center gap-1.5 sm:gap-2 shrink-0 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-muted/50 transition-colors cursor-default group touch-manipulation"
                 >
-                  <span className="text-sm sm:text-lg group-hover:scale-110 transition-transform">{logo.emoji}</span>
+                  <span className="text-sm sm:text-lg group-hover:scale-110 transition-transform">
+                    {logo.emoji}
+                  </span>
                   <span className="text-xs sm:text-sm font-medium text-muted-foreground/70 group-hover:text-muted-foreground transition-colors whitespace-nowrap">
                     {logo.name}
                   </span>

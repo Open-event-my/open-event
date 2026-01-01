@@ -29,10 +29,7 @@ export function EventDetailPublic() {
   const [showApplyModal, setShowApplyModal] = useState(false)
   const [applyType, setApplyType] = useState<'vendor' | 'sponsor'>('vendor')
 
-  const event = useQuery(
-    api.events.getPublic,
-    eventId ? { id: eventId as Id<'events'> } : 'skip'
-  )
+  const event = useQuery(api.events.getPublic, eventId ? { id: eventId as Id<'events'> } : 'skip')
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString('en-US', {
@@ -172,9 +169,7 @@ export function EventDetailPublic() {
               {event.organizer && (
                 <p className="text-muted-foreground">
                   Organized by{' '}
-                  <span className="font-medium text-foreground">
-                    {event.organizer.name}
-                  </span>
+                  <span className="font-medium text-foreground">{event.organizer.name}</span>
                 </p>
               )}
             </div>
@@ -183,44 +178,35 @@ export function EventDetailPublic() {
             {event.description && (
               <div className="prose prose-sm dark:prose-invert max-w-none">
                 <h2 className="text-lg font-semibold mb-3">About This Event</h2>
-                <p className="text-muted-foreground whitespace-pre-line">
-                  {event.description}
-                </p>
+                <p className="text-muted-foreground whitespace-pre-line">{event.description}</p>
               </div>
             )}
 
             {/* What We're Looking For */}
             {(event.seekingVendors || event.seekingSponsors) && (
               <div className="p-6 rounded-xl border border-border bg-card">
-                <h2 className="text-lg font-semibold mb-4">
-                  What We're Looking For
-                </h2>
+                <h2 className="text-lg font-semibold mb-4">What We're Looking For</h2>
 
                 <div className="space-y-4">
                   {event.seekingVendors && (
                     <div className="flex items-start gap-3">
                       <div className="p-2 rounded-lg bg-orange-500/10">
-                        <Storefront
-                          size={20}
-                          weight="duotone"
-                          className="text-orange-500"
-                        />
+                        <Storefront size={20} weight="duotone" className="text-orange-500" />
                       </div>
                       <div className="flex-1">
                         <h3 className="font-medium mb-1">Vendors</h3>
-                        {event.vendorCategories &&
-                          event.vendorCategories.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mt-2">
-                              {event.vendorCategories.map((cat) => (
-                                <span
-                                  key={cat}
-                                  className="px-2 py-1 text-xs bg-orange-500/10 text-orange-600 dark:text-orange-400 rounded-md"
-                                >
-                                  {cat}
-                                </span>
-                              ))}
-                            </div>
-                          )}
+                        {event.vendorCategories && event.vendorCategories.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {event.vendorCategories.map((cat) => (
+                              <span
+                                key={cat}
+                                className="px-2 py-1 text-xs bg-orange-500/10 text-orange-600 dark:text-orange-400 rounded-md"
+                              >
+                                {cat}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -228,18 +214,12 @@ export function EventDetailPublic() {
                   {event.seekingSponsors && (
                     <div className="flex items-start gap-3">
                       <div className="p-2 rounded-lg bg-purple-500/10">
-                        <Handshake
-                          size={20}
-                          weight="duotone"
-                          className="text-purple-500"
-                        />
+                        <Handshake size={20} weight="duotone" className="text-purple-500" />
                       </div>
                       <div className="flex-1">
                         <h3 className="font-medium mb-1">Sponsors</h3>
                         {event.sponsorBenefits && (
-                          <p className="text-sm text-muted-foreground">
-                            {event.sponsorBenefits}
-                          </p>
+                          <p className="text-sm text-muted-foreground">{event.sponsorBenefits}</p>
                         )}
                       </div>
                     </div>
@@ -251,67 +231,41 @@ export function EventDetailPublic() {
             {/* Requirements */}
             {event.requirements && (
               <div className="p-6 rounded-xl border border-border bg-card">
-                <h2 className="text-lg font-semibold mb-4">
-                  Event Requirements
-                </h2>
+                <h2 className="text-lg font-semibold mb-4">Event Requirements</h2>
                 <div className="grid grid-cols-2 gap-3">
                   {event.requirements.catering && (
                     <div className="flex items-center gap-2 text-sm">
-                      <CheckCircle
-                        size={16}
-                        weight="duotone"
-                        className="text-green-500"
-                      />
+                      <CheckCircle size={16} weight="duotone" className="text-green-500" />
                       Catering Services
                     </div>
                   )}
                   {event.requirements.av && (
                     <div className="flex items-center gap-2 text-sm">
-                      <CheckCircle
-                        size={16}
-                        weight="duotone"
-                        className="text-green-500"
-                      />
+                      <CheckCircle size={16} weight="duotone" className="text-green-500" />
                       Audio/Visual Equipment
                     </div>
                   )}
                   {event.requirements.photography && (
                     <div className="flex items-center gap-2 text-sm">
-                      <CheckCircle
-                        size={16}
-                        weight="duotone"
-                        className="text-green-500"
-                      />
+                      <CheckCircle size={16} weight="duotone" className="text-green-500" />
                       Photography/Videography
                     </div>
                   )}
                   {event.requirements.security && (
                     <div className="flex items-center gap-2 text-sm">
-                      <CheckCircle
-                        size={16}
-                        weight="duotone"
-                        className="text-green-500"
-                      />
+                      <CheckCircle size={16} weight="duotone" className="text-green-500" />
                       Security Services
                     </div>
                   )}
                   {event.requirements.transportation && (
                     <div className="flex items-center gap-2 text-sm">
-                      <CheckCircle
-                        size={16}
-                        weight="duotone"
-                        className="text-green-500"
-                      />
+                      <CheckCircle size={16} weight="duotone" className="text-green-500" />
                       Transportation
                     </div>
                   )}
                   {event.requirements.decoration && (
                     <div className="flex items-center gap-2 text-sm">
-                      <CheckCircle
-                        size={16}
-                        weight="duotone"
-                        className="text-green-500"
-                      />
+                      <CheckCircle size={16} weight="duotone" className="text-green-500" />
                       Decoration/Staging
                     </div>
                   )}
@@ -328,45 +282,27 @@ export function EventDetailPublic() {
 
               <div className="space-y-3 text-sm">
                 <div className="flex items-start gap-3">
-                  <Calendar
-                    size={18}
-                    weight="duotone"
-                    className="text-muted-foreground mt-0.5"
-                  />
+                  <Calendar size={18} weight="duotone" className="text-muted-foreground mt-0.5" />
                   <div>
-                    <div className="font-medium">
-                      {formatDate(event.startDate)}
-                    </div>
+                    <div className="font-medium">{formatDate(event.startDate)}</div>
                     {event.endDate && event.endDate !== event.startDate && (
-                      <div className="text-muted-foreground">
-                        to {formatDate(event.endDate)}
-                      </div>
+                      <div className="text-muted-foreground">to {formatDate(event.endDate)}</div>
                     )}
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <Clock
-                    size={18}
-                    weight="duotone"
-                    className="text-muted-foreground"
-                  />
+                  <Clock size={18} weight="duotone" className="text-muted-foreground" />
                   <span>{formatTime(event.startDate)}</span>
                 </div>
 
                 {event.venueName && (
                   <div className="flex items-start gap-3">
-                    <MapPin
-                      size={18}
-                      weight="duotone"
-                      className="text-muted-foreground mt-0.5"
-                    />
+                    <MapPin size={18} weight="duotone" className="text-muted-foreground mt-0.5" />
                     <div>
                       <div className="font-medium">{event.venueName}</div>
                       {event.venueAddress && (
-                        <div className="text-muted-foreground">
-                          {event.venueAddress}
-                        </div>
+                        <div className="text-muted-foreground">{event.venueAddress}</div>
                       )}
                     </div>
                   </div>
@@ -374,36 +310,21 @@ export function EventDetailPublic() {
 
                 {event.virtualPlatform && (
                   <div className="flex items-center gap-3">
-                    <Monitor
-                      size={18}
-                      weight="duotone"
-                      className="text-muted-foreground"
-                    />
+                    <Monitor size={18} weight="duotone" className="text-muted-foreground" />
                     <span>{event.virtualPlatform}</span>
                   </div>
                 )}
 
                 {event.expectedAttendees && (
                   <div className="flex items-center gap-3">
-                    <Users
-                      size={18}
-                      weight="duotone"
-                      className="text-muted-foreground"
-                    />
-                    <span>
-                      {event.expectedAttendees.toLocaleString()} expected
-                      attendees
-                    </span>
+                    <Users size={18} weight="duotone" className="text-muted-foreground" />
+                    <span>{event.expectedAttendees.toLocaleString()} expected attendees</span>
                   </div>
                 )}
 
                 {event.budget && (
                   <div className="flex items-center gap-3">
-                    <CurrencyDollar
-                      size={18}
-                      weight="duotone"
-                      className="text-muted-foreground"
-                    />
+                    <CurrencyDollar size={18} weight="duotone" className="text-muted-foreground" />
                     <span>
                       {event.budgetCurrency || '$'}
                       {event.budget.toLocaleString()} budget
@@ -424,16 +345,12 @@ export function EventDetailPublic() {
             {(event.seekingVendors || event.seekingSponsors) && (
               <div className="p-6 rounded-xl border-2 border-primary/20 bg-primary/5 space-y-4">
                 <h3 className="font-semibold flex items-center gap-2">
-                  <PaperPlaneTilt
-                    size={20}
-                    weight="duotone"
-                    className="text-primary"
-                  />
+                  <PaperPlaneTilt size={20} weight="duotone" className="text-primary" />
                   Apply to This Event
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  Interested in participating? Apply as a vendor or sponsor to
-                  connect with the organizer.
+                  Interested in participating? Apply as a vendor or sponsor to connect with the
+                  organizer.
                 </p>
 
                 <div className="space-y-2">
@@ -474,12 +391,8 @@ export function EventDetailPublic() {
 
                 <p className="text-xs text-muted-foreground flex items-start gap-2">
                   <Info size={14} className="mt-0.5 shrink-0" />
-                  You must be an approved vendor or sponsor to apply. If you're
-                  new,{' '}
-                  <Link
-                    to="/apply/vendor"
-                    className="text-primary hover:underline"
-                  >
+                  You must be an approved vendor or sponsor to apply. If you're new,{' '}
+                  <Link to="/apply/vendor" className="text-primary hover:underline">
                     register here
                   </Link>
                   .
@@ -554,9 +467,7 @@ function ApplyToEventModal({
             : undefined,
         proposedBudget: proposedBudget ? parseFloat(proposedBudget) : undefined,
         proposedTier:
-          applicantType === 'sponsor' && proposedTier.trim()
-            ? proposedTier.trim()
-            : undefined,
+          applicantType === 'sponsor' && proposedTier.trim() ? proposedTier.trim() : undefined,
       })
 
       toast.success('Application submitted successfully!')
@@ -576,15 +487,10 @@ function ApplyToEventModal({
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div>
-            <h2 className="font-semibold text-lg">
-              Apply as {isVendor ? 'Vendor' : 'Sponsor'}
-            </h2>
+            <h2 className="font-semibold text-lg">Apply as {isVendor ? 'Vendor' : 'Sponsor'}</h2>
             <p className="text-sm text-muted-foreground">{eventTitle}</p>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg hover:bg-muted transition-colors"
-          >
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-muted transition-colors">
             <X size={20} />
           </button>
         </div>
@@ -593,10 +499,9 @@ function ApplyToEventModal({
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
             <p className="text-sm text-amber-600 dark:text-amber-400">
-              <strong>Note:</strong> You must be an approved{' '}
-              {isVendor ? 'vendor' : 'sponsor'} to submit an application. Your{' '}
-              {isVendor ? 'Vendor' : 'Sponsor'} ID was provided when your account
-              was approved.
+              <strong>Note:</strong> You must be an approved {isVendor ? 'vendor' : 'sponsor'} to
+              submit an application. Your {isVendor ? 'Vendor' : 'Sponsor'} ID was provided when
+              your account was approved.
             </p>
           </div>
 
@@ -620,9 +525,7 @@ function ApplyToEventModal({
 
           {isVendor && (
             <div>
-              <label className="block text-sm font-medium mb-1.5">
-                Services You're Offering
-              </label>
+              <label className="block text-sm font-medium mb-1.5">Services You're Offering</label>
               <input
                 type="text"
                 value={proposedServices}
@@ -642,9 +545,7 @@ function ApplyToEventModal({
 
           {!isVendor && (
             <div>
-              <label className="block text-sm font-medium mb-1.5">
-                Sponsorship Tier Interest
-              </label>
+              <label className="block text-sm font-medium mb-1.5">Sponsorship Tier Interest</label>
               <select
                 value={proposedTier}
                 onChange={(e) => setProposedTier(e.target.value)}
@@ -683,9 +584,7 @@ function ApplyToEventModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1.5">
-              Message to Organizer
-            </label>
+            <label className="block text-sm font-medium mb-1.5">Message to Organizer</label>
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}

@@ -30,12 +30,7 @@ export function TaskProgress({ tasks, title, className }: TaskProgressProps) {
   const progressPercent = totalCount > 0 ? (completedCount / totalCount) * 100 : 0
 
   return (
-    <div
-      className={cn(
-        'rounded-lg border border-border bg-card/50 overflow-hidden',
-        className
-      )}
-    >
+    <div className={cn('rounded-lg border border-border bg-card/50 overflow-hidden', className)}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
         <h3 className="font-medium text-sm">{title || 'Progress'}</h3>
@@ -109,9 +104,7 @@ function TaskItem({ task }: TaskItemProps) {
           {task.label}
         </span>
         {task.description && (
-          <p className="text-xs text-muted-foreground mt-0.5 truncate">
-            {task.description}
-          </p>
+          <p className="text-xs text-muted-foreground mt-0.5 truncate">{task.description}</p>
         )}
       </div>
     </div>
@@ -147,9 +140,7 @@ export function CompactTaskProgress({
       )}
 
       <div className="flex-1">
-        {label && (
-          <span className="text-xs text-muted-foreground block mb-1">{label}</span>
-        )}
+        {label && <span className="text-xs text-muted-foreground block mb-1">{label}</span>}
         <div className="h-1.5 rounded-full bg-muted overflow-hidden">
           <div
             className={cn(

@@ -147,11 +147,5 @@ export function StreamingMarkdown({
 }: StreamingMarkdownProps) {
   // For now, delegate to StreamingText
   // Future: Parse markdown and handle code blocks specially
-  return (
-    <StreamingText
-      content={content}
-      isStreaming={isStreaming}
-      className={className}
-    />
-  )
+  return <StreamingText content={content} isStreaming={isStreaming} className={className} />
 }

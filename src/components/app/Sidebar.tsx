@@ -26,9 +26,7 @@ const navigationItems = [
   { label: 'Analytics', icon: ChartLine, path: '/dashboard/analytics', number: 4 },
 ]
 
-const bottomItems = [
-  { label: 'Settings', icon: Gear, path: '/dashboard/settings' },
-]
+const bottomItems = [{ label: 'Settings', icon: Gear, path: '/dashboard/settings' }]
 
 export function Sidebar({ collapsed }: SidebarProps) {
   const location = useLocation()
@@ -58,11 +56,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
         )}
       >
         <Link to="/dashboard" className="flex items-center">
-          {collapsed ? (
-            <LogoIcon size="sm" />
-          ) : (
-            <Logo size="sm" showDomain={false} />
-          )}
+          {collapsed ? <LogoIcon size="sm" /> : <Logo size="sm" showDomain={false} />}
         </Link>
       </div>
 
@@ -103,19 +97,18 @@ export function Sidebar({ collapsed }: SidebarProps) {
             >
               {/* Numbered badge like Typeform */}
               {item.number && !collapsed ? (
-                <span className={cn(
-                  'w-6 h-6 rounded-md flex items-center justify-center text-xs font-semibold',
-                  active
-                    ? 'bg-yellow text-foreground dark:text-background'
-                    : 'bg-secondary text-muted-foreground'
-                )}>
+                <span
+                  className={cn(
+                    'w-6 h-6 rounded-md flex items-center justify-center text-xs font-semibold',
+                    active
+                      ? 'bg-yellow text-foreground dark:text-background'
+                      : 'bg-secondary text-muted-foreground'
+                  )}
+                >
                   {item.number}
                 </span>
               ) : (
-                <Icon
-                  size={18}
-                  weight={active ? 'fill' : 'regular'}
-                />
+                <Icon size={18} weight={active ? 'fill' : 'regular'} />
               )}
               {!collapsed && <span>{item.label}</span>}
             </Link>
@@ -159,10 +152,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               )}
             >
-              <Icon
-                size={18}
-                weight={active ? 'fill' : 'regular'}
-              />
+              <Icon size={18} weight={active ? 'fill' : 'regular'} />
               {!collapsed && <span>{item.label}</span>}
             </Link>
           )

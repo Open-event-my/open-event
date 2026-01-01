@@ -12,7 +12,7 @@ export function AIEvaluationScene({ progress }: AIEvaluationSceneProps) {
   const showHeader = progress > 0.1
   const showSpinner = progress > 0.15 && progress < 0.4
   const showScore = progress > 0.4
-  const scoreValue = Math.min(Math.floor((progress - 0.4) / 0.2 * 92), 92)
+  const scoreValue = Math.min(Math.floor(((progress - 0.4) / 0.2) * 92), 92)
   const showRecommendation = progress > 0.6
   const showTags = progress > 0.7
   const tag1 = progress > 0.75

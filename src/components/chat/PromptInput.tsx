@@ -1,4 +1,12 @@
-import { useState, useRef, useCallback, useEffect, useMemo, type KeyboardEvent, type ChangeEvent } from 'react'
+import {
+  useState,
+  useRef,
+  useCallback,
+  useEffect,
+  useMemo,
+  type KeyboardEvent,
+  type ChangeEvent,
+} from 'react'
 import { PaperPlaneTilt, Stop, CircleNotch } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { SlashCommandMenu } from './SlashCommandMenu'
@@ -217,10 +225,7 @@ export function PromptInput({
             </button>
           ) : isLoading ? (
             <div
-              className={cn(
-                'p-2.5 rounded-xl',
-                'bg-foreground/10 text-foreground/50'
-              )}
+              className={cn('p-2.5 rounded-xl', 'bg-foreground/10 text-foreground/50')}
               role="status"
               aria-label="Loading"
             >
@@ -252,9 +257,7 @@ export function PromptInput({
         <div
           className={cn(
             'absolute -bottom-5 right-0 text-xs',
-            charactersRemaining < 100
-              ? 'text-destructive'
-              : 'text-muted-foreground'
+            charactersRemaining < 100 ? 'text-destructive' : 'text-muted-foreground'
           )}
           aria-live="polite"
         >
@@ -268,12 +271,14 @@ export function PromptInput({
         className="mt-2 hidden sm:flex items-center justify-center text-xs text-muted-foreground/60"
       >
         <span>
-          <kbd className="px-1.5 py-0.5 rounded bg-muted/50 font-mono text-[10px]">Enter</kbd>
-          {' '}to send · {' '}
-          <kbd className="px-1.5 py-0.5 rounded bg-muted/50 font-mono text-[10px]">Shift + Enter</kbd>
-          {' '}for new line · {' '}
-          <kbd className="px-1.5 py-0.5 rounded bg-muted/50 font-mono text-[10px]">/</kbd>
-          {' '}for commands
+          <kbd className="px-1.5 py-0.5 rounded bg-muted/50 font-mono text-[10px]">Enter</kbd> to
+          send ·{' '}
+          <kbd className="px-1.5 py-0.5 rounded bg-muted/50 font-mono text-[10px]">
+            Shift + Enter
+          </kbd>{' '}
+          for new line ·{' '}
+          <kbd className="px-1.5 py-0.5 rounded bg-muted/50 font-mono text-[10px]">/</kbd> for
+          commands
         </span>
       </div>
     </div>

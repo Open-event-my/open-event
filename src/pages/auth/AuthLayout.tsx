@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { OptimizedImage } from '@/components/ui/optimized-image'
 
 interface AuthLayoutProps {
   children: React.ReactNode
@@ -23,9 +24,11 @@ export function AuthLayout({
       {/* Left Panel - Image Background (hidden on mobile) */}
       <div className="hidden lg:flex lg:w-1/2 xl:w-3/5 relative overflow-hidden">
         {/* Background Image */}
-        <img
+        <OptimizedImage
           src="/auth-bg.jpg"
+          webpSrc="/auth-bg.webp"
           alt=""
+          priority
           className="absolute inset-0 w-full h-full object-cover"
         />
 
@@ -48,8 +51,8 @@ export function AuthLayout({
               Manage events with the right partners.
             </h2>
             <p className="text-white/70 text-lg">
-              Connect with sponsors, vendors, and volunteers.
-              Powered by AI for seamless event operations.
+              Connect with sponsors, vendors, and volunteers. Powered by AI for seamless event
+              operations.
             </p>
           </div>
 
@@ -63,9 +66,7 @@ export function AuthLayout({
                 />
               ))}
             </div>
-            <p className="text-white/60 text-sm">
-              Early adopters welcome
-            </p>
+            <p className="text-white/60 text-sm">Early adopters welcome</p>
           </div>
         </div>
       </div>
@@ -74,9 +75,11 @@ export function AuthLayout({
       <div className="flex-1 flex flex-col bg-background relative">
         {/* Mobile Background Image */}
         <div className="lg:hidden absolute inset-0 -z-10">
-          <img
+          <OptimizedImage
             src="/auth-bg.jpg"
+            webpSrc="/auth-bg.webp"
             alt=""
+            lazy
             className="absolute inset-0 w-full h-full object-cover opacity-20 dark:opacity-10"
           />
           <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
@@ -98,9 +101,7 @@ export function AuthLayout({
           <div className="w-full max-w-md space-y-8">
             {/* Title Section */}
             <div className="space-y-2">
-              <h1 className="font-mono text-3xl sm:text-4xl font-bold tracking-tight">
-                {title}
-              </h1>
+              <h1 className="font-mono text-3xl sm:text-4xl font-bold tracking-tight">{title}</h1>
               <p className="text-muted-foreground">{subtitle}</p>
             </div>
 
@@ -112,10 +113,7 @@ export function AuthLayout({
             {/* Footer Link */}
             <p className="text-center text-sm text-muted-foreground">
               {footerText}{' '}
-              <Link
-                to={footerLinkTo}
-                className="text-primary hover:underline font-medium"
-              >
+              <Link to={footerLinkTo} className="text-primary hover:underline font-medium">
                 {footerLinkText}
               </Link>
             </p>
@@ -126,9 +124,13 @@ export function AuthLayout({
         <footer className="px-6 py-4 lg:px-12 text-center lg:text-left">
           <p className="text-xs text-muted-foreground">
             By continuing, you agree to our{' '}
-            <Link to="/terms" className="underline hover:text-foreground">Terms of Service</Link>
-            {' '}and{' '}
-            <Link to="/privacy" className="underline hover:text-foreground">Privacy Policy</Link>
+            <Link to="/terms" className="underline hover:text-foreground">
+              Terms of Service
+            </Link>{' '}
+            and{' '}
+            <Link to="/privacy" className="underline hover:text-foreground">
+              Privacy Policy
+            </Link>
           </p>
         </footer>
       </div>

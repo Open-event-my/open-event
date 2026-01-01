@@ -1,0 +1,10 @@
+{
+  "Property 38: Transient Failure Retry": {
+    "status": "passed",
+    "testFile": "convex/lib/resilience/retry.property.test.ts",
+    "testsCount": 20,
+    "lastRun": "2025-12-30T17:51:54.297Z",
+    "requirement": "11.6",
+    "task": "32.2"
+  }
+}

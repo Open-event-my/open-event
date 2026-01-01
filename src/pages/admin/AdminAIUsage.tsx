@@ -18,12 +18,7 @@ import {
   CheckCircle,
   Sliders,
 } from '@phosphor-icons/react'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   Dialog,
   DialogContent,
@@ -52,7 +47,7 @@ const statusConfig: Record<UsageStatus, { bg: string; text: string; label: strin
 
 const sortOptions: { value: SortOption; label: string }[] = [
   { value: 'totalPrompts', label: 'Total Usage' },
-  { value: 'promptCount', label: 'Today\'s Usage' },
+  { value: 'promptCount', label: "Today's Usage" },
   { value: 'updatedAt', label: 'Last Active' },
 ]
 
@@ -95,10 +90,7 @@ export function AdminAIUsage() {
   const filteredStats = usageStats?.filter((u) => {
     if (!searchQuery.trim()) return true
     const search = searchQuery.toLowerCase()
-    return (
-      u.userName?.toLowerCase().includes(search) ||
-      u.userEmail?.toLowerCase().includes(search)
-    )
+    return u.userName?.toLowerCase().includes(search) || u.userEmail?.toLowerCase().includes(search)
   })
 
   const handleSetLimit = async () => {
@@ -217,7 +209,9 @@ export function AdminAIUsage() {
             <ChartBar size={16} weight="duotone" />
             <span className="text-sm">All-Time Prompts</span>
           </div>
-          <p className="text-xl font-bold">{analytics?.totalPromptsAllTime?.toLocaleString() ?? '-'}</p>
+          <p className="text-xl font-bold">
+            {analytics?.totalPromptsAllTime?.toLocaleString() ?? '-'}
+          </p>
         </div>
 
         <div className="p-4 rounded-xl border border-border bg-card">
@@ -262,12 +256,14 @@ export function AdminAIUsage() {
         {/* Sort Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className={cn(
-              'flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border bg-background',
-              'text-sm font-medium hover:bg-muted transition-colors'
-            )}>
+            <button
+              className={cn(
+                'flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border bg-background',
+                'text-sm font-medium hover:bg-muted transition-colors'
+              )}
+            >
               <CaretUpDown size={16} weight="bold" />
-              Sort: {sortOptions.find(o => o.value === sortBy)?.label}
+              Sort: {sortOptions.find((o) => o.value === sortBy)?.label}
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -344,7 +340,11 @@ export function AdminAIUsage() {
               ) : filteredStats?.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-4 py-12 text-center">
-                    <Sparkle size={48} weight="duotone" className="mx-auto text-muted-foreground/30 mb-4" />
+                    <Sparkle
+                      size={48}
+                      weight="duotone"
+                      className="mx-auto text-muted-foreground/30 mb-4"
+                    />
                     <p className="text-muted-foreground">
                       {searchQuery ? `No users match "${searchQuery}"` : 'No AI usage data yet'}
                     </p>
@@ -366,8 +366,12 @@ export function AdminAIUsage() {
                             </span>
                           </div>
                           <div className="min-w-0">
-                            <p className="font-medium text-sm truncate">{user.userName || 'Unknown'}</p>
-                            <p className="text-xs text-muted-foreground truncate">{user.userEmail}</p>
+                            <p className="font-medium text-sm truncate">
+                              {user.userName || 'Unknown'}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {user.userEmail}
+                            </p>
                           </div>
                           {isAdmin && (
                             <span className="px-1.5 py-0.5 text-[10px] font-medium bg-amber-500/10 text-amber-600 rounded">
@@ -389,10 +393,13 @@ export function AdminAIUsage() {
                         <TooltipProvider delayDuration={0}>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <span className={cn(
-                                'font-mono',
-                                user.dailyLimit !== (analytics?.defaultDailyLimit ?? 5) && 'text-purple-600 font-medium'
-                              )}>
+                              <span
+                                className={cn(
+                                  'font-mono',
+                                  user.dailyLimit !== (analytics?.defaultDailyLimit ?? 5) &&
+                                    'text-purple-600 font-medium'
+                                )}
+                              >
                                 {isAdmin ? '∞' : user.dailyLimit}
                               </span>
                             </TooltipTrigger>
@@ -412,11 +419,13 @@ export function AdminAIUsage() {
                             Unlimited
                           </span>
                         ) : (
-                          <span className={cn(
-                            'px-2.5 py-1 text-xs font-medium rounded-full',
-                            status.bg,
-                            status.text
-                          )}>
+                          <span
+                            className={cn(
+                              'px-2.5 py-1 text-xs font-medium rounded-full',
+                              status.bg,
+                              status.text
+                            )}
+                          >
                             {status.label}
                           </span>
                         )}
@@ -424,7 +433,9 @@ export function AdminAIUsage() {
 
                       {/* Total */}
                       <td className="px-4 py-4 text-center">
-                        <span className="font-mono text-sm">{user.totalPrompts.toLocaleString()}</span>
+                        <span className="font-mono text-sm">
+                          {user.totalPrompts.toLocaleString()}
+                        </span>
                       </td>
 
                       {/* Last Active */}
@@ -439,22 +450,28 @@ export function AdminAIUsage() {
                         {!isAdmin && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <button className={cn(
-                                'px-3 py-1.5 rounded-lg text-xs font-medium',
-                                'bg-muted hover:bg-muted/80 transition-colors'
-                              )}>
+                              <button
+                                className={cn(
+                                  'px-3 py-1.5 rounded-lg text-xs font-medium',
+                                  'bg-muted hover:bg-muted/80 transition-colors'
+                                )}
+                              >
                                 Manage
                               </button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-48">
                               <DropdownMenuItem
-                                onClick={() => openLimitModal(user.userId, user.userName, user.dailyLimit)}
+                                onClick={() =>
+                                  openLimitModal(user.userId, user.userName, user.dailyLimit)
+                                }
                               >
                                 <Sliders size={14} className="mr-2" />
                                 Set Daily Limit
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => openResetModal(user.userId, user.userName, user.dailyLimit)}
+                                onClick={() =>
+                                  openResetModal(user.userId, user.userName, user.dailyLimit)
+                                }
                               >
                                 <ArrowClockwise size={14} className="mr-2" />
                                 Reset Today's Usage
@@ -463,7 +480,9 @@ export function AdminAIUsage() {
                                 <>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem
-                                    onClick={() => handleRemoveCustomLimit(user.userId, user.userName)}
+                                    onClick={() =>
+                                      handleRemoveCustomLimit(user.userId, user.userName)
+                                    }
                                     className="text-amber-600"
                                   >
                                     <ArrowClockwise size={14} className="mr-2" />
@@ -493,10 +512,10 @@ export function AdminAIUsage() {
           <div>
             <p className="font-medium text-sm">Rate Limit Configuration</p>
             <p className="text-xs text-muted-foreground mt-1">
-              Users are limited to <strong>{analytics?.defaultDailyLimit ?? 5}</strong> prompts per day.
-              Limits reset at <strong>midnight UTC</strong>.
-              Warning shown at {(analytics?.config?.WARNING_THRESHOLD ?? 0.6) * 100}% usage,
-              critical at {(analytics?.config?.CRITICAL_THRESHOLD ?? 0.9) * 100}%.
+              Users are limited to <strong>{analytics?.defaultDailyLimit ?? 5}</strong> prompts per
+              day. Limits reset at <strong>midnight UTC</strong>. Warning shown at{' '}
+              {(analytics?.config?.WARNING_THRESHOLD ?? 0.6) * 100}% usage, critical at{' '}
+              {(analytics?.config?.CRITICAL_THRESHOLD ?? 0.9) * 100}%.
             </p>
           </div>
         </div>
@@ -513,8 +532,8 @@ export function AdminAIUsage() {
               <DialogTitle>Set Daily Limit</DialogTitle>
             </div>
             <DialogDescription>
-              Set a custom daily prompt limit for <strong>{selectedUser?.name}</strong>.
-              Current limit: {selectedUser?.currentLimit} prompts/day.
+              Set a custom daily prompt limit for <strong>{selectedUser?.name}</strong>. Current
+              limit: {selectedUser?.currentLimit} prompts/day.
             </DialogDescription>
           </DialogHeader>
 
@@ -571,8 +590,8 @@ export function AdminAIUsage() {
               <DialogTitle>Reset Usage</DialogTitle>
             </div>
             <DialogDescription>
-              Reset today's prompt count for <strong>{selectedUser?.name}</strong>?
-              This will restore their daily quota to {selectedUser?.currentLimit ?? 5} prompts.
+              Reset today's prompt count for <strong>{selectedUser?.name}</strong>? This will
+              restore their daily quota to {selectedUser?.currentLimit ?? 5} prompts.
             </DialogDescription>
           </DialogHeader>
 

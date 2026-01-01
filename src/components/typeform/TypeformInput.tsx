@@ -1,12 +1,17 @@
-import { forwardRef, type InputHTMLAttributes, type TextareaHTMLAttributes, type SelectHTMLAttributes, type ReactNode } from 'react'
+import {
+  forwardRef,
+  type InputHTMLAttributes,
+  type TextareaHTMLAttributes,
+  type SelectHTMLAttributes,
+  type ReactNode,
+} from 'react'
 import { cn } from '@/lib/utils'
 
 // ============================================================================
 // TypeformInput - Large text input with underline style
 // ============================================================================
 
-export interface TypeformInputProps
-  extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
+export interface TypeformInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
   label?: string
   error?: string
 }
@@ -16,9 +21,7 @@ export const TypeformInput = forwardRef<HTMLInputElement, TypeformInputProps>(
     return (
       <div className="space-y-1.5 sm:space-y-2">
         {label && (
-          <label className="text-xs sm:text-sm font-medium text-muted-foreground">
-            {label}
-          </label>
+          <label className="text-xs sm:text-sm font-medium text-muted-foreground">{label}</label>
         )}
         <input
           ref={ref}
@@ -46,8 +49,7 @@ TypeformInput.displayName = 'TypeformInput'
 // TypeformTextarea - Auto-resizing textarea with minimal chrome
 // ============================================================================
 
-export interface TypeformTextareaProps
-  extends TextareaHTMLAttributes<HTMLTextAreaElement> {
+export interface TypeformTextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string
   error?: string
 }
@@ -56,11 +58,7 @@ export const TypeformTextarea = forwardRef<HTMLTextAreaElement, TypeformTextarea
   ({ className, label, error, ...props }, ref) => {
     return (
       <div className="space-y-2">
-        {label && (
-          <label className="text-sm font-medium text-muted-foreground">
-            {label}
-          </label>
-        )}
+        {label && <label className="text-sm font-medium text-muted-foreground">{label}</label>}
         <textarea
           ref={ref}
           className={cn(
@@ -84,8 +82,7 @@ TypeformTextarea.displayName = 'TypeformTextarea'
 // TypeformSelect - Custom select with large touch targets
 // ============================================================================
 
-export interface TypeformSelectProps
-  extends SelectHTMLAttributes<HTMLSelectElement> {
+export interface TypeformSelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label?: string
   error?: string
   children: ReactNode
@@ -95,11 +92,7 @@ export const TypeformSelect = forwardRef<HTMLSelectElement, TypeformSelectProps>
   ({ className, label, error, children, ...props }, ref) => {
     return (
       <div className="space-y-2">
-        {label && (
-          <label className="text-sm font-medium text-muted-foreground">
-            {label}
-          </label>
-        )}
+        {label && <label className="text-sm font-medium text-muted-foreground">{label}</label>}
         <select
           ref={ref}
           className={cn(

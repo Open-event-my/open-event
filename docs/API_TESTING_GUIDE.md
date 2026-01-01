@@ -19,15 +19,18 @@ npm run dev:all
 ```
 
 This starts:
+
 - Frontend at `http://localhost:5173`
 - Convex backend (your API)
 
 Your API base URL will be:
+
 ```
 https://your-project.convex.site/api/v1
 ```
 
 You can find your exact Convex URL in:
+
 - `.env` file (`VITE_CONVEX_URL`)
 - Or Convex Dashboard → Settings → Deployment URL
 
@@ -69,22 +72,22 @@ Create a file `scripts/create-api-key.ts`:
 // This is for testing only
 // In production, users create keys via the dashboard UI
 
-import { ConvexHttpClient } from "convex/browser";
-import { api } from "../convex/_generated/api";
+import { ConvexHttpClient } from 'convex/browser'
+import { api } from '../convex/_generated/api'
 
-const client = new ConvexHttpClient(process.env.VITE_CONVEX_URL!);
+const client = new ConvexHttpClient(process.env.VITE_CONVEX_URL!)
 
 async function createTestKey() {
   // Note: This requires authentication
   // For testing, use the Convex Dashboard instead
   const result = await client.mutation(api.apiKeys.create, {
-    name: "Test Key",
-    permissions: ["*"],
-  });
-  
-  console.log("API Key created!");
-  console.log("Key:", result.key);
-  console.log("Save this key - you won't see it again!");
+    name: 'Test Key',
+    permissions: ['*'],
+  })
+
+  console.log('API Key created!')
+  console.log('Key:', result.key)
+  console.log("Save this key - you won't see it again!")
 }
 ```
 
@@ -103,6 +106,7 @@ curl https://YOUR_CONVEX_URL/api/health
 ```
 
 Expected response:
+
 ```json
 {
   "success": true,
@@ -162,6 +166,7 @@ curl -X POST \
 ```
 
 Expected response:
+
 ```json
 {
   "success": true,
@@ -210,6 +215,7 @@ curl https://YOUR_CONVEX_URL/api/v1/events
 ```
 
 Expected:
+
 ```json
 {
   "success": false,
@@ -228,6 +234,7 @@ curl -H "X-API-Key: oe_live_invalid_key" \
 ```
 
 Expected:
+
 ```json
 {
   "success": false,
@@ -249,6 +256,7 @@ curl -X POST \
 ```
 
 Expected:
+
 ```json
 {
   "success": false,
@@ -447,6 +455,7 @@ echo "=== Testing Complete ==="
 ```
 
 Run with:
+
 ```bash
 chmod +x test-api.sh
 ./test-api.sh
@@ -462,4 +471,3 @@ chmod +x test-api.sh
 4. 📊 Monitor API usage in Convex Dashboard
 
 Happy testing! 🎉
-

@@ -111,12 +111,8 @@ export const getOrganizerDashboard = query({
           eventSponsors.map((es) => ctx.db.get(es.sponsorId))
         )
 
-        const pendingSponsors = sponsorDetails.filter(
-          (s) => s?.status === 'pending'
-        ).length
-        const approvedSponsors = sponsorDetails.filter(
-          (s) => s?.status === 'approved'
-        ).length
+        const pendingSponsors = sponsorDetails.filter((s) => s?.status === 'pending').length
+        const approvedSponsors = sponsorDetails.filter((s) => s?.status === 'approved').length
 
         // Get vendors for this event
         const eventVendors = await ctx.db
@@ -158,4 +154,3 @@ export const getOrganizerDashboard = query({
     }
   },
 })
-

@@ -136,9 +136,7 @@ export const getUserCounts = query({
 export const listAllUsersPaginated = query({
   args: {
     role: v.optional(v.union(v.literal('admin'), v.literal('organizer'), v.literal('superadmin'))),
-    status: v.optional(
-      v.union(v.literal('active'), v.literal('suspended'), v.literal('pending'))
-    ),
+    status: v.optional(v.union(v.literal('active'), v.literal('suspended'), v.literal('pending'))),
     limit: v.optional(v.number()),
     offset: v.optional(v.number()),
   },
@@ -162,9 +160,7 @@ export const listAllUsersPaginated = query({
 
     // Filter by status in memory if specified
     if (args.status) {
-      deduplicatedUsers = deduplicatedUsers.filter(
-        (u) => (u.status || 'active') === args.status
-      )
+      deduplicatedUsers = deduplicatedUsers.filter((u) => (u.status || 'active') === args.status)
     }
 
     // Sort by creation date (newest first)
@@ -204,9 +200,7 @@ export const listAllUsersPaginated = query({
 export const listAllUsers = query({
   args: {
     role: v.optional(v.union(v.literal('admin'), v.literal('organizer'), v.literal('superadmin'))),
-    status: v.optional(
-      v.union(v.literal('active'), v.literal('suspended'), v.literal('pending'))
-    ),
+    status: v.optional(v.union(v.literal('active'), v.literal('suspended'), v.literal('pending'))),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
@@ -229,9 +223,7 @@ export const listAllUsers = query({
 
     // Filter by status in memory if specified
     if (args.status) {
-      deduplicatedUsers = deduplicatedUsers.filter(
-        (u) => (u.status || 'active') === args.status
-      )
+      deduplicatedUsers = deduplicatedUsers.filter((u) => (u.status || 'active') === args.status)
     }
 
     // Sort by creation date (newest first)
@@ -385,9 +377,7 @@ export const updateAdmin = mutation({
   args: {
     adminId: v.id('users'),
     name: v.optional(v.string()),
-    status: v.optional(
-      v.union(v.literal('active'), v.literal('suspended'), v.literal('pending'))
-    ),
+    status: v.optional(v.union(v.literal('active'), v.literal('suspended'), v.literal('pending'))),
   },
   handler: async (ctx, args) => {
     await assertRole(ctx, 'superadmin')
@@ -416,5 +406,269 @@ export const updateAdmin = mutation({
     await ctx.db.patch(args.adminId, updates)
 
     return { success: true }
+  },
+})
+
+// ============================================================================
+// Bulk Operations
+// ============================================================================
+
+/**
+ * Bulk suspend multiple users
+ * Only accessible by admin and superadmin
+ */
+export const bulkSuspendUsers = mutation({
+  args: {
+    userIds: v.array(v.id('users')),
+    reason: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const admin = await assertRole(ctx, 'admin')
+
+    if (args.userIds.length === 0) {
+      throw new Error('No users selected')
+    }
+
+    if (args.userIds.length > 50) {
+      throw new Error('Cannot suspend more than 50 users at once')
+    }
+
+    const now = Date.now()
+    const results: { userId: string; success: boolean; error?: string }[] = []
+
+    for (const userId of args.userIds) {
+      try {
+        const user = await ctx.db.get(userId)
+        if (!user) {
+          results.push({ userId, success: false, error: 'User not found' })
+          continue
+        }
+
+        // Cannot suspend admins unless you're a superadmin
+        if ((user.role === 'admin' || user.role === 'superadmin') && admin.role !== 'superadmin') {
+          results.push({ userId, success: false, error: 'Cannot suspend admin users' })
+          continue
+        }
+
+        // Cannot suspend superadmins at all
+        if (user.role === 'superadmin') {
+          results.push({ userId, success: false, error: 'Cannot suspend superadmin users' })
+          continue
+        }
+
+        // Cannot suspend yourself
+        if (userId === admin._id) {
+          results.push({ userId, success: false, error: 'Cannot suspend yourself' })
+          continue
+        }
+
+        await ctx.db.patch(userId, {
+          status: 'suspended',
+          suspendedAt: now,
+          suspendedReason: args.reason,
+          updatedAt: now,
+        })
+
+        // Log the action
+        await ctx.db.insert('moderationLogs', {
+          adminId: admin._id,
+          action: 'user_suspended',
+          targetType: 'user',
+          targetId: userId,
+          reason: args.reason,
+          metadata: { bulk: true },
+          createdAt: now,
+        })
+
+        results.push({ userId, success: true })
+      } catch (error) {
+        results.push({
+          userId,
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        })
+      }
+    }
+
+    const successCount = results.filter((r) => r.success).length
+    const failCount = results.filter((r) => !r.success).length
+
+    return {
+      success: failCount === 0,
+      results,
+      summary: {
+        total: args.userIds.length,
+        succeeded: successCount,
+        failed: failCount,
+      },
+    }
+  },
+})
+
+/**
+ * Bulk unsuspend multiple users
+ * Only accessible by admin and superadmin
+ */
+export const bulkUnsuspendUsers = mutation({
+  args: {
+    userIds: v.array(v.id('users')),
+  },
+  handler: async (ctx, args) => {
+    const admin = await assertRole(ctx, 'admin')
+
+    if (args.userIds.length === 0) {
+      throw new Error('No users selected')
+    }
+
+    if (args.userIds.length > 50) {
+      throw new Error('Cannot unsuspend more than 50 users at once')
+    }
+
+    const now = Date.now()
+    const results: { userId: string; success: boolean; error?: string }[] = []
+
+    for (const userId of args.userIds) {
+      try {
+        const user = await ctx.db.get(userId)
+        if (!user) {
+          results.push({ userId, success: false, error: 'User not found' })
+          continue
+        }
+
+        if (user.status !== 'suspended') {
+          results.push({ userId, success: false, error: 'User is not suspended' })
+          continue
+        }
+
+        await ctx.db.patch(userId, {
+          status: 'active',
+          suspendedAt: undefined,
+          suspendedReason: undefined,
+          updatedAt: now,
+        })
+
+        // Log the action
+        await ctx.db.insert('moderationLogs', {
+          adminId: admin._id,
+          action: 'user_unsuspended',
+          targetType: 'user',
+          targetId: userId,
+          reason: 'Bulk unsuspend',
+          metadata: { bulk: true },
+          createdAt: now,
+        })
+
+        results.push({ userId, success: true })
+      } catch (error) {
+        results.push({
+          userId,
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        })
+      }
+    }
+
+    const successCount = results.filter((r) => r.success).length
+    const failCount = results.filter((r) => !r.success).length
+
+    return {
+      success: failCount === 0,
+      results,
+      summary: {
+        total: args.userIds.length,
+        succeeded: successCount,
+        failed: failCount,
+      },
+    }
+  },
+})
+
+/**
+ * Bulk change role for multiple users
+ * Only accessible by superadmin
+ */
+export const bulkChangeRole = mutation({
+  args: {
+    userIds: v.array(v.id('users')),
+    newRole: v.union(v.literal('admin'), v.literal('organizer')),
+  },
+  handler: async (ctx, args) => {
+    const superadmin = await assertRole(ctx, 'superadmin')
+
+    if (args.userIds.length === 0) {
+      throw new Error('No users selected')
+    }
+
+    if (args.userIds.length > 50) {
+      throw new Error('Cannot change role for more than 50 users at once')
+    }
+
+    const now = Date.now()
+    const results: { userId: string; success: boolean; error?: string }[] = []
+
+    for (const userId of args.userIds) {
+      try {
+        const user = await ctx.db.get(userId)
+        if (!user) {
+          results.push({ userId, success: false, error: 'User not found' })
+          continue
+        }
+
+        // Cannot change superadmin role
+        if (user.role === 'superadmin') {
+          results.push({ userId, success: false, error: 'Cannot change superadmin role' })
+          continue
+        }
+
+        // Cannot change your own role
+        if (userId === superadmin._id) {
+          results.push({ userId, success: false, error: 'Cannot change your own role' })
+          continue
+        }
+
+        const previousRole = user.role || 'organizer'
+        if (previousRole === args.newRole) {
+          results.push({ userId, success: false, error: `User already has ${args.newRole} role` })
+          continue
+        }
+
+        await ctx.db.patch(userId, {
+          role: args.newRole,
+          updatedAt: now,
+        })
+
+        // Log the action
+        await ctx.db.insert('moderationLogs', {
+          adminId: superadmin._id,
+          action: 'user_role_changed',
+          targetType: 'user',
+          targetId: userId,
+          reason: `Bulk role change to ${args.newRole}`,
+          metadata: { bulk: true, previousRole, newRole: args.newRole },
+          createdAt: now,
+        })
+
+        results.push({ userId, success: true })
+      } catch (error) {
+        results.push({
+          userId,
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        })
+      }
+    }
+
+    const successCount = results.filter((r) => r.success).length
+    const failCount = results.filter((r) => !r.success).length
+
+    return {
+      success: failCount === 0,
+      results,
+      summary: {
+        total: args.userIds.length,
+        succeeded: successCount,
+        failed: failCount,
+      },
+    }
   },
 })

@@ -55,7 +55,7 @@ export function NotificationScene({ progress }: NotificationSceneProps) {
                   showBadge ? 'scale-100 opacity-100' : 'scale-0 opacity-0'
                 )}
                 style={{
-                  animation: showBadge ? 'demo-badge-pop 0.4s ease-out forwards' : 'none'
+                  animation: showBadge ? 'demo-badge-pop 0.4s ease-out forwards' : 'none',
                 }}
               >
                 1
@@ -113,9 +113,7 @@ export function NotificationScene({ progress }: NotificationSceneProps) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium">New Sponsor Application</p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    Acme Corp • Gold Tier
-                  </p>
+                  <p className="text-xs text-muted-foreground truncate">Acme Corp • Gold Tier</p>
                   <p className="text-xs text-muted-foreground mt-1">Just now</p>
                 </div>
               </div>

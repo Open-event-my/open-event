@@ -6,35 +6,43 @@ import { CaretDown } from '@phosphor-icons/react'
 const faqs = [
   {
     question: 'wait, is this actually free?',
-    answer: 'yep. 100% open-source, MIT licensed. use it, fork it, self-host it, remix it into something cooler. we\'re just getting started and want people to actually use this thing.',
+    answer:
+      "yep. 100% open-source, MIT licensed. use it, fork it, self-host it, remix it into something cooler. we're just getting started and want people to actually use this thing.",
   },
   {
     question: 'who is this for exactly?',
-    answer: 'three types of people: organizers who are drowning in spreadsheets, sponsors who want to know their money isn\'t vanishing into thin air, and vendors who are tired of cold outreach. if you\'ve ever planned an event and thought "there has to be a better way" — hi, that\'s us.',
+    answer:
+      "three types of people: organizers who are drowning in spreadsheets, sponsors who want to know their money isn't vanishing into thin air, and vendors who are tired of cold outreach. if you've ever planned an event and thought \"there has to be a better way\" — hi, that's us.",
   },
   {
     question: 'what can the AI actually do?',
-    answer: 'real stuff. find sponsors that match your event type and budget. compare vendors by pricing and reviews. auto-generate task checklists. create post-event reports. it\'s not just a chatbot — it actually does things. revolutionary concept, we know.',
+    answer:
+      "real stuff. find sponsors that match your event type and budget. compare vendors by pricing and reviews. auto-generate task checklists. create post-event reports. it's not just a chatbot — it actually does things. revolutionary concept, we know.",
   },
   {
     question: 'how do sponsors track their ROI?',
-    answer: 'real metrics, not vibes. booth visits, lead captures, engagement data — all compiled into reports your CFO won\'t need a translator for. no more "trust us, it was a great event" conversations.',
+    answer:
+      'real metrics, not vibes. booth visits, lead captures, engagement data — all compiled into reports your CFO won\'t need a translator for. no more "trust us, it was a great event" conversations.',
   },
   {
     question: 'can vendors actually get discovered here?',
-    answer: 'that\'s the whole point. instead of cold-emailing organizers, you list your services and let them find you. AI matching helps surface you to relevant events. inbound > outbound, always.',
+    answer:
+      "that's the whole point. instead of cold-emailing organizers, you list your services and let them find you. AI matching helps surface you to relevant events. inbound > outbound, always.",
   },
   {
     question: 'is my data safe?',
-    answer: 'open-source means you can audit every line of code. for our hosted version: encrypted, backed up, the usual security checklist. or self-host and keep everything on your own servers. your call.',
+    answer:
+      'open-source means you can audit every line of code. for our hosted version: encrypted, backed up, the usual security checklist. or self-host and keep everything on your own servers. your call.',
   },
   {
     question: 'you just launched — should I trust this?',
-    answer: 'fair question. we\'re new, but the code is open and the roadmap is public. worst case, you try it, hate it, and export your data. best case, you\'re one of our first users and we\'ll love you forever.',
+    answer:
+      "fair question. we're new, but the code is open and the roadmap is public. worst case, you try it, hate it, and export your data. best case, you're one of our first users and we'll love you forever.",
   },
   {
     question: 'how do I get help?',
-    answer: 'github issues for bugs, email for everything else. we actually read and reply to messages. shocking in 2024, we know.',
+    answer:
+      'github issues for bugs, email for everything else. we actually read and reply to messages. shocking in 2024, we know.',
   },
 ]
 
@@ -71,15 +79,7 @@ export function FAQ() {
   )
 }
 
-function FAQItem({
-  question,
-  answer,
-  index,
-}: {
-  question: string
-  answer: string
-  index: number
-}) {
+function FAQItem({ question, answer, index }: { question: string; answer: string; index: number }) {
   const [isOpen, setIsOpen] = useState(false)
   const { ref, isVisible } = useScrollAnimation()
 

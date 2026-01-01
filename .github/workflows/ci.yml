@@ -1,0 +1,499 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      skip-e2e:
+        description: 'Skip E2E tests'
+        type: boolean
+        default: false
+      shard-count:
+        description: 'Number of E2E shards'
+        type: choice
+        options: ['1', '2', '3', '4', '5']
+        default: '3'
+      skip-lighthouse:
+        description: 'Skip Lighthouse audit'
+        type: boolean
+        default: false
+      force-full-run:
+        description: 'Force full CI run (ignore path filtering)'
+        type: boolean
+        default: false
+      debug-enabled:
+        description: 'Enable debug logging'
+        type: boolean
+        default: false
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+  pull-requests: write
+  actions: read
+  checks: write
+
+env:
+  NODE_OPTIONS: '--max-old-space-size=4096'
+  PLAYWRIGHT_BROWSERS_PATH: ~/.cache/ms-playwright
+  FORCE_COLOR: 1
+
+jobs:
+  # ============================================
+  # CHANGES DETECTION - Determine what to run
+  # ============================================
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft != true
+    outputs:
+      src: ${{ steps.filter.outputs.src }}
+      convex: ${{ steps.filter.outputs.convex }}
+      e2e: ${{ steps.filter.outputs.e2e }}
+      deps: ${{ steps.filter.outputs.deps }}
+      config: ${{ steps.filter.outputs.config }}
+      docs-only: ${{ steps.docs-check.outputs.docs-only }}
+      should-run: ${{ steps.should-run.outputs.result }}
+      shard-matrix: ${{ steps.shard-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            src:
+              - 'src/**'
+              - 'index.html'
+              - 'public/**'
+            convex:
+              - 'convex/**'
+            e2e:
+              - 'e2e/**'
+              - 'playwright.config.ts'
+              - 'src/**'
+            deps:
+              - 'package.json'
+              - 'package-lock.json'
+            config:
+              - 'vite.config.ts'
+              - 'tsconfig*.json'
+              - 'eslint.config.js'
+              - 'tailwind.config.*'
+
+      - name: Check if docs-only change
+        id: docs-check
+        run: |
+          if [[ "${{ steps.filter.outputs.src }}" == "false" ]] && \
+             [[ "${{ steps.filter.outputs.convex }}" == "false" ]] && \
+             [[ "${{ steps.filter.outputs.e2e }}" == "false" ]] && \
+             [[ "${{ steps.filter.outputs.deps }}" == "false" ]] && \
+             [[ "${{ steps.filter.outputs.config }}" == "false" ]]; then
+            echo "docs-only=true" >> $GITHUB_OUTPUT
+          else
+            echo "docs-only=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Determine if CI should run
+        id: should-run
+        run: |
+          if [[ "${{ github.event.inputs.force-full-run }}" == "true" ]] || \
+             [[ "${{ steps.docs-check.outputs.docs-only }}" == "false" ]] || \
+             [[ "${{ github.event_name }}" == "push" ]]; then
+            echo "result=true" >> $GITHUB_OUTPUT
+          else
+            echo "result=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate shard matrix
+        id: shard-matrix
+        run: |
+          SHARD_COUNT="${{ github.event.inputs.shard-count || '3' }}"
+          SHARDS=$(seq -s ',' 1 $SHARD_COUNT)
+          echo "matrix={\"shardIndex\":[${SHARDS}],\"shardTotal\":[${SHARD_COUNT}]}" >> $GITHUB_OUTPUT
+
+  # ============================================
+  # DEPENDENCY REVIEW - Security check for PRs
+  # ============================================
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    needs: changes
+    if: github.event_name == 'pull_request' && needs.changes.outputs.deps == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          deny-licenses: GPL-3.0, AGPL-3.0
+          comment-summary-in-pr: always
+
+  # ============================================
+  # QUALITY CHECKS - Run in parallel
+  # ============================================
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.should-run == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
+
+      - name: Run ESLint
+        run: npm run lint -- --max-warnings=0
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Check for console statements in production code
+        run: |
+          if grep -r "console\.\(log\|debug\|info\)" src --include="*.ts" --include="*.tsx" \
+             --exclude="*.test.*" --exclude="*.spec.*" | grep -v "// eslint-disable"; then
+            echo "::warning::Found console statements in production code"
+          fi
+
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    needs: changes
+    if: |
+      needs.changes.outputs.should-run == 'true' &&
+      (needs.changes.outputs.src == 'true' ||
+       needs.changes.outputs.convex == 'true' ||
+       needs.changes.outputs.deps == 'true' ||
+       needs.changes.outputs.config == 'true' ||
+       github.event.inputs.force-full-run == 'true')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
+
+      - name: Type check frontend
+        run: npx tsc --noEmit
+
+      - name: Type check Convex backend
+        run: npx tsc --noEmit -p convex/tsconfig.json
+
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: changes
+    if: |
+      needs.changes.outputs.should-run == 'true' &&
+      (needs.changes.outputs.src == 'true' ||
+       needs.changes.outputs.convex == 'true' ||
+       needs.changes.outputs.deps == 'true' ||
+       github.event.inputs.force-full-run == 'true')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
+
+      - name: Run tests with coverage
+        run: npm run test:coverage -- --reporter=junit --outputFile=test-results.xml
+
+      - name: Upload test results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Unit Test Results
+          path: test-results.xml
+          reporter: java-junit
+          fail-on-error: false
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          fail_ci_if_error: false
+          flags: unittests
+          name: codecov-${{ github.sha }}
+
+      - name: Coverage summary
+        if: github.event_name == 'pull_request'
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          json-summary-path: ./coverage/coverage-summary.json
+          json-final-path: ./coverage/coverage-final.json
+
+  # ============================================
+  # BUILD - Only runs if quality checks pass
+  # ============================================
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [changes, lint, typecheck, test]
+    if: |
+      always() &&
+      needs.changes.outputs.should-run == 'true' &&
+      (needs.lint.result == 'success' || needs.lint.result == 'skipped') &&
+      (needs.typecheck.result == 'success' || needs.typecheck.result == 'skipped') &&
+      (needs.test.result == 'success' || needs.test.result == 'skipped')
+    outputs:
+      build-time: ${{ steps.build.outputs.time }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
+
+      - name: Restore Vite cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules/.vite
+            .vite
+          key: ${{ runner.os }}-vite-${{ hashFiles('src/**', 'vite.config.ts') }}
+          restore-keys: |
+            ${{ runner.os }}-vite-
+
+      - name: Build application
+        id: build
+        run: |
+          START=$(date +%s)
+          npm run build
+          END=$(date +%s)
+          echo "time=$((END-START))s" >> $GITHUB_OUTPUT
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ github.sha }}
+          path: dist/
+          retention-days: 7
+          compression-level: 6
+
+      - name: Analyze bundle size
+        uses: preactjs/compressed-size-action@v2
+        if: github.event_name == 'pull_request'
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          pattern: './dist/**/*.{js,css,html}'
+          exclude: '{**/*.map,**/node_modules/**}'
+          compression: 'gzip'
+
+      - name: Check bundle size limits
+        run: |
+          MAX_SIZE_KB=500
+          MAIN_JS_SIZE=$(find dist -name "*.js" -exec du -k {} + | sort -rn | head -1 | awk '{print $1}')
+          echo "Main bundle size: ${MAIN_JS_SIZE}KB"
+          if [ "$MAIN_JS_SIZE" -gt "$MAX_SIZE_KB" ]; then
+            echo "::warning::Main bundle exceeds ${MAX_SIZE_KB}KB limit"
+          fi
+
+  # ============================================
+  # E2E TESTS - Sharded for parallelization
+  # ============================================
+  e2e:
+    name: E2E Tests (${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
+    runs-on: ubuntu-latest
+    needs: [changes, build]
+    if: |
+      needs.build.result == 'success' &&
+      github.event.inputs.skip-e2e != 'true' &&
+      (needs.changes.outputs.e2e == 'true' ||
+       github.event.inputs.force-full-run == 'true' ||
+       github.event_name == 'push')
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.changes.outputs.shard-matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-node
+        with:
+          install-playwright: 'true'
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-${{ github.sha }}
+          path: dist/
+
+      - name: Run E2E tests
+        run: |
+          npx playwright test \
+            --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} \
+            --retries=2 \
+            --reporter=blob
+        env:
+          CI: true
+          DEBUG: ${{ github.event.inputs.debug-enabled == 'true' && 'pw:api' || '' }}
+
+      - name: Upload blob report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: blob-report-${{ matrix.shardIndex }}
+          path: blob-report/
+          retention-days: 7
+
+      - name: Upload test screenshots on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: e2e-screenshots-${{ matrix.shardIndex }}
+          path: test-results/
+          retention-days: 7
+
+  # ============================================
+  # MERGE E2E REPORTS - Combine sharded results
+  # ============================================
+  merge-e2e-reports:
+    name: Merge E2E Reports
+    runs-on: ubuntu-latest
+    needs: [changes, e2e]
+    if: always() && needs.e2e.result != 'skipped'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
+
+      - name: Download all blob reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: blob-report-*
+          path: all-blob-reports
+          merge-multiple: true
+
+      - name: Merge reports
+        run: npx playwright merge-reports --reporter=html,json ./all-blob-reports
+
+      - name: Upload merged HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Publish E2E results to PR
+        if: github.event_name == 'pull_request' && always()
+        uses: daun/playwright-report-summary@v3
+        with:
+          report-file: report.json
+          comment-title: 'E2E Test Results'
+
+  # ============================================
+  # LIGHTHOUSE AUDIT - Performance check
+  # ============================================
+  lighthouse:
+    name: Lighthouse Audit
+    runs-on: ubuntu-latest
+    needs: [changes, build]
+    if: |
+      needs.build.result == 'success' &&
+      github.event.inputs.skip-lighthouse != 'true' &&
+      (github.event_name == 'pull_request' || github.ref == 'refs/heads/main')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-${{ github.sha }}
+          path: dist/
+
+      - name: Run Lighthouse CI
+        id: lighthouse
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+          configPath: './lighthouserc.json'
+          budgetPath: './lighthouse-budget.json'
+
+      - name: Format Lighthouse results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const results = ${{ steps.lighthouse.outputs.manifest }};
+            const links = ${{ steps.lighthouse.outputs.links }};
+
+            if (!results || results.length === 0) return;
+
+            const formatScore = (score) => {
+              const percentage = Math.round(score * 100);
+              const emoji = percentage >= 90 ? ':green_circle:' : percentage >= 50 ? ':yellow_circle:' : ':red_circle:';
+              return `${emoji} ${percentage}`;
+            };
+
+            let body = '## :lighthouse: Lighthouse Report\n\n';
+            body += '| URL | Performance | Accessibility | Best Practices | SEO |\n';
+            body += '|-----|-------------|---------------|----------------|-----|\n';
+
+            for (const result of results) {
+              const url = new URL(result.url).pathname;
+              const summary = result.summary;
+              body += `| ${url} | ${formatScore(summary.performance)} | ${formatScore(summary.accessibility)} | ${formatScore(summary['best-practices'])} | ${formatScore(summary.seo)} |\n`;
+            }
+
+            body += '\n[View full reports](' + Object.values(links)[0] + ')';
+
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body
+            });
+
+  # ============================================
+  # CI STATUS - Final gate for branch protection
+  # ============================================
+  ci-status:
+    name: CI Status
+    runs-on: ubuntu-latest
+    needs:
+      [changes, lint, typecheck, test, build, e2e, merge-e2e-reports, lighthouse, dependency-review]
+    if: always()
+    steps:
+      - name: Check CI Status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const needs = ${{ toJSON(needs) }};
+
+            console.log('=== CI Run Summary ===');
+            console.log(`Changes: src=${needs.changes.outputs?.src}, convex=${needs.changes.outputs?.convex}, e2e=${needs.changes.outputs?.e2e}, deps=${needs.changes.outputs?.deps}`);
+            console.log(`Docs only: ${needs.changes.outputs?.['docs-only']}`);
+            console.log('');
+            console.log('=== Job Results ===');
+
+            const jobs = ['lint', 'typecheck', 'test', 'build', 'e2e', 'lighthouse', 'dependency-review'];
+            const results = {};
+            let failed = false;
+
+            for (const job of jobs) {
+              const result = needs[job]?.result || 'skipped';
+              results[job] = result;
+              console.log(`${job}: ${result}`);
+              if (result === 'failure') failed = true;
+            }
+
+            // Docs-only PRs pass without running jobs
+            if (needs.changes.outputs?.['docs-only'] === 'true' &&
+                '${{ github.event.inputs.force-full-run }}' !== 'true') {
+              core.notice('Docs-only change - CI checks skipped');
+              return;
+            }
+
+            if (failed) {
+              core.setFailed('CI failed - one or more required jobs failed');
+              return;
+            }
+
+            // Create summary
+            await core.summary
+              .addHeading('CI Results')
+              .addTable([
+                [{data: 'Job', header: true}, {data: 'Result', header: true}],
+                ...Object.entries(results).map(([job, result]) => [job, result])
+              ])
+              .write();
+
+            core.notice('CI passed successfully');

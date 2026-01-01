@@ -33,23 +33,23 @@ export const WEBHOOK_EVENTS = {
   EVENT_UPDATED: 'event.updated',
   EVENT_DELETED: 'event.deleted',
   EVENT_STATUS_CHANGED: 'event.status_changed',
-  
+
   // Vendor events
   VENDOR_APPLIED: 'vendor.applied',
   VENDOR_CONFIRMED: 'vendor.confirmed',
   VENDOR_DECLINED: 'vendor.declined',
-  
+
   // Sponsor events
   SPONSOR_APPLIED: 'sponsor.applied',
   SPONSOR_CONFIRMED: 'sponsor.confirmed',
   SPONSOR_DECLINED: 'sponsor.declined',
-  
+
   // Task events
   TASK_CREATED: 'task.created',
   TASK_COMPLETED: 'task.completed',
 } as const
 
-export type WebhookEventType = typeof WEBHOOK_EVENTS[keyof typeof WEBHOOK_EVENTS]
+export type WebhookEventType = (typeof WEBHOOK_EVENTS)[keyof typeof WEBHOOK_EVENTS]
 
 // All event types as array
 export const ALL_WEBHOOK_EVENTS = Object.values(WEBHOOK_EVENTS)
@@ -131,15 +131,15 @@ export const create = mutation({
     // Check user's webhook limit
     const existingWebhooks = await ctx.db
       .query('webhooks')
-      .withIndex('by_user', q => q.eq('userId', user._id))
+      .withIndex('by_user', (q) => q.eq('userId', user._id))
       .collect()
-    
+
     if (existingWebhooks.length >= MAX_WEBHOOKS_PER_USER) {
       throw new Error(`Maximum ${MAX_WEBHOOKS_PER_USER} webhooks allowed per user`)
     }
 
     // Check for duplicate URL
-    const duplicateUrl = existingWebhooks.find(w => w.url === args.url)
+    const duplicateUrl = existingWebhooks.find((w) => w.url === args.url)
     if (duplicateUrl) {
       throw new Error('A webhook with this URL already exists')
     }
@@ -180,11 +180,11 @@ export const list = query({
 
     const webhooks = await ctx.db
       .query('webhooks')
-      .withIndex('by_user', q => q.eq('userId', user._id))
+      .withIndex('by_user', (q) => q.eq('userId', user._id))
       .collect()
 
     // Don't return the secret
-    return webhooks.map(w => ({
+    return webhooks.map((w) => ({
       _id: w._id,
       name: w.name,
       url: w.url,
@@ -312,9 +312,9 @@ export const remove = mutation({
     // Delete delivery logs
     const deliveries = await ctx.db
       .query('webhookDeliveries')
-      .withIndex('by_webhook', q => q.eq('webhookId', args.id))
+      .withIndex('by_webhook', (q) => q.eq('webhookId', args.id))
       .collect()
-    
+
     for (const delivery of deliveries) {
       await ctx.db.delete(delivery._id)
     }
@@ -375,11 +375,11 @@ export const getDeliveries = query({
 
     const deliveries = await ctx.db
       .query('webhookDeliveries')
-      .withIndex('by_webhook', q => q.eq('webhookId', args.webhookId))
+      .withIndex('by_webhook', (q) => q.eq('webhookId', args.webhookId))
       .order('desc')
       .take(limit)
 
-    return deliveries.map(d => ({
+    return deliveries.map((d) => ({
       _id: d._id,
       eventType: d.eventType,
       eventId: d.eventId,
@@ -409,12 +409,12 @@ export const getWebhooksForEvent = internalQuery({
   handler: async (ctx, args) => {
     const webhooks = await ctx.db
       .query('webhooks')
-      .withIndex('by_user', q => q.eq('userId', args.userId))
-      .filter(q => q.eq(q.field('status'), 'active'))
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .filter((q) => q.eq(q.field('status'), 'active'))
       .collect()
 
     // Filter to those subscribed to this event
-    return webhooks.filter(w => w.events.includes(args.eventType))
+    return webhooks.filter((w) => w.events.includes(args.eventType))
   },
 })
 
@@ -532,11 +532,11 @@ export const triggerWebhooks = internalMutation({
     // Get webhooks subscribed to this event
     const webhooks = await ctx.db
       .query('webhooks')
-      .withIndex('by_user', q => q.eq('userId', args.userId))
-      .filter(q => q.eq(q.field('status'), 'active'))
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .filter((q) => q.eq(q.field('status'), 'active'))
       .collect()
 
-    const subscribedWebhooks = webhooks.filter(w => w.events.includes(args.eventType))
+    const subscribedWebhooks = webhooks.filter((w) => w.events.includes(args.eventType))
 
     if (subscribedWebhooks.length === 0) return { triggered: 0 }
 
@@ -575,4 +575,3 @@ export const triggerWebhooks = internalMutation({
     }
   },
 })
-

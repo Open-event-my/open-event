@@ -1,10 +1,4 @@
-import {
-  Question,
-  Plus,
-  Trash,
-  Gear,
-  ArrowClockwise,
-} from '@phosphor-icons/react'
+import { Question, Plus, Trash, Gear, ArrowClockwise } from '@phosphor-icons/react'
 import type { ComponentType } from 'react'
 import type { IconProps } from '@phosphor-icons/react'
 

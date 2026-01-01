@@ -7,13 +7,7 @@ import {
   getToolConfirmLabel,
   type ToolName,
 } from './agent-tools'
-import {
-  Calendar,
-  Storefront,
-  Handshake,
-  User,
-  Wrench,
-} from '@phosphor-icons/react'
+import { Calendar, Storefront, Handshake, User, Wrench } from '@phosphor-icons/react'
 
 describe('agent-tools', () => {
   describe('TOOL_CONFIG', () => {

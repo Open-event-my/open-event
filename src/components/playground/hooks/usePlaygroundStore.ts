@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { createTLStore, defaultShapeUtils, type TLStore } from 'tldraw'
+import { getSnapshot, loadSnapshot } from '@tldraw/editor'
 import { customShapeUtils } from '../shapes'
 
 const STORAGE_KEY = 'open-event-playground-v1'
@@ -16,7 +17,7 @@ export function usePlaygroundStore() {
         const saved = localStorage.getItem(STORAGE_KEY)
         if (saved) {
           const snapshot = JSON.parse(saved)
-          newStore.loadSnapshot(snapshot)
+          loadSnapshot(newStore, snapshot)
         }
       } catch (error) {
         console.warn('Failed to load playground state:', error)
@@ -29,7 +30,7 @@ export function usePlaygroundStore() {
   const saveToStorage = useCallback(() => {
     if (typeof window !== 'undefined') {
       try {
-        const snapshot = store.getSnapshot()
+        const snapshot = getSnapshot(store)
         localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot))
       } catch (error) {
         console.warn('Failed to save playground state:', error)

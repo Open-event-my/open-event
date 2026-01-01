@@ -43,15 +43,42 @@ export interface AgenticToolProps {
 // Tool Config
 // ============================================================================
 
-const toolConfig: Record<string, { icon: React.ElementType; label: string; executingLabel: string }> = {
-  searchVendors: { icon: MagnifyingGlass, label: 'Search Vendors', executingLabel: 'Searching vendors...' },
-  searchSponsors: { icon: MagnifyingGlass, label: 'Search Sponsors', executingLabel: 'Searching sponsors...' },
-  getRecommendedVendors: { icon: Storefront, label: 'Get Vendors', executingLabel: 'Finding best vendors...' },
-  getRecommendedSponsors: { icon: Handshake, label: 'Get Sponsors', executingLabel: 'Finding sponsors...' },
+const toolConfig: Record<
+  string,
+  { icon: React.ElementType; label: string; executingLabel: string }
+> = {
+  searchVendors: {
+    icon: MagnifyingGlass,
+    label: 'Search Vendors',
+    executingLabel: 'Searching vendors...',
+  },
+  searchSponsors: {
+    icon: MagnifyingGlass,
+    label: 'Search Sponsors',
+    executingLabel: 'Searching sponsors...',
+  },
+  getRecommendedVendors: {
+    icon: Storefront,
+    label: 'Get Vendors',
+    executingLabel: 'Finding best vendors...',
+  },
+  getRecommendedSponsors: {
+    icon: Handshake,
+    label: 'Get Sponsors',
+    executingLabel: 'Finding sponsors...',
+  },
   createEvent: { icon: Calendar, label: 'Create Event', executingLabel: 'Creating your event...' },
   updateEvent: { icon: Calendar, label: 'Update Event', executingLabel: 'Updating event...' },
-  getEventDetails: { icon: Calendar, label: 'Event Details', executingLabel: 'Loading event details...' },
-  getUpcomingEvents: { icon: Calendar, label: 'Upcoming Events', executingLabel: 'Loading events...' },
+  getEventDetails: {
+    icon: Calendar,
+    label: 'Event Details',
+    executingLabel: 'Loading event details...',
+  },
+  getUpcomingEvents: {
+    icon: Calendar,
+    label: 'Upcoming Events',
+    executingLabel: 'Loading events...',
+  },
   getUserProfile: { icon: User, label: 'User Profile', executingLabel: 'Loading profile...' },
   addVendorToEvent: { icon: Storefront, label: 'Add Vendor', executingLabel: 'Adding vendor...' },
   addSponsorToEvent: { icon: Handshake, label: 'Add Sponsor', executingLabel: 'Adding sponsor...' },
@@ -66,16 +93,21 @@ const toolConfig: Record<string, { icon: React.ElementType; label: string; execu
  * Shows status with animated icons and gradient backgrounds
  */
 export function AgenticTool({ name, status, summary, className }: AgenticToolProps) {
-  const config = toolConfig[name] || { icon: Gear, label: name, executingLabel: `Running ${name}...` }
+  const config = toolConfig[name] || {
+    icon: Gear,
+    label: name,
+    executingLabel: `Running ${name}...`,
+  }
   const Icon = config.icon
 
-  const statusText = status === 'executing'
-    ? config.executingLabel
-    : status === 'success'
-    ? summary || 'Completed'
-    : status === 'error'
-    ? summary || 'Failed'
-    : config.label
+  const statusText =
+    status === 'executing'
+      ? config.executingLabel
+      : status === 'success'
+        ? summary || 'Completed'
+        : status === 'error'
+          ? summary || 'Failed'
+          : config.label
 
   return (
     <div
@@ -122,12 +154,7 @@ export function AgenticToolList({ tools, className }: AgenticToolListProps) {
   return (
     <div className={cn('flex flex-col gap-2', className)}>
       {tools.map((tool) => (
-        <AgenticTool
-          key={tool.id}
-          name={tool.name}
-          status={tool.status}
-          summary={tool.summary}
-        />
+        <AgenticTool key={tool.id} name={tool.name} status={tool.status} summary={tool.summary} />
       ))}
     </div>
   )

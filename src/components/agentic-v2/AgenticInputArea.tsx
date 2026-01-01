@@ -49,15 +49,7 @@ function useIsMobile() {
 
 export const AgenticInputArea = memo(
   forwardRef<HTMLTextAreaElement, AgenticInputAreaProps>(function AgenticInputArea(
-    {
-      value,
-      onChange,
-      onSubmit,
-      disabled,
-      placeholder,
-      isLoading,
-      showKeyboardHint = false,
-    },
+    { value, onChange, onSubmit, disabled, placeholder, isLoading, showKeyboardHint = false },
     ref
   ) {
     const isMobile = useIsMobile()
@@ -123,10 +115,7 @@ export const AgenticInputArea = memo(
                   onClick={handleSubmitClick}
                   disabled={!value.trim() || disabled}
                   type="button"
-                  className={cn(
-                    'agentic-input-v2-send',
-                    isReady && 'is-ready'
-                  )}
+                  className={cn('agentic-input-v2-send', isReady && 'is-ready')}
                   aria-label="Send message"
                 >
                   {isLoading ? (
@@ -143,10 +132,8 @@ export const AgenticInputArea = memo(
         {/* Keyboard hint - only on desktop when empty */}
         {showKeyboardHint && !isMobile && (
           <p className="text-center text-xs text-muted-foreground/40 mt-3">
-            <kbd className="px-1.5 py-0.5 rounded bg-muted/30 font-mono text-[10px]">
-              Enter
-            </kbd>{' '}
-            to send
+            <kbd className="px-1.5 py-0.5 rounded bg-muted/30 font-mono text-[10px]">Enter</kbd> to
+            send
           </p>
         )}
       </div>

@@ -65,9 +65,7 @@ export function Logo({ size = 'md', className, showDomain = true }: LogoProps) {
           openevent
         </span>
         {showDomain && (
-          <span className={cn('font-mono font-medium text-muted-foreground', s.domain)}>
-            .my
-          </span>
+          <span className={cn('font-mono font-medium text-muted-foreground', s.domain)}>.my</span>
         )}
       </div>
     </div>
@@ -104,7 +102,12 @@ export function LogoAnimated({ size = 'md', className, showDomain = true }: Logo
   return (
     <div className={cn('flex items-center group cursor-pointer', s.gap, className)}>
       {/* Pixel icon with bounce animation */}
-      <div className={cn('relative flex-shrink-0 transition-transform duration-150 group-hover:-translate-y-0.5', s.icon)}>
+      <div
+        className={cn(
+          'relative flex-shrink-0 transition-transform duration-150 group-hover:-translate-y-0.5',
+          s.icon
+        )}
+      >
         <svg
           viewBox="0 0 16 16"
           fill="none"
@@ -117,7 +120,13 @@ export function LogoAnimated({ size = 'md', className, showDomain = true }: Logo
           <rect x="1" y="3" width="14" height="3" className="fill-foreground" />
           <rect x="4" y="1" width="2" height="4" className="fill-foreground" />
           <rect x="10" y="1" width="2" height="4" className="fill-foreground" />
-          <rect x="6" y="9" width="4" height="4" className="fill-foreground transition-colors group-hover:fill-foreground" />
+          <rect
+            x="6"
+            y="9"
+            width="4"
+            height="4"
+            className="fill-foreground transition-colors group-hover:fill-foreground"
+          />
         </svg>
       </div>
 
@@ -127,7 +136,12 @@ export function LogoAnimated({ size = 'md', className, showDomain = true }: Logo
           openevent
         </span>
         {showDomain && (
-          <span className={cn('font-mono font-medium text-muted-foreground transition-colors group-hover:text-foreground', s.domain)}>
+          <span
+            className={cn(
+              'font-mono font-medium text-muted-foreground transition-colors group-hover:text-foreground',
+              s.domain
+            )}
+          >
             .my
           </span>
         )}
@@ -139,7 +153,13 @@ export function LogoAnimated({ size = 'md', className, showDomain = true }: Logo
 /**
  * Icon only - pixel style
  */
-export function LogoIcon({ className, size = 'md' }: { className?: string; size?: 'sm' | 'md' | 'lg' }) {
+export function LogoIcon({
+  className,
+  size = 'md',
+}: {
+  className?: string
+  size?: 'sm' | 'md' | 'lg'
+}) {
   const sizes = {
     sm: 'w-5 h-5',
     md: 'w-6 h-6',
@@ -197,7 +217,7 @@ export function LogoFull({ className }: { className?: string }) {
 export function LogoAscii({ className }: { className?: string }) {
   return (
     <pre className={cn('font-mono text-[8px] leading-none text-foreground select-none', className)}>
-{`┌──────────┐
+      {`┌──────────┐
 │ ▀▀ ▀▀   │
 │  ████   │
 │ openevent│

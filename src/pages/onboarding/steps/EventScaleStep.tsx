@@ -1,40 +1,36 @@
 import { useState } from 'react'
 import { TypeformQuestion, TypeformNavigation } from '@/components/typeform'
 import { OptionCard } from '@/components/onboarding'
-import {
-  UsersThree,
-  UsersFour,
-  Users,
-  Buildings,
-} from '@phosphor-icons/react'
+import { UsersThree, UsersFour, Users, Buildings } from '@phosphor-icons/react'
 import type { StepProps, EventScale } from '@/types/onboarding'
 
-const scales: { value: EventScale; label: string; description: string; icon: typeof UsersThree }[] = [
-  {
-    value: 'small',
-    label: 'Small',
-    description: 'Less than 100 attendees',
-    icon: UsersThree,
-  },
-  {
-    value: 'medium',
-    label: 'Medium',
-    description: '100-500 attendees',
-    icon: UsersFour,
-  },
-  {
-    value: 'large',
-    label: 'Large',
-    description: '500-2,000 attendees',
-    icon: Users,
-  },
-  {
-    value: 'enterprise',
-    label: 'Enterprise',
-    description: '2,000+ attendees',
-    icon: Buildings,
-  },
-]
+const scales: { value: EventScale; label: string; description: string; icon: typeof UsersThree }[] =
+  [
+    {
+      value: 'small',
+      label: 'Small',
+      description: 'Less than 100 attendees',
+      icon: UsersThree,
+    },
+    {
+      value: 'medium',
+      label: 'Medium',
+      description: '100-500 attendees',
+      icon: UsersFour,
+    },
+    {
+      value: 'large',
+      label: 'Large',
+      description: '500-2,000 attendees',
+      icon: Users,
+    },
+    {
+      value: 'enterprise',
+      label: 'Enterprise',
+      description: '2,000+ attendees',
+      icon: Buildings,
+    },
+  ]
 
 export function EventScaleStep({ onNext, onBack, currentData }: StepProps) {
   const [selected, setSelected] = useState<EventScale | undefined>(currentData.eventScale)

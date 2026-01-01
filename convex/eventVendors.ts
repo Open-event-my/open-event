@@ -182,13 +182,15 @@ export const listForEvent = query({
         const vendor = await ctx.db.get(ev.vendorId)
         return {
           ...ev,
-          vendor: vendor ? {
-            id: vendor._id,
-            name: vendor.name,
-            category: vendor.category,
-            rating: vendor.rating,
-            priceRange: vendor.priceRange,
-          } : null,
+          vendor: vendor
+            ? {
+                id: vendor._id,
+                name: vendor.name,
+                category: vendor.category,
+                rating: vendor.rating,
+                priceRange: vendor.priceRange,
+              }
+            : null,
         }
       })
     )

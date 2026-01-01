@@ -1,17 +1,20 @@
-import { useAuthActions } from '@convex-dev/auth/react'
-import { useConvexAuth } from 'convex/react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Logo } from '@/components/ui/logo'
+import { OptimizedImage } from '@/components/ui/optimized-image'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
+import { useAuthActions } from '@convex-dev/auth/react'
+import { useConvexAuth } from 'convex/react'
+import { cn } from '@/lib/utils'
+import { validatePasswordStrength, PASSWORD_REQUIREMENTS, isValidEmail } from '@/lib/validation'
+import { getErrorMessage } from '@/types/errors'
 import {
   Envelope,
   Lock,
-  GoogleLogo,
   CircleNotch,
   ArrowRight,
   User,
@@ -19,28 +22,37 @@ import {
   Shield,
   Heart,
   CheckCircle,
+  XCircle,
+  Eye,
+  EyeSlash,
 } from '@phosphor-icons/react'
 
 export function SignUp() {
   const { signIn } = useAuthActions()
-  const { isAuthenticated, isLoading } = useConvexAuth()
+  const { isAuthenticated, isLoading: authLoading } = useConvexAuth()
   const navigate = useNavigate()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string }>({})
   const [loading, setLoading] = useState(false)
   const [redirecting, setRedirecting] = useState(false)
+  const [showPasswordRequirements, setShowPasswordRequirements] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
-  // Redirect if already authenticated (e.g., after OAuth callback)
+  // Password validation
+  const passwordValidation = useMemo(() => validatePasswordStrength(password), [password])
+
+  // Redirect if already authenticated
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
+    if (!authLoading && isAuthenticated) {
       setRedirecting(true)
-      navigate('/auth/redirect', { replace: true })
+      navigate('/dashboard', { replace: true })
     }
-  }, [isAuthenticated, isLoading, navigate])
+  }, [isAuthenticated, authLoading, navigate])
 
   // Show loading screen while checking auth or redirecting
-  if (isLoading || redirecting) {
+  if (authLoading || redirecting) {
     return (
       <LoadingSpinner
         message={redirecting ? 'Setting up your account...' : 'Loading...'}
@@ -51,31 +63,79 @@ export function SignUp() {
 
   const handlePasswordSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!email || !password) {
-      toast.error('Please enter email and password')
-      return
-    }
-    if (password.length < 8) {
-      toast.error('Password must be at least 8 characters')
-      return
-    }
-    setLoading(true)
-    try {
-      await signIn('password', { email, password, name, flow: 'signUp' })
-      navigate('/auth/redirect')
-    } catch {
-      toast.error('Failed to create account. Email may already be in use.')
-    } finally {
-      setLoading(false)
-    }
-  }
+    const newErrors: { name?: string; email?: string; password?: string } = {}
 
-  const handleGoogleSignUp = async () => {
+    if (!email) {
+      newErrors.email = 'Email is required'
+    } else if (!isValidEmail(email)) {
+      newErrors.email = 'Please enter a valid email'
+    }
+
+    if (!password) {
+      newErrors.password = 'Password is required'
+    } else if (!passwordValidation.isValid) {
+      newErrors.password = passwordValidation.errors[0]
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      return
+    }
+
+    setErrors({})
     setLoading(true)
     try {
-      await signIn('google', { redirectTo: '/auth/redirect' })
-    } catch {
-      toast.error('Failed to sign up with Google')
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'src/pages/auth/SignUp.tsx:87',
+          message: 'Before signIn call',
+          data: { email, hasPassword: !!password, hasName: !!name },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'signup-attempt',
+          hypothesisId: 'S1',
+        }),
+      }).catch(() => {})
+      // #endregion
+      await signIn('password', { email, password, flow: 'signUp', name: name || '' })
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'src/pages/auth/SignUp.tsx:90',
+          message: 'signIn success - before navigate',
+          data: { email },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'signup-attempt',
+          hypothesisId: 'S2',
+        }),
+      }).catch(() => {})
+      // #endregion
+      toast.success('Welcome to Open Event!')
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'src/pages/auth/SignUp.tsx:93',
+          message: 'Before navigate to onboarding',
+          data: { email },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'signup-attempt',
+          hypothesisId: 'S3',
+        }),
+      }).catch(() => {})
+      // #endregion
+      navigate('/onboarding')
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error) || 'Failed to create account')
+    } finally {
       setLoading(false)
     }
   }
@@ -116,8 +176,19 @@ export function SignUp() {
                 <span className="bg-gradient-to-r from-slate-800 via-slate-600 to-slate-800 dark:from-slate-200 dark:via-slate-400 dark:to-slate-200 bg-clip-text text-transparent">
                   event ops that don't suck.
                 </span>
-                <svg className="absolute -bottom-1 left-0 w-full" height="8" viewBox="0 0 200 10" preserveAspectRatio="none">
-                  <path d="M0 8 Q50 0 100 8 T200 8" stroke="url(#signup-underline)" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+                <svg
+                  className="absolute -bottom-1 left-0 w-full"
+                  height="8"
+                  viewBox="0 0 200 10"
+                  preserveAspectRatio="none"
+                >
+                  <path
+                    d="M0 8 Q50 0 100 8 T200 8"
+                    stroke="url(#signup-underline)"
+                    strokeWidth="2.5"
+                    fill="none"
+                    strokeLinecap="round"
+                  />
                   <defs>
                     <linearGradient id="signup-underline" x1="0%" y1="0%" x2="100%" y2="0%">
                       <stop offset="0%" stopColor="#10b981" />
@@ -129,7 +200,8 @@ export function SignUp() {
               </span>
             </h2>
             <p className="text-lg text-muted-foreground leading-relaxed">
-              we just launched. you could be one of the first to ditch the spreadsheet chaos forever.
+              we just launched. you could be one of the first to ditch the spreadsheet chaos
+              forever.
             </p>
 
             {/* Feature highlights */}
@@ -155,14 +227,16 @@ export function SignUp() {
           {/* Bottom social proof - the team */}
           <div className="flex items-center gap-4">
             <div className="flex -space-x-2">
-              <img
+              <OptimizedImage
                 src="https://github.com/hazlijohar95.png"
                 alt="Hazli"
+                lazy
                 className="w-8 h-8 rounded-full border-2 border-background shadow-sm"
               />
-              <img
+              <OptimizedImage
                 src="https://github.com/azmir32.png"
                 alt="Azmir"
+                lazy
                 className="w-8 h-8 rounded-full border-2 border-background shadow-sm"
               />
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 border-2 border-background shadow-sm flex items-center justify-center text-white text-xs font-medium">
@@ -186,7 +260,10 @@ export function SignUp() {
 
         {/* Header */}
         <header className="flex items-center justify-between px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex-shrink-0">
-          <Link to="/" className="lg:opacity-0 lg:pointer-events-none hover:opacity-80 transition-opacity">
+          <Link
+            to="/"
+            className="lg:opacity-0 lg:pointer-events-none hover:opacity-80 transition-opacity"
+          >
             <Logo />
           </Link>
           <ThemeToggle />
@@ -198,114 +275,219 @@ export function SignUp() {
             {/* Card with glass effect */}
             <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-xl p-5 sm:p-6">
               <div className="text-center mb-5">
-                <h1 className="text-xl sm:text-2xl font-semibold tracking-tight mb-1">Create Account</h1>
+                <h1 className="text-xl sm:text-2xl font-semibold tracking-tight mb-1">
+                  Create Account
+                </h1>
                 <p className="text-muted-foreground text-sm">
                   Get started with your free account today.
                 </p>
               </div>
 
-              {/* Google OAuth Button */}
-              <button
-                onClick={handleGoogleSignUp}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-3 border border-border bg-background hover:bg-muted rounded-xl py-2.5 px-4 font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-4 group"
-              >
-                <GoogleLogo size={18} weight="bold" className="text-foreground" />
-                <span className="text-sm">Continue with Google</span>
-              </button>
-
-              {/* Divider */}
-              <div className="relative mb-4">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-3 text-muted-foreground">
-                    Or continue with
-                  </span>
-                </div>
-              </div>
-
               <form onSubmit={handlePasswordSignUp} className="space-y-2.5">
-                  <div className="space-y-1">
-                    <Label htmlFor="name" className="text-sm font-medium">Name</Label>
-                    <div className="relative">
-                      <User
-                        size={16}
-                        weight="duotone"
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                      />
-                      <Input
-                        id="name"
-                        type="text"
-                        placeholder="Your name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="pl-10 h-10 rounded-xl text-sm"
-                      />
-                    </div>
+                <div className="space-y-1">
+                  <Label htmlFor="name" className="text-sm font-medium">
+                    Name
+                  </Label>
+                  <div className="relative">
+                    <User
+                      size={16}
+                      weight="duotone"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                    />
+                    <Input
+                      id="name"
+                      type="text"
+                      placeholder="Your name"
+                      value={name}
+                      onChange={(e) => {
+                        setName(e.target.value)
+                        if (errors.name) setErrors((prev) => ({ ...prev, name: undefined }))
+                      }}
+                      className={cn(
+                        'pl-10 h-10 rounded-xl text-sm',
+                        errors.name && 'border-destructive'
+                      )}
+                      aria-describedby={errors.name ? 'name-error' : undefined}
+                    />
                   </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="email" className="text-sm font-medium">Email</Label>
-                    <div className="relative">
-                      <Envelope
-                        size={16}
-                        weight="duotone"
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                      />
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="you@example.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10 h-10 rounded-xl text-sm"
-                        required
-                      />
-                    </div>
+                  {errors.name && (
+                    <p id="name-error" role="alert" className="text-sm text-destructive">
+                      {errors.name}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="email" className="text-sm font-medium">
+                    Email
+                  </Label>
+                  <div className="relative">
+                    <Envelope
+                      size={16}
+                      weight="duotone"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                    />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value)
+                        if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }))
+                      }}
+                      className={cn(
+                        'pl-10 h-10 rounded-xl text-sm',
+                        errors.email && 'border-destructive'
+                      )}
+                      aria-invalid={!!errors.email}
+                      aria-describedby={errors.email ? 'email-error' : undefined}
+                      aria-required
+                    />
                   </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="password" className="text-sm font-medium">Password</Label>
-                    <div className="relative">
-                      <Lock
-                        size={16}
-                        weight="duotone"
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                      />
-                      <Input
-                        id="password"
-                        type="password"
-                        placeholder="Min. 8 characters"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10 h-10 rounded-xl text-sm"
-                        required
-                        minLength={8}
-                      />
-                    </div>
+                  {errors.email && (
+                    <p id="email-error" role="alert" className="text-sm text-destructive">
+                      {errors.email}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="password" className="text-sm font-medium">
+                    Password
+                  </Label>
+                  <div className="relative">
+                    <Lock
+                      size={16}
+                      weight="duotone"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground z-10"
+                    />
+                    <Input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Min. 12 characters"
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value)
+                        if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }))
+                      }}
+                      onFocus={() => setShowPasswordRequirements(true)}
+                      onBlur={() => password.length === 0 && setShowPasswordRequirements(false)}
+                      className={cn(
+                        'pl-10 pr-10 h-10 rounded-xl text-sm',
+                        errors.password && 'border-destructive'
+                      )}
+                      aria-invalid={!!errors.password}
+                      aria-describedby={
+                        errors.password ? 'password-error' : 'password-requirements'
+                      }
+                      aria-required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      tabIndex={-1}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? (
+                        <EyeSlash size={16} weight="duotone" />
+                      ) : (
+                        <Eye size={16} weight="duotone" />
+                      )}
+                    </button>
                   </div>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-foreground hover:bg-foreground/90 text-background py-2.5 px-4 rounded-xl font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-xl group text-sm mt-1"
-                  >
-                    {loading ? (
-                      <>
-                        <CircleNotch
-                          size={18}
-                          weight="bold"
-                          className="animate-spin"
-                        />
-                        Creating account...
-                      </>
-                    ) : (
-                      <>
-                        Create Account
-                        <ArrowRight size={18} weight="bold" className="transition-transform group-hover:translate-x-1" />
-                      </>
-                    )}
-                  </button>
-                </form>
+                  {errors.password && (
+                    <p id="password-error" role="alert" className="text-sm text-destructive">
+                      {errors.password}
+                    </p>
+                  )}
+
+                  {/* Password Strength Indicator */}
+                  {(showPasswordRequirements || password.length > 0) && (
+                    <div id="password-requirements" className="mt-2 space-y-2">
+                      {/* Strength bar */}
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className={cn(
+                              'h-full transition-all duration-300',
+                              passwordValidation.strength === 'weak' && 'w-1/3 bg-red-500',
+                              passwordValidation.strength === 'medium' && 'w-2/3 bg-yellow-500',
+                              passwordValidation.strength === 'strong' && 'w-full bg-emerald-500'
+                            )}
+                          />
+                        </div>
+                        <span
+                          className={cn(
+                            'text-xs font-medium capitalize',
+                            passwordValidation.strength === 'weak' && 'text-red-500',
+                            passwordValidation.strength === 'medium' && 'text-yellow-600',
+                            passwordValidation.strength === 'strong' && 'text-emerald-500'
+                          )}
+                        >
+                          {password.length > 0 ? passwordValidation.strength : ''}
+                        </span>
+                      </div>
+
+                      {/* Requirements list */}
+                      <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+                        {[
+                          {
+                            label: `${PASSWORD_REQUIREMENTS.minLength}+ characters`,
+                            met: password.length >= PASSWORD_REQUIREMENTS.minLength,
+                          },
+                          { label: 'Uppercase letter', met: /[A-Z]/.test(password) },
+                          { label: 'Lowercase letter', met: /[a-z]/.test(password) },
+                          { label: 'Number', met: /[0-9]/.test(password) },
+                          {
+                            label: 'Special character',
+                            met: /[!@#$%^&*(),.?":{}|<>[\]\\;'`~_+=-]/.test(password),
+                          },
+                        ].map((req) => (
+                          <div
+                            key={req.label}
+                            className={cn(
+                              'flex items-center gap-1 text-xs transition-colors',
+                              req.met ? 'text-emerald-600' : 'text-muted-foreground'
+                            )}
+                          >
+                            {req.met ? (
+                              <CheckCircle size={12} weight="fill" className="text-emerald-500" />
+                            ) : (
+                              <XCircle
+                                size={12}
+                                weight="fill"
+                                className="text-muted-foreground/50"
+                              />
+                            )}
+                            <span>{req.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-foreground hover:bg-foreground/90 text-background py-2.5 px-4 rounded-xl font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-xl group text-sm mt-1"
+                >
+                  {loading ? (
+                    <>
+                      <CircleNotch size={18} weight="bold" className="animate-spin" />
+                      Creating account...
+                    </>
+                  ) : (
+                    <>
+                      Create Account
+                      <ArrowRight
+                        size={18}
+                        weight="bold"
+                        className="transition-transform group-hover:translate-x-1"
+                      />
+                    </>
+                  )}
+                </button>
+              </form>
 
               <p className="text-center text-sm text-muted-foreground mt-4">
                 Already have an account?{' '}

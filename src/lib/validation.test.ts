@@ -9,6 +9,8 @@ import {
   isValidEventDate,
   isValidDateRange,
   isValidPassword,
+  validatePasswordStrength,
+  PASSWORD_REQUIREMENTS,
   validateEventTitle,
   validateEventDescription,
   validateBusinessName,
@@ -130,7 +132,7 @@ describe('Date Validation', () => {
   })
 })
 
-describe('Password Validation', () => {
+describe('Password Validation (Legacy)', () => {
   it('should accept valid passwords', () => {
     expect(isValidPassword('password123').valid).toBe(true)
     expect(isValidPassword('12345678').valid).toBe(true)
@@ -146,6 +148,66 @@ describe('Password Validation', () => {
   it('should reject empty passwords', () => {
     expect(isValidPassword('').valid).toBe(false)
     expect(isValidPassword('1234567').valid).toBe(false)
+  })
+})
+
+describe('Password Strength Validation', () => {
+  it('should have correct requirements defined', () => {
+    expect(PASSWORD_REQUIREMENTS.minLength).toBe(12)
+    expect(PASSWORD_REQUIREMENTS.requireUppercase).toBe(true)
+    expect(PASSWORD_REQUIREMENTS.requireLowercase).toBe(true)
+    expect(PASSWORD_REQUIREMENTS.requireNumber).toBe(true)
+    expect(PASSWORD_REQUIREMENTS.requireSpecial).toBe(true)
+  })
+
+  it('should accept strong passwords', () => {
+    const result = validatePasswordStrength('MyP@ssword123!')
+    expect(result.isValid).toBe(true)
+    expect(result.errors).toHaveLength(0)
+    expect(result.strength).toBe('strong')
+  })
+
+  it('should reject passwords shorter than 12 characters', () => {
+    const result = validatePasswordStrength('Short1!')
+    expect(result.isValid).toBe(false)
+    expect(result.errors).toContain('At least 12 characters')
+  })
+
+  it('should reject passwords without uppercase', () => {
+    const result = validatePasswordStrength('mypassword123!')
+    expect(result.isValid).toBe(false)
+    expect(result.errors).toContain('At least 1 uppercase letter')
+  })
+
+  it('should reject passwords without lowercase', () => {
+    const result = validatePasswordStrength('MYPASSWORD123!')
+    expect(result.isValid).toBe(false)
+    expect(result.errors).toContain('At least 1 lowercase letter')
+  })
+
+  it('should reject passwords without numbers', () => {
+    const result = validatePasswordStrength('MyPasswordHere!')
+    expect(result.isValid).toBe(false)
+    expect(result.errors).toContain('At least 1 number')
+  })
+
+  it('should reject passwords without special characters', () => {
+    const result = validatePasswordStrength('MyPassword1234')
+    expect(result.isValid).toBe(false)
+    expect(result.errors).toContain('At least 1 special character')
+  })
+
+  it('should return weak strength for many errors', () => {
+    const result = validatePasswordStrength('short')
+    expect(result.strength).toBe('weak')
+    expect(result.errors.length).toBeGreaterThan(2)
+  })
+
+  it('should return medium strength for few errors', () => {
+    const result = validatePasswordStrength('MyPassword12')
+    expect(result.strength).toBe('medium')
+    expect(result.errors.length).toBeLessThanOrEqual(2)
+    expect(result.errors.length).toBeGreaterThan(0)
   })
 })
 

@@ -17,12 +17,7 @@ import {
   CurrencyDollar,
   Clock,
 } from '@phosphor-icons/react'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   Dialog,
   DialogContent,
@@ -35,10 +30,28 @@ import { AddSponsorModal } from '@/components/admin'
 
 type SponsorStatus = 'pending' | 'approved' | 'rejected'
 
-const statusConfig: Record<SponsorStatus, { bg: string; text: string; label: string; description: string }> = {
-  pending: { bg: 'bg-amber-500/10', text: 'text-amber-600', label: 'Pending', description: 'Awaiting review' },
-  approved: { bg: 'bg-green-500/10', text: 'text-green-600', label: 'Approved', description: 'Active in marketplace' },
-  rejected: { bg: 'bg-red-500/10', text: 'text-red-600', label: 'Rejected', description: 'Application declined' },
+const statusConfig: Record<
+  SponsorStatus,
+  { bg: string; text: string; label: string; description: string }
+> = {
+  pending: {
+    bg: 'bg-amber-500/10',
+    text: 'text-amber-600',
+    label: 'Pending',
+    description: 'Awaiting review',
+  },
+  approved: {
+    bg: 'bg-green-500/10',
+    text: 'text-green-600',
+    label: 'Approved',
+    description: 'Active in marketplace',
+  },
+  rejected: {
+    bg: 'bg-red-500/10',
+    text: 'text-red-600',
+    label: 'Rejected',
+    description: 'Application declined',
+  },
 }
 
 const statusFilters = [
@@ -70,10 +83,13 @@ export function AdminSponsors() {
   // Calculate status counts
   const statusCounts = useMemo(() => {
     if (!allSponsors) return {}
-    return allSponsors.reduce((acc, sponsor) => {
-      acc[sponsor.status] = (acc[sponsor.status] || 0) + 1
-      return acc
-    }, {} as Record<string, number>)
+    return allSponsors.reduce(
+      (acc, sponsor) => {
+        acc[sponsor.status] = (acc[sponsor.status] || 0) + 1
+        return acc
+      },
+      {} as Record<string, number>
+    )
   }, [allSponsors])
 
   const filteredSponsors = sponsors?.filter((s) => {
@@ -141,9 +157,7 @@ export function AdminSponsors() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold font-mono">Sponsor Management</h1>
-          <p className="text-muted-foreground mt-1">
-            Review and manage sponsor applications
-          </p>
+          <p className="text-muted-foreground mt-1">Review and manage sponsor applications</p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
@@ -163,9 +177,7 @@ export function AdminSponsors() {
         {/* Status Filter Tabs with Counts */}
         <div className="flex flex-wrap items-center gap-2 pb-2 border-b border-border sm:border-0 sm:pb-0">
           {statusFilters.map((filter) => {
-            const count = filter.value === 'all'
-              ? totalCount
-              : (statusCounts[filter.value] || 0)
+            const count = filter.value === 'all' ? totalCount : statusCounts[filter.value] || 0
             const config = filter.value !== 'all' ? statusConfig[filter.value] : null
             const isActive = statusFilter === filter.value
 
@@ -240,14 +252,18 @@ export function AdminSponsors() {
           </div>
         ) : filteredSponsors?.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border bg-card p-12 text-center">
-            <Handshake size={64} weight="duotone" className="mx-auto text-muted-foreground/30 mb-6" />
+            <Handshake
+              size={64}
+              weight="duotone"
+              className="mx-auto text-muted-foreground/30 mb-6"
+            />
             <h3 className="text-lg font-semibold mb-2">
-              {statusFilter === 'all' ? 'No sponsors yet' : `No ${statusConfig[statusFilter]?.label.toLowerCase()} sponsors`}
+              {statusFilter === 'all'
+                ? 'No sponsors yet'
+                : `No ${statusConfig[statusFilter]?.label.toLowerCase()} sponsors`}
             </h3>
             <p className="text-muted-foreground max-w-sm mx-auto">
-              {searchQuery
-                ? `No sponsors match "${searchQuery}"`
-                : `No sponsors in this category`}
+              {searchQuery ? `No sponsors match "${searchQuery}"` : `No sponsors in this category`}
             </p>
           </div>
         ) : (
@@ -349,10 +365,7 @@ export function AdminSponsors() {
                     {sponsor.targetEventTypes && sponsor.targetEventTypes.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 mt-3 ml-15">
                         {sponsor.targetEventTypes.map((type) => (
-                          <span
-                            key={type}
-                            className="px-2 py-0.5 text-xs bg-muted rounded-md"
-                          >
+                          <span key={type} className="px-2 py-0.5 text-xs bg-muted rounded-md">
                             {type}
                           </span>
                         ))}
@@ -411,7 +424,8 @@ export function AdminSponsors() {
                 {sponsor.status === 'rejected' && sponsor.rejectionReason && (
                   <div className="mt-3 pt-3 border-t border-border ml-15">
                     <p className="text-xs text-red-600">
-                      <span className="font-medium">Rejection reason:</span> {sponsor.rejectionReason}
+                      <span className="font-medium">Rejection reason:</span>{' '}
+                      {sponsor.rejectionReason}
                     </p>
                   </div>
                 )}

@@ -8,6 +8,14 @@ export interface User {
   role: UserRole
   avatarUrl?: string
   createdAt: number
+
+  // Account status for moderation
+  status?: 'active' | 'suspended' | 'pending'
+
+  // Suspension tracking
+  suspendedAt?: number
+  suspendedReason?: string
+  suspendedBy?: string
 }
 
 // Event types

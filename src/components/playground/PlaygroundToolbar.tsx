@@ -22,25 +22,40 @@ interface PlaygroundToolbarProps {
 }
 
 const cardTools = [
-  { id: 'event', icon: CalendarBlank, label: 'Event', shapeType: 'event-card', color: 'text-purple' },
+  {
+    id: 'event',
+    icon: CalendarBlank,
+    label: 'Event',
+    shapeType: 'event-card',
+    color: 'text-purple',
+  },
   { id: 'task', icon: CheckSquare, label: 'Task', shapeType: 'task-card', color: 'text-blue-500' },
-  { id: 'budget', icon: CurrencyDollar, label: 'Budget', shapeType: 'budget-card', color: 'text-green-600' },
+  {
+    id: 'budget',
+    icon: CurrencyDollar,
+    label: 'Budget',
+    shapeType: 'budget-card',
+    color: 'text-green-600',
+  },
   { id: 'note', icon: Note, label: 'Note', shapeType: 'note-card', color: 'text-amber-500' },
 ]
 
 export function PlaygroundToolbar({ editor, onFinalize }: PlaygroundToolbarProps) {
-  const createCard = useCallback((shapeType: string) => {
-    if (!editor) return
+  const createCard = useCallback(
+    (shapeType: string) => {
+      if (!editor) return
 
-    const { x, y } = editor.getViewportScreenCenter()
-    const point = editor.screenToPage({ x, y })
+      const { x, y } = editor.getViewportScreenCenter()
+      const point = editor.screenToPage({ x, y })
 
-    editor.createShape({
-      type: shapeType,
-      x: point.x - 140,
-      y: point.y - 100,
-    })
-  }, [editor])
+      editor.createShape({
+        type: shapeType,
+        x: point.x - 140,
+        y: point.y - 100,
+      })
+    },
+    [editor]
+  )
 
   return (
     <div className="flex items-center justify-between px-4 py-3 bg-background border-b border-border">

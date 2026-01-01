@@ -85,10 +85,7 @@ export function EventBudgetPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [isSaving, setIsSaving] = useState(false)
 
-  const event = useQuery(
-    api.events.get,
-    eventId ? { id: eventId as Id<'events'> } : 'skip'
-  )
+  const event = useQuery(api.events.get, eventId ? { id: eventId as Id<'events'> } : 'skip')
 
   const budgetItems = useQuery(
     api.budgetItems.listByEvent,
@@ -209,19 +206,17 @@ export function EventBudgetPage() {
       <div className="text-center py-16">
         <Warning size={64} weight="duotone" className="mx-auto text-muted-foreground/30 mb-6" />
         <h2 className="text-xl font-semibold mb-2">Event not found</h2>
-        <Link
-          to="/dashboard/events"
-          className="text-primary hover:underline"
-        >
+        <Link to="/dashboard/events" className="text-primary hover:underline">
           Back to Events
         </Link>
       </div>
     )
   }
 
-  const filteredItems = categoryFilter === 'all'
-    ? budgetItems
-    : budgetItems.filter((item) => item.category === categoryFilter)
+  const filteredItems =
+    categoryFilter === 'all'
+      ? budgetItems
+      : budgetItems.filter((item) => item.category === categoryFilter)
 
   const activeItems = filteredItems.filter((i) => i.status !== 'cancelled')
 
@@ -265,11 +260,14 @@ export function EventBudgetPage() {
             </div>
             <p className="text-2xl font-bold font-mono">{formatCurrency(summary.eventBudget)}</p>
             {summary.remaining !== 0 && (
-              <p className={cn(
-                'text-xs mt-1',
-                summary.remaining < 0 ? 'text-red-500' : 'text-green-500'
-              )}>
-                {summary.remaining > 0 ? '+' : ''}{formatCurrency(summary.remaining)} remaining
+              <p
+                className={cn(
+                  'text-xs mt-1',
+                  summary.remaining < 0 ? 'text-red-500' : 'text-green-500'
+                )}
+              >
+                {summary.remaining > 0 ? '+' : ''}
+                {formatCurrency(summary.remaining)} remaining
               </p>
             )}
           </div>
@@ -280,9 +278,7 @@ export function EventBudgetPage() {
               <span className="text-xs font-medium">Total Estimated</span>
             </div>
             <p className="text-2xl font-bold font-mono">{formatCurrency(summary.totalEstimated)}</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {summary.itemCount} items
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">{summary.itemCount} items</p>
           </div>
 
           <div className="p-4 rounded-xl border border-border bg-card">
@@ -290,7 +286,9 @@ export function EventBudgetPage() {
               <CheckCircle size={16} weight="bold" />
               <span className="text-xs font-medium">Total Paid</span>
             </div>
-            <p className="text-2xl font-bold font-mono text-green-600">{formatCurrency(summary.totalPaid)}</p>
+            <p className="text-2xl font-bold font-mono text-green-600">
+              {formatCurrency(summary.totalPaid)}
+            </p>
             <p className="text-xs text-muted-foreground mt-1">
               {formatCurrency(summary.totalCommitted)} committed
             </p>
@@ -305,14 +303,18 @@ export function EventBudgetPage() {
               )}
               <span className="text-xs font-medium">Variance</span>
             </div>
-            <p className={cn(
-              'text-2xl font-bold font-mono',
-              summary.variance > 0 ? 'text-red-500' : summary.variance < 0 ? 'text-green-500' : ''
-            )}>
-              {summary.variance > 0 ? '+' : ''}{formatCurrency(summary.variance)}
+            <p
+              className={cn(
+                'text-2xl font-bold font-mono',
+                summary.variance > 0 ? 'text-red-500' : summary.variance < 0 ? 'text-green-500' : ''
+              )}
+            >
+              {summary.variance > 0 ? '+' : ''}
+              {formatCurrency(summary.variance)}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              {summary.variancePercent > 0 ? '+' : ''}{summary.variancePercent.toFixed(1)}% from estimate
+              {summary.variancePercent > 0 ? '+' : ''}
+              {summary.variancePercent.toFixed(1)}% from estimate
             </p>
           </div>
         </div>
@@ -333,7 +335,9 @@ export function EventBudgetPage() {
           All
         </button>
         {BUDGET_CATEGORIES.map((cat) => {
-          const count = budgetItems.filter((i) => i.category === cat.value && i.status !== 'cancelled').length
+          const count = budgetItems.filter(
+            (i) => i.category === cat.value && i.status !== 'cancelled'
+          ).length
           if (count === 0) return null
           return (
             <button
@@ -377,9 +381,7 @@ export function EventBudgetPage() {
           {activeItems.map((item) => {
             const category = BUDGET_CATEGORIES.find((c) => c.value === item.category)
             const statusInfo = STATUS_OPTIONS.find((s) => s.value === item.status)
-            const variance = item.actualAmount
-              ? item.actualAmount - item.estimatedAmount
-              : 0
+            const variance = item.actualAmount ? item.actualAmount - item.estimatedAmount : 0
 
             return (
               <div
@@ -390,29 +392,33 @@ export function EventBudgetPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-semibold truncate">{item.name}</h3>
-                      <span className={cn(
-                        'px-2 py-0.5 rounded text-xs font-medium',
-                        statusInfo?.color
-                      )}>
+                      <span
+                        className={cn('px-2 py-0.5 rounded text-xs font-medium', statusInfo?.color)}
+                      >
                         {statusInfo?.label}
                       </span>
                     </div>
                     <p className="text-sm text-muted-foreground">{category?.label}</p>
                     {item.description && (
-                      <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{item.description}</p>
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-1">
+                        {item.description}
+                      </p>
                     )}
                   </div>
 
                   <div className="text-right">
                     <p className="font-mono font-bold">{formatCurrency(item.estimatedAmount)}</p>
-                    {item.actualAmount !== undefined && item.actualAmount !== item.estimatedAmount && (
-                      <p className={cn(
-                        'text-sm font-mono',
-                        variance > 0 ? 'text-red-500' : 'text-green-500'
-                      )}>
-                        Actual: {formatCurrency(item.actualAmount)}
-                      </p>
-                    )}
+                    {item.actualAmount !== undefined &&
+                      item.actualAmount !== item.estimatedAmount && (
+                        <p
+                          className={cn(
+                            'text-sm font-mono',
+                            variance > 0 ? 'text-red-500' : 'text-green-500'
+                          )}
+                        >
+                          Actual: {formatCurrency(item.actualAmount)}
+                        </p>
+                      )}
                   </div>
 
                   <div className="flex items-center gap-1">
@@ -444,9 +450,7 @@ export function EventBudgetPage() {
               <CurrencyDollar size={20} weight="duotone" className="text-primary" />
               {editingItem ? 'Edit Budget Item' : 'Add Budget Item'}
             </DialogTitle>
-            <DialogDescription>
-              Track expenses for your event.
-            </DialogDescription>
+            <DialogDescription>Track expenses for your event.</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
@@ -474,7 +478,9 @@ export function EventBudgetPage() {
                 <Label>Status</Label>
                 <Select
                   value={form.status}
-                  onValueChange={(value) => setForm({ ...form, status: value as BudgetItemForm['status'] })}
+                  onValueChange={(value) =>
+                    setForm({ ...form, status: value as BudgetItemForm['status'] })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -524,7 +530,9 @@ export function EventBudgetPage() {
               <div className="space-y-2">
                 <Label>Estimated Amount *</Label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    $
+                  </span>
                   <input
                     type="number"
                     value={form.estimatedAmount}
@@ -542,7 +550,9 @@ export function EventBudgetPage() {
               <div className="space-y-2">
                 <Label>Actual Amount</Label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    $
+                  </span>
                   <input
                     type="number"
                     value={form.actualAmount}

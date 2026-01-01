@@ -52,7 +52,7 @@ test.describe('Navigation', () => {
 
     // Look for theme toggle button
     const themeToggle = page.getByRole('button', { name: /toggle theme|theme/i })
-    if (await themeToggle.count() > 0) {
+    if ((await themeToggle.count()) > 0) {
       await expect(themeToggle.first()).toBeVisible()
     }
   })

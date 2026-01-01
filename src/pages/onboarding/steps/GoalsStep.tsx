@@ -20,11 +20,7 @@ export function GoalsStep({ onNext, onBack, currentData }: StepProps) {
         description="Select all that apply"
       />
 
-      <MultiSelect
-        options={goalOptions}
-        selected={selected}
-        onChange={setSelected}
-      />
+      <MultiSelect options={goalOptions} selected={selected} onChange={setSelected} />
 
       <TypeformNavigation
         onPrevious={onBack}

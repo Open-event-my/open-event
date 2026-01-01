@@ -148,10 +148,12 @@ export function AddSponsorModal({ open, onOpenChange }: AddSponsorModalProps) {
         name: formData.name,
         description: formData.description || undefined,
         industry: formData.industry,
-        sponsorshipTiers: formData.sponsorshipTiers.length > 0 ? formData.sponsorshipTiers : undefined,
+        sponsorshipTiers:
+          formData.sponsorshipTiers.length > 0 ? formData.sponsorshipTiers : undefined,
         budgetMin: formData.budgetMin ? parseInt(formData.budgetMin) : undefined,
         budgetMax: formData.budgetMax ? parseInt(formData.budgetMax) : undefined,
-        targetEventTypes: formData.targetEventTypes.length > 0 ? formData.targetEventTypes : undefined,
+        targetEventTypes:
+          formData.targetEventTypes.length > 0 ? formData.targetEventTypes : undefined,
         targetAudience: formData.targetAudience || undefined,
         contactEmail: formData.contactEmail || undefined,
         contactName: formData.contactName || undefined,
@@ -176,7 +178,9 @@ export function AddSponsorModal({ open, onOpenChange }: AddSponsorModalProps) {
 
         // Payment Terms
         paymentTerms:
-          formData.paymentPreferredMethod || formData.paymentNetDays || formData.paymentRequiresInvoice
+          formData.paymentPreferredMethod ||
+          formData.paymentNetDays ||
+          formData.paymentRequiresInvoice
             ? {
                 preferredMethod: formData.paymentPreferredMethod || undefined,
                 netDays: formData.paymentNetDays ? parseInt(formData.paymentNetDays) : undefined,
@@ -667,9 +671,7 @@ export function AddSponsorModal({ open, onOpenChange }: AddSponsorModalProps) {
           {activeTab === 'legal' && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1.5">
-                  Contract Template URL
-                </label>
+                <label className="block text-sm font-medium mb-1.5">Contract Template URL</label>
                 <input
                   type="url"
                   value={formData.contractTemplateUrl}
@@ -814,9 +816,7 @@ export function AddSponsorModal({ open, onOpenChange }: AddSponsorModalProps) {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium mb-1.5">
-                        Territorial Scope
-                      </label>
+                      <label className="block text-sm font-medium mb-1.5">Territorial Scope</label>
                       <input
                         type="text"
                         value={formData.exclusivityTerritory}

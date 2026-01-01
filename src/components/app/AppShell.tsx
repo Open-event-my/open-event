@@ -15,9 +15,9 @@ export function AppShell() {
   const handleMenuClick = useCallback(() => {
     // Check if we're on mobile (< 1024px / lg breakpoint)
     if (window.innerWidth < 1024) {
-      setMobileMenuOpen(prev => !prev)
+      setMobileMenuOpen((prev) => !prev)
     } else {
-      setSidebarCollapsed(prev => !prev)
+      setSidebarCollapsed((prev) => !prev)
     }
   }, [])
 
@@ -25,19 +25,13 @@ export function AppShell() {
     <ProtectedRoute>
       <div className="min-h-screen bg-background">
         {/* Top Bar - Always visible */}
-        <TopBar
-          onMenuClick={handleMenuClick}
-          sidebarCollapsed={sidebarCollapsed}
-        />
+        <TopBar onMenuClick={handleMenuClick} sidebarCollapsed={sidebarCollapsed} />
 
         {/* Desktop Sidebar */}
         <Sidebar collapsed={sidebarCollapsed} />
 
         {/* Mobile Sidebar */}
-        <MobileSidebar
-          open={mobileMenuOpen}
-          onClose={() => setMobileMenuOpen(false)}
-        />
+        <MobileSidebar open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
 
         {/* Main Content */}
         <main

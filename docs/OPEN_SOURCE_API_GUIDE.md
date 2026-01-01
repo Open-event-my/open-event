@@ -34,15 +34,15 @@ Transform Open Event from a web application into a **platform with a public API*
 
 ### API Goals
 
-| Goal | Description |
-|------|-------------|
-| **RESTful Design** | Intuitive, resource-based endpoints |
-| **Type Safety** | Full TypeScript types for all endpoints |
-| **Documentation** | OpenAPI/Swagger spec with interactive docs |
-| **Authentication** | API keys + OAuth for different use cases |
-| **Rate Limiting** | Protect the API from abuse |
-| **Versioning** | Support multiple API versions |
-| **Webhooks** | Real-time event notifications |
+| Goal               | Description                                |
+| ------------------ | ------------------------------------------ |
+| **RESTful Design** | Intuitive, resource-based endpoints        |
+| **Type Safety**    | Full TypeScript types for all endpoints    |
+| **Documentation**  | OpenAPI/Swagger spec with interactive docs |
+| **Authentication** | API keys + OAuth for different use cases   |
+| **Rate Limiting**  | Protect the API from abuse                 |
+| **Versioning**     | Support multiple API versions              |
+| **Webhooks**       | Real-time event notifications              |
 
 ---
 
@@ -69,11 +69,11 @@ The project already has some HTTP endpoints in `convex/http.ts`:
 
 ```typescript
 // Health check
-GET  /api/health
+GET / api / health
 
 // AI Chat (streaming)
-POST /api/chat/stream
-POST /api/chat/execute-tool
+POST / api / chat / stream
+POST / api / chat / execute - tool
 ```
 
 ### Convex HTTP Actions
@@ -92,9 +92,9 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     // Your logic here
     return new Response(JSON.stringify(data), {
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
     })
-  })
+  }),
 })
 
 export default http
@@ -256,12 +256,7 @@ export function apiSuccess<T>(data: T, meta?: Record<string, unknown>) {
 }
 
 // Error response helper
-export function apiError(
-  code: string,
-  message: string,
-  status: number = 400,
-  details?: unknown[]
-) {
+export function apiError(code: string, message: string, status: number = 400, details?: unknown[]) {
   return new Response(
     JSON.stringify({
       success: false,
@@ -299,7 +294,7 @@ export function getPagination(url: URL) {
 export function getPathParam(path: string, pattern: string): string | null {
   const patternParts = pattern.split('/')
   const pathParts = path.split('/')
-  
+
   for (let i = 0; i < patternParts.length; i++) {
     if (patternParts[i].startsWith(':')) {
       return pathParts[i] || null
@@ -371,7 +366,7 @@ async function hashKey(key: string): Promise<string> {
   const data = encoder.encode(key)
   const hashBuffer = await crypto.subtle.digest('SHA-256', data)
   const hashArray = Array.from(new Uint8Array(hashBuffer))
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
 // Create a new API key
@@ -405,7 +400,7 @@ export const create = mutation({
     return {
       key: plainKey,
       prefix: keyPrefix,
-      message: 'Save this key securely. You won\'t be able to see it again.',
+      message: "Save this key securely. You won't be able to see it again.",
     }
   },
 })
@@ -419,11 +414,11 @@ export const list = query({
 
     const keys = await ctx.db
       .query('apiKeys')
-      .withIndex('by_user', q => q.eq('userId', user._id))
+      .withIndex('by_user', (q) => q.eq('userId', user._id))
       .collect()
 
     // Never return the full key hash
-    return keys.map(k => ({
+    return keys.map((k) => ({
       _id: k._id,
       name: k.name,
       keyPrefix: k.keyPrefix,
@@ -475,17 +470,14 @@ async function hashKey(key: string): Promise<string> {
   const data = encoder.encode(key)
   const hashBuffer = await crypto.subtle.digest('SHA-256', data)
   const hashArray = Array.from(new Uint8Array(hashBuffer))
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
 // Validate API key from request
-export async function validateApiKey(
-  ctx: ActionCtx,
-  request: Request
-): Promise<ApiKeyInfo | null> {
+export async function validateApiKey(ctx: ActionCtx, request: Request): Promise<ApiKeyInfo | null> {
   // Check X-API-Key header first, then Authorization header
   let apiKey = request.headers.get('X-API-Key')
-  
+
   if (!apiKey) {
     const authHeader = request.headers.get('Authorization')
     if (authHeader?.startsWith('Bearer oe_')) {
@@ -524,12 +516,9 @@ export async function validateApiKey(
 }
 
 // Check if API key has required permission
-export function hasPermission(
-  keyInfo: ApiKeyInfo,
-  required: string
-): boolean {
+export function hasPermission(keyInfo: ApiKeyInfo, required: string): boolean {
   // Support wildcards: "events:*" matches "events:read", "events:write"
-  return keyInfo.permissions.some(perm => {
+  return keyInfo.permissions.some((perm) => {
     if (perm === '*') return true
     if (perm === required) return true
     if (perm.endsWith(':*')) {
@@ -546,24 +535,24 @@ export const PERMISSIONS = {
   EVENTS_READ: 'events:read',
   EVENTS_WRITE: 'events:write',
   EVENTS_DELETE: 'events:delete',
-  
+
   // Vendors
   VENDORS_READ: 'vendors:read',
-  
+
   // Sponsors
   SPONSORS_READ: 'sponsors:read',
-  
+
   // Tasks
   TASKS_READ: 'tasks:read',
   TASKS_WRITE: 'tasks:write',
-  
+
   // Budget
   BUDGET_READ: 'budget:read',
   BUDGET_WRITE: 'budget:write',
-  
+
   // Webhooks
   WEBHOOKS_MANAGE: 'webhooks:manage',
-  
+
   // Full access
   ADMIN: '*',
 } as const
@@ -576,13 +565,7 @@ Update `convex/http.ts` to add the events API:
 ```typescript
 // Add to convex/http.ts
 
-import { 
-  apiSuccess, 
-  apiError, 
-  corsHeaders, 
-  getPagination, 
-  parseBody 
-} from './api/helpers'
+import { apiSuccess, apiError, corsHeaders, getPagination, parseBody } from './api/helpers'
 import { validateApiKey, hasPermission, PERMISSIONS } from './api/auth'
 
 // ============================================================================
@@ -623,7 +606,7 @@ http.route({
 
       // Apply pagination
       const paginatedEvents = events.slice(offset, offset + limit)
-      
+
       return apiSuccess(paginatedEvents, {
         total: events.length,
         page,
@@ -820,7 +803,7 @@ http.route({
     try {
       const url = new URL(request.url)
       const { page, limit, offset } = getPagination(url)
-      
+
       const eventType = url.searchParams.get('eventType') || undefined
       const locationType = url.searchParams.get('locationType') || undefined
       const seekingVendors = url.searchParams.get('seekingVendors') === 'true'
@@ -857,11 +840,11 @@ http.route({
 
 ### Authentication Methods
 
-| Method | Use Case | Security Level |
-|--------|----------|----------------|
-| **API Key** | Server-to-server, backend integrations | High |
-| **OAuth 2.0** | User-facing apps, third-party login | High |
-| **JWT Token** | Existing web app users accessing API | Medium |
+| Method        | Use Case                               | Security Level |
+| ------------- | -------------------------------------- | -------------- |
+| **API Key**   | Server-to-server, backend integrations | High           |
+| **OAuth 2.0** | User-facing apps, third-party login    | High           |
+| **JWT Token** | Existing web app users accessing API   | Medium         |
 
 ### API Key Format
 
@@ -925,26 +908,26 @@ const rateLimitStore = new Map<string, { count: number; resetAt: number }>()
 export async function checkRateLimit(
   ctx: ActionCtx,
   identifier: string,
-  limit: number = 1000,  // requests per hour
-  windowMs: number = 60 * 60 * 1000  // 1 hour
+  limit: number = 1000, // requests per hour
+  windowMs: number = 60 * 60 * 1000 // 1 hour
 ): Promise<RateLimitResult> {
   const now = Date.now()
   const key = `rate:${identifier}`
-  
+
   let record = rateLimitStore.get(key)
-  
+
   // Reset if window expired
   if (!record || now > record.resetAt) {
     record = { count: 0, resetAt: now + windowMs }
     rateLimitStore.set(key, record)
   }
-  
+
   // Increment count
   record.count++
-  
+
   const remaining = Math.max(0, limit - record.count)
   const allowed = record.count <= limit
-  
+
   return {
     allowed,
     remaining,
@@ -965,12 +948,12 @@ export function rateLimitHeaders(result: RateLimitResult): Record<string, string
 
 ### Rate Limit Tiers
 
-| Tier | Limit | Use Case |
-|------|-------|----------|
-| **Free** | 100 req/hour | Testing, small apps |
-| **Basic** | 1,000 req/hour | Small production apps |
-| **Pro** | 10,000 req/hour | Medium apps |
-| **Enterprise** | Custom | Large scale |
+| Tier           | Limit           | Use Case              |
+| -------------- | --------------- | --------------------- |
+| **Free**       | 100 req/hour    | Testing, small apps   |
+| **Basic**      | 1,000 req/hour  | Small production apps |
+| **Pro**        | 10,000 req/hour | Medium apps           |
+| **Enterprise** | Custom          | Large scale           |
 
 ### Rate Limit Response
 
@@ -999,11 +982,11 @@ export function rateLimitHeaders(result: RateLimitResult): Record<string, string
 
 ### Version Lifecycle
 
-| Stage | Duration | Description |
-|-------|----------|-------------|
-| **Current** | Ongoing | Actively developed |
+| Stage          | Duration | Description                    |
+| -------------- | -------- | ------------------------------ |
+| **Current**    | Ongoing  | Actively developed             |
 | **Deprecated** | 6 months | Still works, migration advised |
-| **Sunset** | - | No longer available |
+| **Sunset**     | -        | No longer available            |
 
 ### Version Header
 
@@ -1048,9 +1031,7 @@ export const openApiSpec = {
       description: 'Development',
     },
   ],
-  security: [
-    { ApiKeyAuth: [] },
-  ],
+  security: [{ ApiKeyAuth: [] }],
   components: {
     securitySchemes: {
       ApiKeyAuth: {
@@ -1227,11 +1208,7 @@ export class OpenEventClient {
     this.baseUrl = options.baseUrl || 'https://api.openevent.dev'
   }
 
-  private async request<T>(
-    method: string,
-    path: string,
-    body?: unknown
-  ): Promise<T> {
+  private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
     const response = await fetch(`${this.baseUrl}${path}`, {
       method,
       headers: {
@@ -1242,51 +1219,55 @@ export class OpenEventClient {
     })
 
     const data = await response.json()
-    
+
     if (!data.success) {
       throw new OpenEventError(data.error.code, data.error.message)
     }
-    
+
     return data
   }
 
   // Events
   events = {
     list: (params?: { page?: number; limit?: number; status?: string }) =>
-      this.request<EventsListResponse>('GET', '/api/v1/events?' + new URLSearchParams(params as any)),
-    
-    get: (id: string) =>
-      this.request<EventResponse>('GET', `/api/v1/events/${id}`),
-    
+      this.request<EventsListResponse>(
+        'GET',
+        '/api/v1/events?' + new URLSearchParams(params as any)
+      ),
+
+    get: (id: string) => this.request<EventResponse>('GET', `/api/v1/events/${id}`),
+
     create: (data: CreateEventInput) =>
       this.request<CreateEventResponse>('POST', '/api/v1/events', data),
-    
+
     update: (id: string, data: UpdateEventInput) =>
       this.request<UpdateEventResponse>('PATCH', `/api/v1/events/${id}`, data),
-    
-    delete: (id: string) =>
-      this.request<void>('DELETE', `/api/v1/events/${id}`),
+
+    delete: (id: string) => this.request<void>('DELETE', `/api/v1/events/${id}`),
   }
 
   // Vendors
   vendors = {
     list: (params?: { category?: string; search?: string }) =>
-      this.request<VendorsListResponse>('GET', '/api/v1/vendors?' + new URLSearchParams(params as any)),
-    
-    get: (id: string) =>
-      this.request<VendorResponse>('GET', `/api/v1/vendors/${id}`),
-    
-    categories: () =>
-      this.request<string[]>('GET', '/api/v1/vendors/categories'),
+      this.request<VendorsListResponse>(
+        'GET',
+        '/api/v1/vendors?' + new URLSearchParams(params as any)
+      ),
+
+    get: (id: string) => this.request<VendorResponse>('GET', `/api/v1/vendors/${id}`),
+
+    categories: () => this.request<string[]>('GET', '/api/v1/vendors/categories'),
   }
 
   // Sponsors
   sponsors = {
     list: (params?: { industry?: string; search?: string }) =>
-      this.request<SponsorsListResponse>('GET', '/api/v1/sponsors?' + new URLSearchParams(params as any)),
-    
-    get: (id: string) =>
-      this.request<SponsorResponse>('GET', `/api/v1/sponsors/${id}`),
+      this.request<SponsorsListResponse>(
+        'GET',
+        '/api/v1/sponsors?' + new URLSearchParams(params as any)
+      ),
+
+    get: (id: string) => this.request<SponsorResponse>('GET', `/api/v1/sponsors/${id}`),
   }
 }
 
@@ -1348,15 +1329,15 @@ webhookDeliveries: defineTable({
 
 ### Webhook Events
 
-| Event | Description |
-|-------|-------------|
-| `event.created` | New event created |
-| `event.updated` | Event details updated |
-| `event.cancelled` | Event cancelled |
-| `vendor.applied` | Vendor applied to event |
-| `sponsor.applied` | Sponsor applied to event |
-| `application.accepted` | Application accepted |
-| `application.rejected` | Application rejected |
+| Event                  | Description              |
+| ---------------------- | ------------------------ |
+| `event.created`        | New event created        |
+| `event.updated`        | Event details updated    |
+| `event.cancelled`      | Event cancelled          |
+| `vendor.applied`       | Vendor applied to event  |
+| `sponsor.applied`      | Sponsor applied to event |
+| `application.accepted` | Application accepted     |
+| `application.rejected` | Application rejected     |
 
 ### Webhook Payload
 
@@ -1431,6 +1412,7 @@ if (!result.success) {
 ### Sensitive Data
 
 Never expose in API responses:
+
 - User passwords/hashes
 - API key hashes
 - Internal IDs (use public IDs)
@@ -1459,13 +1441,13 @@ SENTRY_DSN=https://xxx@sentry.io/xxx
 
 Track these metrics:
 
-| Metric | Description |
-|--------|-------------|
-| **Request Rate** | Requests per second/minute |
-| **Latency** | P50, P95, P99 response times |
-| **Error Rate** | % of 4xx and 5xx responses |
-| **Rate Limit Hits** | How often limits are hit |
-| **API Key Usage** | Requests per key |
+| Metric              | Description                  |
+| ------------------- | ---------------------------- |
+| **Request Rate**    | Requests per second/minute   |
+| **Latency**         | P50, P95, P99 response times |
+| **Error Rate**      | % of 4xx and 5xx responses   |
+| **Rate Limit Hits** | How often limits are hit     |
+| **API Key Usage**   | Requests per key             |
 
 ### Health Check Endpoint
 
@@ -1499,7 +1481,7 @@ Response:
 import { OpenEventClient } from '@open-event/sdk'
 
 const client = new OpenEventClient({
-  apiKey: 'oe_live_your_key_here'
+  apiKey: 'oe_live_your_key_here',
 })
 
 // List your events
@@ -1515,18 +1497,18 @@ const { data: newEvent } = await client.events.create({
 
 ### API Endpoints Overview
 
-| Endpoint | Method | Auth | Description |
-|----------|--------|------|-------------|
-| `/api/v1/events` | GET | API Key | List events |
-| `/api/v1/events` | POST | API Key | Create event |
-| `/api/v1/events/:id` | GET | API Key | Get event |
-| `/api/v1/events/:id` | PATCH | API Key | Update event |
-| `/api/v1/events/:id` | DELETE | API Key | Delete event |
-| `/api/v1/vendors` | GET | API Key | List vendors |
-| `/api/v1/sponsors` | GET | API Key | List sponsors |
-| `/api/v1/public/events` | GET | None | Public event directory |
-| `/api/health` | GET | None | Health check |
-| `/api/docs/openapi.json` | GET | None | OpenAPI spec |
+| Endpoint                 | Method | Auth    | Description            |
+| ------------------------ | ------ | ------- | ---------------------- |
+| `/api/v1/events`         | GET    | API Key | List events            |
+| `/api/v1/events`         | POST   | API Key | Create event           |
+| `/api/v1/events/:id`     | GET    | API Key | Get event              |
+| `/api/v1/events/:id`     | PATCH  | API Key | Update event           |
+| `/api/v1/events/:id`     | DELETE | API Key | Delete event           |
+| `/api/v1/vendors`        | GET    | API Key | List vendors           |
+| `/api/v1/sponsors`       | GET    | API Key | List sponsors          |
+| `/api/v1/public/events`  | GET    | None    | Public event directory |
+| `/api/health`            | GET    | None    | Health check           |
+| `/api/docs/openapi.json` | GET    | None    | OpenAPI spec           |
 
 ---
 
@@ -1546,4 +1528,3 @@ const { data: newEvent } = await client.events.create({
 - [OpenAPI Specification](https://swagger.io/specification/)
 - [API Security Best Practices](https://owasp.org/www-project-api-security/)
 - [Rate Limiting Algorithms](https://cloud.google.com/architecture/rate-limiting-strategies-techniques)
-

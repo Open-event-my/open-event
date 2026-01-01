@@ -5,15 +5,19 @@ Open Event is a Progressive Web App, meaning you can install it on your device f
 ## Features
 
 ### Installable
+
 Install Open Event on your home screen for quick access without opening a browser.
 
 ### Offline Support
+
 The app caches essential assets so you can access previously viewed content even without an internet connection.
 
 ### Auto-Updates
+
 The app automatically checks for updates and prompts you when a new version is available.
 
 ### Native Feel
+
 Runs in its own window without browser UI, providing a seamless app experience.
 
 ---
@@ -90,6 +94,7 @@ You can manage PWA settings from the **Settings** page in your dashboard:
 ### Service Worker
 
 The service worker is registered automatically and handles:
+
 - Asset caching and retrieval
 - Offline fallback page
 - Background sync (when available)
@@ -97,13 +102,13 @@ The service worker is registered automatically and handles:
 
 ### Browser Support
 
-| Browser | Install | Offline | Updates |
-|---------|---------|---------|---------|
-| Chrome (Desktop) | ✅ | ✅ | ✅ |
-| Chrome (Android) | ✅ | ✅ | ✅ |
-| Edge | ✅ | ✅ | ✅ |
-| Safari (iOS) | Manual | ✅ | ✅ |
-| Firefox | Limited | ✅ | ✅ |
+| Browser          | Install | Offline | Updates |
+| ---------------- | ------- | ------- | ------- |
+| Chrome (Desktop) | ✅      | ✅      | ✅      |
+| Chrome (Android) | ✅      | ✅      | ✅      |
+| Edge             | ✅      | ✅      | ✅      |
+| Safari (iOS)     | Manual  | ✅      | ✅      |
+| Firefox          | Limited | ✅      | ✅      |
 
 ---
 
@@ -134,24 +139,26 @@ vite.config.ts                 # PWA plugin configuration
 
 ```typescript
 const {
-  isInstalled,    // boolean - Is running as installed PWA
-  isInstallable,  // boolean - Can be installed
-  isOnline,       // boolean - Network connection status
-  showPrompt,     // boolean - Should show install banner
-  promptInstall,  // () => Promise<boolean> - Trigger native install
-  dismissPrompt,  // () => void - Dismiss banner for 7 days
-  getPlatform,    // () => 'ios' | 'android' | 'desktop' | 'unknown'
+  isInstalled, // boolean - Is running as installed PWA
+  isInstallable, // boolean - Can be installed
+  isOnline, // boolean - Network connection status
+  showPrompt, // boolean - Should show install banner
+  promptInstall, // () => Promise<boolean> - Trigger native install
+  dismissPrompt, // () => void - Dismiss banner for 7 days
+  getPlatform, // () => 'ios' | 'android' | 'desktop' | 'unknown'
 } = usePWA()
 ```
 
 ### Testing PWA Locally
 
 1. Build the production version:
+
    ```bash
    npm run build
    ```
 
 2. Serve the build:
+
    ```bash
    npx serve dist
    ```
@@ -164,8 +171,8 @@ During development, you can force clear the service worker:
 
 ```javascript
 // In browser console
-navigator.serviceWorker.getRegistrations().then(registrations => {
-  registrations.forEach(registration => registration.unregister())
+navigator.serviceWorker.getRegistrations().then((registrations) => {
+  registrations.forEach((registration) => registration.unregister())
 })
 ```
 

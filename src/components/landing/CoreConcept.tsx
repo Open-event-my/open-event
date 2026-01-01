@@ -25,14 +25,17 @@ interface Step {
   icon: Icon
 }
 
-const audienceData: Record<AudienceType, {
-  label: string
-  emoji: string
-  color: string
-  borderColor: string
-  textColor: string
-  steps: Step[]
-}> = {
+const audienceData: Record<
+  AudienceType,
+  {
+    label: string
+    emoji: string
+    color: string
+    borderColor: string
+    textColor: string
+    steps: Step[]
+  }
+> = {
   organizers: {
     label: 'Organizers',
     emoji: '🎯',
@@ -43,19 +46,22 @@ const audienceData: Record<AudienceType, {
       {
         number: 1,
         title: 'Create Event',
-        description: 'Set requirements, budget, timeline, and what you need from sponsors and vendors.',
+        description:
+          'Set requirements, budget, timeline, and what you need from sponsors and vendors.',
         icon: Calendar,
       },
       {
         number: 2,
         title: 'Discover Partners',
-        description: 'Browse AI-matched sponsors and vendors. Compare pricing, reviews, and availability.',
+        description:
+          'Browse AI-matched sponsors and vendors. Compare pricing, reviews, and availability.',
         icon: MagnifyingGlass,
       },
       {
         number: 3,
         title: 'Execute',
-        description: 'Manage logistics, track progress, and generate reports — all in one dashboard.',
+        description:
+          'Manage logistics, track progress, and generate reports — all in one dashboard.',
         icon: Rocket,
       },
     ],
@@ -70,7 +76,8 @@ const audienceData: Record<AudienceType, {
       {
         number: 1,
         title: 'Browse Events',
-        description: 'Filter by industry, audience size, location, and sponsorship tier availability.',
+        description:
+          'Filter by industry, audience size, location, and sponsorship tier availability.',
         icon: Binoculars,
       },
       {
@@ -103,7 +110,8 @@ const audienceData: Record<AudienceType, {
       {
         number: 2,
         title: 'Get Discovered',
-        description: 'Organizers find you through search and AI recommendations — no cold outreach.',
+        description:
+          'Organizers find you through search and AI recommendations — no cold outreach.',
         icon: UsersThree,
       },
       {
@@ -160,8 +168,19 @@ export function CoreConcept() {
             How it{' '}
             <span className="relative inline-block">
               works
-              <svg className="absolute -bottom-0.5 sm:-bottom-1 left-0 w-full" height="6" viewBox="0 0 100 6" preserveAspectRatio="none">
-                <path d="M0 5 Q25 0 50 5 T100 5" stroke="currentColor" strokeWidth="2" fill="none" className="text-amber-400" />
+              <svg
+                className="absolute -bottom-0.5 sm:-bottom-1 left-0 w-full"
+                height="6"
+                viewBox="0 0 100 6"
+                preserveAspectRatio="none"
+              >
+                <path
+                  d="M0 5 Q25 0 50 5 T100 5"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  fill="none"
+                  className="text-amber-400"
+                />
               </svg>
             </span>
           </h2>
@@ -196,10 +215,7 @@ export function CoreConcept() {
         </div>
 
         {/* Steps */}
-        <div className={cn(
-          'transition-all duration-300',
-          isAnimating && 'opacity-0 scale-95'
-        )}>
+        <div className={cn('transition-all duration-300', isAnimating && 'opacity-0 scale-95')}>
           {/* Progress dots - larger touch targets on mobile */}
           <div className="flex justify-center mb-6 sm:mb-8">
             <div className="flex items-center gap-3 sm:gap-2">
@@ -278,29 +294,29 @@ function StepCard({
       ref={ref}
       className={cn(
         'relative p-4 sm:p-6 rounded-xl sm:rounded-2xl border bg-card transition-all duration-500 touch-manipulation',
-        isActive
-          ? `${borderColor} border-2`
-          : 'border-border hover:border-border/80',
+        isActive ? `${borderColor} border-2` : 'border-border hover:border-border/80',
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
       )}
       style={{ transitionDelay: `${index * 100}ms` }}
     >
       {/* Step number - minimal outline style */}
-      <div className={cn(
-        'absolute -top-2.5 sm:-top-3 left-4 sm:left-6 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold border-2 bg-background transition-all duration-300',
-        isActive ? borderColor : 'border-border',
-        isActive ? textColor : 'text-muted-foreground'
-      )}>
+      <div
+        className={cn(
+          'absolute -top-2.5 sm:-top-3 left-4 sm:left-6 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold border-2 bg-background transition-all duration-300',
+          isActive ? borderColor : 'border-border',
+          isActive ? textColor : 'text-muted-foreground'
+        )}
+      >
         {step.number}
       </div>
 
       {/* Icon - minimal with color on active */}
-      <div className={cn(
-        'w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4 mt-1 sm:mt-2 border transition-all duration-300',
-        isActive
-          ? `${borderColor} border-2`
-          : 'border-border'
-      )}>
+      <div
+        className={cn(
+          'w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4 mt-1 sm:mt-2 border transition-all duration-300',
+          isActive ? `${borderColor} border-2` : 'border-border'
+        )}
+      >
         <IconComponent
           size={20}
           className={cn(
@@ -320,18 +336,22 @@ function StepCard({
       </div>
 
       {/* Title with color accent when active */}
-      <h3 className={cn(
-        'text-base sm:text-lg font-semibold mb-1.5 sm:mb-2 transition-colors duration-300',
-        isActive ? textColor : 'text-foreground'
-      )}>
+      <h3
+        className={cn(
+          'text-base sm:text-lg font-semibold mb-1.5 sm:mb-2 transition-colors duration-300',
+          isActive ? textColor : 'text-foreground'
+        )}
+      >
         {step.title}
       </h3>
 
       {/* Description */}
-      <p className={cn(
-        'text-xs sm:text-sm leading-relaxed transition-colors duration-300',
-        isActive ? 'text-foreground' : 'text-muted-foreground'
-      )}>
+      <p
+        className={cn(
+          'text-xs sm:text-sm leading-relaxed transition-colors duration-300',
+          isActive ? 'text-foreground' : 'text-muted-foreground'
+        )}
+      >
         {step.description}
       </p>
     </div>

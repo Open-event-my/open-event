@@ -90,12 +90,8 @@ export const listByEvent = query({
     ])
 
     // Create lookup maps
-    const vendorMap = new Map(
-      vendors.filter(Boolean).map((v) => [v!._id, v!])
-    )
-    const sponsorMap = new Map(
-      sponsors.filter(Boolean).map((s) => [s!._id, s!])
-    )
+    const vendorMap = new Map(vendors.filter(Boolean).map((v) => [v!._id, v!]))
+    const sponsorMap = new Map(sponsors.filter(Boolean).map((s) => [s!._id, s!]))
 
     // Enrich applications using the maps (no additional queries)
     const enrichedApplications = applications.map((app) => {
@@ -326,11 +322,7 @@ export const submit = mutation({
 export const updateStatus = mutation({
   args: {
     applicationId: v.id('eventApplications'),
-    status: v.union(
-      v.literal('under_review'),
-      v.literal('accepted'),
-      v.literal('rejected')
-    ),
+    status: v.union(v.literal('under_review'), v.literal('accepted'), v.literal('rejected')),
     organizerNotes: v.optional(v.string()),
     rejectionReason: v.optional(v.string()),
   },
@@ -462,9 +454,7 @@ export const getMyPendingCount = query({
     for (const event of myEvents) {
       const applications = await ctx.db
         .query('eventApplications')
-        .withIndex('by_event_status', (q) =>
-          q.eq('eventId', event._id).eq('status', 'pending')
-        )
+        .withIndex('by_event_status', (q) => q.eq('eventId', event._id).eq('status', 'pending'))
         .collect()
       pendingCount += applications.length
     }
@@ -520,7 +510,9 @@ export const selfServiceSubmit = mutation({
         throw new Error('Vendor not found')
       }
       if (vendor.status !== 'approved') {
-        throw new Error('Only approved vendors can apply to events. Please wait for your application to be approved.')
+        throw new Error(
+          'Only approved vendors can apply to events. Please wait for your application to be approved.'
+        )
       }
       applicantName = vendor.contactName || vendor.name
       applicantEmail = vendor.contactEmail || ''
@@ -539,7 +531,9 @@ export const selfServiceSubmit = mutation({
         throw new Error('Sponsor not found')
       }
       if (sponsor.status !== 'approved') {
-        throw new Error('Only approved sponsors can apply to events. Please wait for your application to be approved.')
+        throw new Error(
+          'Only approved sponsors can apply to events. Please wait for your application to be approved.'
+        )
       }
       applicantName = sponsor.contactName || sponsor.name
       applicantEmail = sponsor.contactEmail || ''

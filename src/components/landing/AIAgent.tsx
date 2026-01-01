@@ -52,7 +52,6 @@ const capabilities = [
   },
 ]
 
-
 export function AIAgent() {
   const { ref, isVisible } = useScrollAnimation()
   const [activeCard, setActiveCard] = useState(0)
@@ -99,7 +98,10 @@ export function AIAgent() {
         <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 via-background to-teal-50/30 dark:from-emerald-950/20 dark:via-background dark:to-teal-950/10" />
         {/* Floating orbs - smaller on mobile */}
         <div className="absolute top-1/4 right-[10%] sm:right-[20%] w-48 sm:w-72 h-48 sm:h-72 bg-gradient-to-br from-emerald-300/20 to-transparent rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 left-[5%] sm:left-[10%] w-40 sm:w-64 h-40 sm:h-64 bg-gradient-to-br from-teal-300/15 to-transparent rounded-full blur-3xl" style={{ animation: 'pulse 4s ease-in-out infinite' }} />
+        <div
+          className="absolute bottom-1/4 left-[5%] sm:left-[10%] w-40 sm:w-64 h-40 sm:h-64 bg-gradient-to-br from-teal-300/15 to-transparent rounded-full blur-3xl"
+          style={{ animation: 'pulse 4s ease-in-out infinite' }}
+        />
       </div>
 
       <div className="relative max-w-6xl mx-auto">
@@ -113,8 +115,16 @@ export function AIAgent() {
         >
           {/* Fun badge */}
           <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800/50 mb-4 sm:mb-6">
-            <Robot size={14} className="sm:hidden text-emerald-600 dark:text-emerald-400" weight="fill" />
-            <Robot size={16} className="hidden sm:block text-emerald-600 dark:text-emerald-400" weight="fill" />
+            <Robot
+              size={14}
+              className="sm:hidden text-emerald-600 dark:text-emerald-400"
+              weight="fill"
+            />
+            <Robot
+              size={16}
+              className="hidden sm:block text-emerald-600 dark:text-emerald-400"
+              weight="fill"
+            />
             <span className="text-xs sm:text-sm font-medium text-emerald-700 dark:text-emerald-300">
               Actually useful AI
             </span>
@@ -127,8 +137,16 @@ export function AIAgent() {
               <span className="bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent">
                 helps
               </span>
-              <Lightning size={18} className="sm:hidden absolute -top-1 -right-5 text-amber-400 animate-pulse" weight="fill" />
-              <Lightning size={24} className="hidden sm:block absolute -top-2 -right-6 text-amber-400 animate-pulse" weight="fill" />
+              <Lightning
+                size={18}
+                className="sm:hidden absolute -top-1 -right-5 text-amber-400 animate-pulse"
+                weight="fill"
+              />
+              <Lightning
+                size={24}
+                className="hidden sm:block absolute -top-2 -right-6 text-amber-400 animate-pulse"
+                weight="fill"
+              />
             </span>
           </h2>
           <p className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto px-2">
@@ -150,7 +168,11 @@ export function AIAgent() {
                 <div className="flex-1 text-center">
                   <span className="text-[10px] sm:text-xs font-mono text-muted-foreground flex items-center justify-center gap-1 sm:gap-2">
                     <ChatCircle size={10} className="sm:hidden text-emerald-500" weight="fill" />
-                    <ChatCircle size={12} className="hidden sm:block text-emerald-500" weight="fill" />
+                    <ChatCircle
+                      size={12}
+                      className="hidden sm:block text-emerald-500"
+                      weight="fill"
+                    />
                     <span className="hidden xs:inline">open-event</span> AI assistant
                   </span>
                 </div>
@@ -163,7 +185,9 @@ export function AIAgent() {
                   <div className="max-w-[90%] sm:max-w-[85%] px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl rounded-tr-sm bg-emerald-500 text-white text-xs sm:text-sm">
                     <p className="font-mono break-words">
                       {typingText}
-                      {isTyping && <span className="inline-block w-0.5 h-3 sm:h-4 bg-white ml-0.5 animate-pulse" />}
+                      {isTyping && (
+                        <span className="inline-block w-0.5 h-3 sm:h-4 bg-white ml-0.5 animate-pulse" />
+                      )}
                     </p>
                   </div>
                 </div>
@@ -178,7 +202,8 @@ export function AIAgent() {
                     <div className="flex-1 space-y-2 min-w-0">
                       <div className="px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl rounded-tl-sm bg-muted/80 text-xs sm:text-sm">
                         <p className="text-foreground leading-relaxed">
-                          Found {Math.floor(Math.random() * 10) + 5} matches for your query. Here are the top recommendations based on your criteria:
+                          Found {Math.floor(Math.random() * 10) + 5} matches for your query. Here
+                          are the top recommendations based on your criteria:
                         </p>
                       </div>
                       <div className="flex gap-1.5 sm:gap-2 flex-wrap">
@@ -201,9 +226,18 @@ export function AIAgent() {
                       <Robot size={16} className="hidden sm:block text-white" weight="fill" />
                     </div>
                     <div className="flex items-center gap-1 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl rounded-tl-sm bg-muted/50">
-                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <div
+                        className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-400 animate-bounce"
+                        style={{ animationDelay: '0ms' }}
+                      />
+                      <div
+                        className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-400 animate-bounce"
+                        style={{ animationDelay: '150ms' }}
+                      />
+                      <div
+                        className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-400 animate-bounce"
+                        style={{ animationDelay: '300ms' }}
+                      />
                     </div>
                   </div>
                 )}
@@ -320,12 +354,14 @@ function CapabilityCard({
     >
       <div className="flex items-start gap-3 sm:gap-4">
         {/* Icon */}
-        <div className={cn(
-          'w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 transition-all duration-300',
-          isActive
-            ? `bg-gradient-to-br ${colorClasses[color as keyof typeof colorClasses]} shadow-lg`
-            : 'bg-muted'
-        )}>
+        <div
+          className={cn(
+            'w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 transition-all duration-300',
+            isActive
+              ? `bg-gradient-to-br ${colorClasses[color as keyof typeof colorClasses]} shadow-lg`
+              : 'bg-muted'
+          )}
+        >
           <IconComponent
             size={18}
             className={cn('sm:hidden', isActive ? 'text-white' : 'text-muted-foreground')}
@@ -340,13 +376,13 @@ function CapabilityCard({
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm sm:text-base font-semibold">
-            {title}
-          </h3>
-          <p className={cn(
-            'text-xs sm:text-sm mt-0.5 sm:mt-1 transition-colors duration-300 line-clamp-2',
-            isActive ? 'text-foreground' : 'text-muted-foreground'
-          )}>
+          <h3 className="text-sm sm:text-base font-semibold">{title}</h3>
+          <p
+            className={cn(
+              'text-xs sm:text-sm mt-0.5 sm:mt-1 transition-colors duration-300 line-clamp-2',
+              isActive ? 'text-foreground' : 'text-muted-foreground'
+            )}
+          >
             {description}
           </p>
         </div>

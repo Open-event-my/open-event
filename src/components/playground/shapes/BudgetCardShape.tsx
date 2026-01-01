@@ -1,9 +1,5 @@
-import {
-  ShapeUtil,
-  HTMLContainer,
-  Rectangle2d,
-  type TLOnResizeHandler,
-} from 'tldraw'
+import { ShapeUtil, HTMLContainer, Rectangle2d } from 'tldraw'
+import type { TLResizeInfo } from '@tldraw/editor'
 import type { BudgetCardShape, BudgetCardProps } from '@/lib/playground/types'
 import { CurrencyDollar, TrendUp, TrendDown } from '@phosphor-icons/react'
 
@@ -48,7 +44,7 @@ export class BudgetCardShapeUtil extends ShapeUtil<BudgetCardShape> {
     return true
   }
 
-  override onResize: TLOnResizeHandler<BudgetCardShape> = (shape, info) => {
+  override onResize = (_shape: BudgetCardShape, info: TLResizeInfo<BudgetCardShape>) => {
     return {
       props: {
         w: Math.max(200, info.initialBounds.width * info.scaleX),
@@ -64,9 +60,9 @@ export class BudgetCardShapeUtil extends ShapeUtil<BudgetCardShape> {
     const variancePercent = estimatedAmount > 0 ? (variance / estimatedAmount) * 100 : 0
 
     const statusColors = {
-      'planned': 'bg-gray-500/10 text-gray-500',
-      'committed': 'bg-amber-500/10 text-amber-500',
-      'paid': 'bg-green-500/10 text-green-500',
+      planned: 'bg-gray-500/10 text-gray-500',
+      committed: 'bg-amber-500/10 text-amber-500',
+      paid: 'bg-green-500/10 text-green-500',
     }
 
     const categoryLabels: Record<string, string> = {
@@ -99,7 +95,9 @@ export class BudgetCardShapeUtil extends ShapeUtil<BudgetCardShape> {
             <span className="text-xs font-semibold text-green-600 uppercase tracking-wide">
               {categoryLabels[category]}
             </span>
-            <span className={`ml-auto text-[10px] px-2 py-0.5 rounded-full font-medium ${statusColors[status]}`}>
+            <span
+              className={`ml-auto text-[10px] px-2 py-0.5 rounded-full font-medium ${statusColors[status]}`}
+            >
               {status}
             </span>
           </div>
@@ -116,9 +114,13 @@ export class BudgetCardShapeUtil extends ShapeUtil<BudgetCardShape> {
 
             {actualAmount > 0 && (
               <div className="flex items-center gap-2 text-xs">
-                <span className="text-muted-foreground">Actual: {formatCurrency(actualAmount)}</span>
+                <span className="text-muted-foreground">
+                  Actual: {formatCurrency(actualAmount)}
+                </span>
                 {variance !== 0 && (
-                  <span className={`flex items-center gap-0.5 ${variance > 0 ? 'text-red-500' : 'text-green-500'}`}>
+                  <span
+                    className={`flex items-center gap-0.5 ${variance > 0 ? 'text-red-500' : 'text-green-500'}`}
+                  >
                     {variance > 0 ? <TrendUp size={12} /> : <TrendDown size={12} />}
                     {Math.abs(variancePercent).toFixed(0)}%
                   </span>
@@ -132,13 +134,6 @@ export class BudgetCardShapeUtil extends ShapeUtil<BudgetCardShape> {
   }
 
   indicator(shape: BudgetCardShape) {
-    return (
-      <rect
-        width={shape.props.w}
-        height={shape.props.h}
-        rx={12}
-        ry={12}
-      />
-    )
+    return <rect width={shape.props.w} height={shape.props.h} rx={12} ry={12} />
   }
 }

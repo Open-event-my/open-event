@@ -29,7 +29,17 @@ export const AGENT_TOOLS: ToolDefinition[] = [
         eventType: {
           type: 'string',
           description: 'The type of event',
-          enum: ['conference', 'hackathon', 'workshop', 'meetup', 'corporate', 'webinar', 'concert', 'exhibition', 'other'],
+          enum: [
+            'conference',
+            'hackathon',
+            'workshop',
+            'meetup',
+            'corporate',
+            'webinar',
+            'concert',
+            'exhibition',
+            'other',
+          ],
         },
         startDate: {
           type: 'string',
@@ -78,7 +88,10 @@ export const AGENT_TOOLS: ToolDefinition[] = [
           properties: {
             catering: { type: 'boolean', description: 'Whether catering is needed' },
             av: { type: 'boolean', description: 'Whether AV equipment is needed' },
-            photography: { type: 'boolean', description: 'Whether photography/videography is needed' },
+            photography: {
+              type: 'boolean',
+              description: 'Whether photography/videography is needed',
+            },
             security: { type: 'boolean', description: 'Whether security is needed' },
             transportation: { type: 'boolean', description: 'Whether transportation is needed' },
             decoration: { type: 'boolean', description: 'Whether decoration is needed' },
@@ -166,7 +179,16 @@ export const AGENT_TOOLS: ToolDefinition[] = [
         category: {
           type: 'string',
           description: 'The type of vendor to search for',
-          enum: ['catering', 'av', 'photography', 'decoration', 'security', 'transportation', 'entertainment', 'staffing'],
+          enum: [
+            'catering',
+            'av',
+            'photography',
+            'decoration',
+            'security',
+            'transportation',
+            'entertainment',
+            'staffing',
+          ],
         },
         location: {
           type: 'string',
@@ -234,7 +256,16 @@ export const AGENT_TOOLS: ToolDefinition[] = [
         industry: {
           type: 'string',
           description: 'Industry to search in',
-          enum: ['technology', 'finance', 'healthcare', 'education', 'media', 'retail', 'automotive', 'consumer-goods'],
+          enum: [
+            'technology',
+            'finance',
+            'healthcare',
+            'education',
+            'media',
+            'retail',
+            'automotive',
+            'consumer-goods',
+          ],
         },
         eventType: {
           type: 'string',
@@ -316,7 +347,16 @@ export const AGENT_TOOLS: ToolDefinition[] = [
         category: {
           type: 'string',
           description: 'Optionally filter by vendor category',
-          enum: ['catering', 'av', 'photography', 'decoration', 'security', 'transportation', 'entertainment', 'staffing'],
+          enum: [
+            'catering',
+            'av',
+            'photography',
+            'decoration',
+            'security',
+            'transportation',
+            'entertainment',
+            'staffing',
+          ],
         },
         limit: {
           type: 'number',

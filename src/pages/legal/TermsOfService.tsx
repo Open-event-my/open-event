@@ -30,9 +30,7 @@ export function TermsOfService() {
           <h1 className="font-mono text-3xl sm:text-4xl font-bold tracking-tight mb-2">
             Terms of Service
           </h1>
-          <p className="text-muted-foreground text-lg mb-8">
-            Last updated: December 8, 2024
-          </p>
+          <p className="text-muted-foreground text-lg mb-8">Last updated: December 8, 2024</p>
 
           <section className="space-y-6">
             <div>
@@ -46,7 +44,9 @@ export function TermsOfService() {
             </div>
 
             <div>
-              <h2 className="font-mono text-xl font-semibold mt-8 mb-4">2. Description of Service</h2>
+              <h2 className="font-mono text-xl font-semibold mt-8 mb-4">
+                2. Description of Service
+              </h2>
               <p className="text-muted-foreground leading-relaxed">
                 openevent.my is an open-source event operations platform designed to connect event
                 organizers with sponsors and vendors. Our services include event management tools,
@@ -98,9 +98,16 @@ export function TermsOfService() {
                 The Platform serves three main user types:
               </p>
               <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
-                <li><strong>Event Organizers:</strong> Create and manage events, post opportunities for sponsors and vendors</li>
-                <li><strong>Sponsors:</strong> Discover events and submit sponsorship applications</li>
-                <li><strong>Vendors:</strong> Offer services and apply to provide for events</li>
+                <li>
+                  <strong>Event Organizers:</strong> Create and manage events, post opportunities
+                  for sponsors and vendors
+                </li>
+                <li>
+                  <strong>Sponsors:</strong> Discover events and submit sponsorship applications
+                </li>
+                <li>
+                  <strong>Vendors:</strong> Offer services and apply to provide for events
+                </li>
               </ul>
               <p className="text-muted-foreground leading-relaxed mt-4">
                 Users may hold multiple roles. Each role has specific features and responsibilities
@@ -109,10 +116,10 @@ export function TermsOfService() {
             </div>
 
             <div>
-              <h2 className="font-mono text-xl font-semibold mt-8 mb-4">6. Acceptable Use Policy</h2>
-              <p className="text-muted-foreground leading-relaxed mb-4">
-                You agree NOT to:
-              </p>
+              <h2 className="font-mono text-xl font-semibold mt-8 mb-4">
+                6. Acceptable Use Policy
+              </h2>
+              <p className="text-muted-foreground leading-relaxed mb-4">You agree NOT to:</p>
               <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
                 <li>Violate any applicable laws, regulations, or third-party rights</li>
                 <li>Post false, misleading, or fraudulent information</li>
@@ -128,32 +135,36 @@ export function TermsOfService() {
             </div>
 
             <div>
-              <h2 className="font-mono text-xl font-semibold mt-8 mb-4">7. Content and Intellectual Property</h2>
+              <h2 className="font-mono text-xl font-semibold mt-8 mb-4">
+                7. Content and Intellectual Property
+              </h2>
               <p className="text-muted-foreground leading-relaxed mb-4">
-                <strong>Your Content:</strong> You retain ownership of content you submit (event details,
-                profiles, images, documents). By submitting content, you grant us a worldwide,
-                non-exclusive, royalty-free license to use, display, and distribute such content
-                solely for operating and improving the Platform.
+                <strong>Your Content:</strong> You retain ownership of content you submit (event
+                details, profiles, images, documents). By submitting content, you grant us a
+                worldwide, non-exclusive, royalty-free license to use, display, and distribute such
+                content solely for operating and improving the Platform.
               </p>
               <p className="text-muted-foreground leading-relaxed mb-4">
-                <strong>Platform Content:</strong> The openevent.my platform, including its source code,
-                is open-source software. Usage is subject to the applicable open-source license
-                terms available in our GitHub repository.
+                <strong>Platform Content:</strong> The openevent.my platform, including its source
+                code, is open-source software. Usage is subject to the applicable open-source
+                license terms available in our GitHub repository.
               </p>
               <p className="text-muted-foreground leading-relaxed">
-                <strong>Trademarks:</strong> The openevent.my name, logo, and branding are our trademarks.
-                You may not use these without prior written permission.
+                <strong>Trademarks:</strong> The openevent.my name, logo, and branding are our
+                trademarks. You may not use these without prior written permission.
               </p>
             </div>
 
             <div>
-              <h2 className="font-mono text-xl font-semibold mt-8 mb-4">8. Transactions Between Users</h2>
+              <h2 className="font-mono text-xl font-semibold mt-8 mb-4">
+                8. Transactions Between Users
+              </h2>
               <p className="text-muted-foreground leading-relaxed">
-                openevent.my facilitates connections between organizers, sponsors, and vendors but is
-                not a party to any agreements made between users. We do not guarantee the quality,
-                safety, or legality of services offered. Users are responsible for conducting their
-                own due diligence before entering into any arrangement. Any disputes between users
-                should be resolved directly between the parties involved.
+                openevent.my facilitates connections between organizers, sponsors, and vendors but
+                is not a party to any agreements made between users. We do not guarantee the
+                quality, safety, or legality of services offered. Users are responsible for
+                conducting their own due diligence before entering into any arrangement. Any
+                disputes between users should be resolved directly between the parties involved.
               </p>
             </div>
 
@@ -162,13 +173,16 @@ export function TermsOfService() {
               <p className="text-muted-foreground leading-relaxed">
                 The Platform is currently free to use. We may introduce premium features or fees in
                 the future, with advance notice. Any paid services will be clearly disclosed with
-                pricing before purchase. Payments are processed through secure third-party providers.
-                Fees, once paid, are non-refundable except as required by law or explicitly stated.
+                pricing before purchase. Payments are processed through secure third-party
+                providers. Fees, once paid, are non-refundable except as required by law or
+                explicitly stated.
               </p>
             </div>
 
             <div>
-              <h2 className="font-mono text-xl font-semibold mt-8 mb-4">10. Disclaimer of Warranties</h2>
+              <h2 className="font-mono text-xl font-semibold mt-8 mb-4">
+                10. Disclaimer of Warranties
+              </h2>
               <p className="text-muted-foreground leading-relaxed font-mono text-sm bg-muted/50 p-4 rounded-lg">
                 THE PLATFORM IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND,
                 WHETHER EXPRESS, IMPLIED, OR STATUTORY. WE DISCLAIM ALL WARRANTIES INCLUDING
@@ -179,7 +193,9 @@ export function TermsOfService() {
             </div>
 
             <div>
-              <h2 className="font-mono text-xl font-semibold mt-8 mb-4">11. Limitation of Liability</h2>
+              <h2 className="font-mono text-xl font-semibold mt-8 mb-4">
+                11. Limitation of Liability
+              </h2>
               <p className="text-muted-foreground leading-relaxed font-mono text-sm bg-muted/50 p-4 rounded-lg">
                 TO THE MAXIMUM EXTENT PERMITTED BY MALAYSIAN LAW, OPENEVENT.MY AND ITS AFFILIATES,
                 DIRECTORS, EMPLOYEES, AND AGENTS SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL,
@@ -220,33 +236,52 @@ export function TermsOfService() {
             </div>
 
             <div>
-              <h2 className="font-mono text-xl font-semibold mt-8 mb-4">14. Modifications to Terms</h2>
+              <h2 className="font-mono text-xl font-semibold mt-8 mb-4">
+                14. Modifications to Terms
+              </h2>
               <p className="text-muted-foreground leading-relaxed">
                 We reserve the right to modify these Terms at any time. Material changes will be
-                communicated via email or platform notification at least 14 days before taking effect.
-                Your continued use of the Platform after changes constitutes acceptance. If you
-                disagree with the changes, you must stop using the Platform.
+                communicated via email or platform notification at least 14 days before taking
+                effect. Your continued use of the Platform after changes constitutes acceptance. If
+                you disagree with the changes, you must stop using the Platform.
               </p>
             </div>
 
             <div>
-              <h2 className="font-mono text-xl font-semibold mt-8 mb-4">15. Governing Law and Jurisdiction</h2>
+              <h2 className="font-mono text-xl font-semibold mt-8 mb-4">
+                15. Governing Law and Jurisdiction
+              </h2>
               <p className="text-muted-foreground leading-relaxed">
                 These Terms shall be governed by and construed in accordance with the laws of
-                Malaysia. Any disputes arising from these Terms or your use of the Platform shall
-                be subject to the exclusive jurisdiction of the courts of Malaysia. Both parties
-                agree to attempt good-faith resolution of disputes before pursuing legal action.
+                Malaysia. Any disputes arising from these Terms or your use of the Platform shall be
+                subject to the exclusive jurisdiction of the courts of Malaysia. Both parties agree
+                to attempt good-faith resolution of disputes before pursuing legal action.
               </p>
             </div>
 
             <div>
               <h2 className="font-mono text-xl font-semibold mt-8 mb-4">16. General Provisions</h2>
               <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
-                <li><strong>Entire Agreement:</strong> These Terms constitute the entire agreement between you and openevent.my</li>
-                <li><strong>Severability:</strong> If any provision is found unenforceable, the remaining provisions remain in effect</li>
-                <li><strong>Waiver:</strong> Our failure to enforce any right does not waive that right</li>
-                <li><strong>Assignment:</strong> You may not assign your rights under these Terms without our consent</li>
-                <li><strong>Force Majeure:</strong> We are not liable for delays caused by events beyond our control</li>
+                <li>
+                  <strong>Entire Agreement:</strong> These Terms constitute the entire agreement
+                  between you and openevent.my
+                </li>
+                <li>
+                  <strong>Severability:</strong> If any provision is found unenforceable, the
+                  remaining provisions remain in effect
+                </li>
+                <li>
+                  <strong>Waiver:</strong> Our failure to enforce any right does not waive that
+                  right
+                </li>
+                <li>
+                  <strong>Assignment:</strong> You may not assign your rights under these Terms
+                  without our consent
+                </li>
+                <li>
+                  <strong>Force Majeure:</strong> We are not liable for delays caused by events
+                  beyond our control
+                </li>
               </ul>
             </div>
 
@@ -257,11 +292,13 @@ export function TermsOfService() {
               </p>
               <div className="mt-4 p-4 bg-muted/50 rounded-lg text-muted-foreground">
                 <p className="font-mono text-sm">
-                  <strong>openevent.my</strong><br />
+                  <strong>openevent.my</strong>
+                  <br />
                   Email:{' '}
                   <a href="mailto:legal@openevent.my" className="text-foreground hover:underline">
                     legal@openevent.my
-                  </a><br />
+                  </a>
+                  <br />
                   For urgent matters:{' '}
                   <a href="mailto:hello@openevent.my" className="text-foreground hover:underline">
                     hello@openevent.my

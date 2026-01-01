@@ -26,16 +26,20 @@
 Our design system is built on three principles:
 
 ### 1. Clarity Over Decoration
+
 Every element serves a purpose. We avoid decorative clutter in favor of clear hierarchy and scannable layouts. Whitespace is a feature, not empty space.
 
 ### 2. Balanced Color Palette
+
 We use a **diverse accent palette** rather than monotone theming:
+
 - **Amber/Orange** for warmth and energy (CTAs, highlights)
 - **Emerald/Teal** for growth and AI features
 - **Indigo** for trust and professionalism (forms, organizer tools)
 - **Slate** for neutral, sophisticated headlines
 
 ### 3. Honest Personality
+
 We're a new product and we embrace it. Our copy is authentic ("hopefully, soon"), our animations are playful but not distracting, and our footer credits the real people behind the project.
 
 ---
@@ -46,15 +50,15 @@ We use **OKLCH** color space for perceptually uniform colors that look great acr
 
 ### Semantic Colors
 
-| Token | Light Mode | Dark Mode | Usage |
-|-------|------------|-----------|-------|
-| `--background` | `oklch(0.995 0 0)` | `oklch(0.12 0.005 300)` | Page background |
-| `--foreground` | `oklch(0.13 0 0)` | `oklch(0.97 0 0)` | Primary text |
-| `--card` | `oklch(1 0 0)` | `oklch(0.16 0.008 300)` | Card surfaces |
-| `--muted` | `oklch(0.965 0.005 300)` | `oklch(0.22 0.01 300)` | Subtle backgrounds |
-| `--muted-foreground` | `oklch(0.45 0 0)` | `oklch(0.65 0 0)` | Secondary text |
-| `--border` | `oklch(0.91 0 0)` | `oklch(1 0 0 / 12%)` | Borders |
-| `--destructive` | `oklch(0.577 0.245 27)` | `oklch(0.704 0.191 22)` | Error states |
+| Token                | Light Mode               | Dark Mode               | Usage              |
+| -------------------- | ------------------------ | ----------------------- | ------------------ |
+| `--background`       | `oklch(0.995 0 0)`       | `oklch(0.12 0.005 300)` | Page background    |
+| `--foreground`       | `oklch(0.13 0 0)`        | `oklch(0.97 0 0)`       | Primary text       |
+| `--card`             | `oklch(1 0 0)`           | `oklch(0.16 0.008 300)` | Card surfaces      |
+| `--muted`            | `oklch(0.965 0.005 300)` | `oklch(0.22 0.01 300)`  | Subtle backgrounds |
+| `--muted-foreground` | `oklch(0.45 0 0)`        | `oklch(0.65 0 0)`       | Secondary text     |
+| `--border`           | `oklch(0.91 0 0)`        | `oklch(1 0 0 / 12%)`    | Borders            |
+| `--destructive`      | `oklch(0.577 0.245 27)`  | `oklch(0.704 0.191 22)` | Error states       |
 
 ### Accent Color Palette
 
@@ -81,11 +85,11 @@ Rather than a single primary color, we use contextual accents:
 
 Each user type has an assigned color for easy recognition:
 
-| Stakeholder | Color | Tailwind Classes |
-|-------------|-------|------------------|
-| Sponsors | Amber | `amber-500`, `from-amber-500 to-orange-600` |
-| Vendors | Emerald | `emerald-500`, `from-emerald-500 to-green-600` |
-| Organizers | Indigo | `indigo-500`, `from-indigo-500 to-violet-600` |
+| Stakeholder | Color   | Tailwind Classes                               |
+| ----------- | ------- | ---------------------------------------------- |
+| Sponsors    | Amber   | `amber-500`, `from-amber-500 to-orange-600`    |
+| Vendors     | Emerald | `emerald-500`, `from-emerald-500 to-green-600` |
+| Organizers  | Indigo  | `indigo-500`, `from-indigo-500 to-violet-600`  |
 
 ### Usage Examples
 
@@ -121,8 +125,8 @@ Each user type has an assigned color for easy recognition:
 We use **Geist** by Vercel - a modern, highly legible font family.
 
 ```css
---font-sans: "Geist", system-ui, sans-serif;
---font-mono: "Geist Mono", ui-monospace, monospace;
+--font-sans: 'Geist', system-ui, sans-serif;
+--font-mono: 'Geist Mono', ui-monospace, monospace;
 ```
 
 ### Font Loading
@@ -131,8 +135,9 @@ Fonts are loaded via CDN with `font-display: swap` for performance:
 
 ```css
 @font-face {
-  font-family: "Geist";
-  src: url("https://cdn.jsdelivr.net/npm/geist@1.5.1/dist/fonts/geist-sans/Geist-Variable.woff2") format("woff2");
+  font-family: 'Geist';
+  src: url('https://cdn.jsdelivr.net/npm/geist@1.5.1/dist/fonts/geist-sans/Geist-Variable.woff2')
+    format('woff2');
   font-weight: 100 900;
   font-display: swap;
 }
@@ -140,14 +145,14 @@ Fonts are loaded via CDN with `font-display: swap` for performance:
 
 ### Type Scale
 
-| Element | Size | Weight | Letter Spacing |
-|---------|------|--------|----------------|
-| Hero H1 | `text-4xl` to `text-7xl` | `font-semibold` | `tracking-tight` |
-| Section H2 | `text-3xl` to `text-5xl` | `font-semibold` | `tracking-tight` |
-| Card H3 | `text-lg` to `text-xl` | `font-semibold` | default |
-| Body | `text-base` to `text-lg` | `font-normal` | default |
-| Small/Caption | `text-sm` to `text-xs` | `font-medium` | default |
-| Mono/Code | `text-xs` | `font-mono` | default |
+| Element       | Size                     | Weight          | Letter Spacing   |
+| ------------- | ------------------------ | --------------- | ---------------- |
+| Hero H1       | `text-4xl` to `text-7xl` | `font-semibold` | `tracking-tight` |
+| Section H2    | `text-3xl` to `text-5xl` | `font-semibold` | `tracking-tight` |
+| Card H3       | `text-lg` to `text-xl`   | `font-semibold` | default          |
+| Body          | `text-base` to `text-lg` | `font-normal`   | default          |
+| Small/Caption | `text-sm` to `text-xs`   | `font-medium`   | default          |
+| Mono/Code     | `text-xs`                | `font-mono`     | default          |
 
 ### Typography Patterns
 
@@ -172,18 +177,18 @@ Fonts are loaded via CDN with `font-display: swap` for performance:
 
 We use an **8px base unit** for consistent spacing:
 
-| Token | Value | Pixels | Usage |
-|-------|-------|--------|-------|
-| `--space-1` | `0.25rem` | 4px | Tight spacing |
-| `--space-2` | `0.5rem` | 8px | Base unit |
-| `--space-3` | `0.75rem` | 12px | Small gaps |
-| `--space-4` | `1rem` | 16px | Default padding |
-| `--space-5` | `1.5rem` | 24px | Medium gaps |
-| `--space-6` | `2rem` | 32px | Section padding |
-| `--space-8` | `3rem` | 48px | Large gaps |
-| `--space-10` | `4rem` | 64px | XL gaps |
-| `--space-12` | `6rem` | 96px | Section margins |
-| `--space-16` | `8rem` | 128px | Hero spacing |
+| Token        | Value     | Pixels | Usage           |
+| ------------ | --------- | ------ | --------------- |
+| `--space-1`  | `0.25rem` | 4px    | Tight spacing   |
+| `--space-2`  | `0.5rem`  | 8px    | Base unit       |
+| `--space-3`  | `0.75rem` | 12px   | Small gaps      |
+| `--space-4`  | `1rem`    | 16px   | Default padding |
+| `--space-5`  | `1.5rem`  | 24px   | Medium gaps     |
+| `--space-6`  | `2rem`    | 32px   | Section padding |
+| `--space-8`  | `3rem`    | 48px   | Large gaps      |
+| `--space-10` | `4rem`    | 64px   | XL gaps         |
+| `--space-12` | `6rem`    | 96px   | Section margins |
+| `--space-16` | `8rem`    | 128px  | Hero spacing    |
 
 ### Section Spacing
 
@@ -204,13 +209,13 @@ We use an **8px base unit** for consistent spacing:
 
 Consistent rounded corners for a polished look:
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--radius-sm` | `0.375rem` (6px) | Small buttons, badges |
-| `--radius-md` | `0.5rem` (8px) | Inputs, small cards |
-| `--radius-lg` | `0.75rem` (12px) | Cards, dropdowns |
-| `--radius-xl` | `1rem` (16px) | Large cards, modals |
-| `--radius-2xl` | `1.5rem` (24px) | Hero cards, feature blocks |
+| Token          | Value            | Usage                      |
+| -------------- | ---------------- | -------------------------- |
+| `--radius-sm`  | `0.375rem` (6px) | Small buttons, badges      |
+| `--radius-md`  | `0.5rem` (8px)   | Inputs, small cards        |
+| `--radius-lg`  | `0.75rem` (12px) | Cards, dropdowns           |
+| `--radius-xl`  | `1rem` (16px)    | Large cards, modals        |
+| `--radius-2xl` | `1.5rem` (24px)  | Hero cards, feature blocks |
 
 ```tsx
 // Button
@@ -233,29 +238,28 @@ We use [Phosphor Icons](https://phosphoricons.com/) with the **duotone** weight 
 
 ```tsx
 import { Calendar, Storefront, Handshake } from '@phosphor-icons/react'
-
-<Calendar size={24} weight="duotone" className="text-amber-500" />
+;<Calendar size={24} weight="duotone" className="text-amber-500" />
 ```
 
 ### Icon Sizes
 
-| Context | Size | Usage |
-|---------|------|-------|
+| Context     | Size    | Usage           |
+| ----------- | ------- | --------------- |
 | Inline text | `14-16` | Labels, buttons |
-| Cards | `18-24` | Feature cards |
-| Hero | `24-32` | Large displays |
+| Cards       | `18-24` | Feature cards   |
+| Hero        | `24-32` | Large displays  |
 
 ### Common Icons
 
-| Purpose | Icon | Notes |
-|---------|------|-------|
-| Events | `Calendar` | Primary event icon |
-| Vendors | `Storefront` | Vendor/marketplace |
-| Sponsors | `Handshake` | Partnerships |
-| AI | `Robot`, `Sparkle` | AI features |
-| Success | `CheckCircle` | Confirmation |
-| Close | `X` | Dismiss actions |
-| Navigate | `ArrowRight`, `CaretRight` | CTAs, links |
+| Purpose  | Icon                       | Notes              |
+| -------- | -------------------------- | ------------------ |
+| Events   | `Calendar`                 | Primary event icon |
+| Vendors  | `Storefront`               | Vendor/marketplace |
+| Sponsors | `Handshake`                | Partnerships       |
+| AI       | `Robot`, `Sparkle`         | AI features        |
+| Success  | `CheckCircle`              | Confirmation       |
+| Close    | `X`                        | Dismiss actions    |
+| Navigate | `ArrowRight`, `CaretRight` | CTAs, links        |
 
 ---
 
@@ -264,18 +268,18 @@ import { Calendar, Storefront, Handshake } from '@phosphor-icons/react'
 ### Duration Tokens
 
 ```css
---duration-instant: 100ms;   /* Immediate feedback */
---duration-fast: 150ms;      /* Quick transitions */
---duration-normal: 200ms;    /* Standard animations */
---duration-slow: 300ms;      /* Deliberate motion */
---duration-slower: 400ms;    /* Dramatic entrances */
+--duration-instant: 100ms; /* Immediate feedback */
+--duration-fast: 150ms; /* Quick transitions */
+--duration-normal: 200ms; /* Standard animations */
+--duration-slow: 300ms; /* Deliberate motion */
+--duration-slower: 400ms; /* Dramatic entrances */
 ```
 
 ### Easing Curves
 
 ```css
---ease-out: cubic-bezier(0.16, 1, 0.3, 1);      /* Smooth deceleration */
---ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);    /* Balanced */
+--ease-out: cubic-bezier(0.16, 1, 0.3, 1); /* Smooth deceleration */
+--ease-in-out: cubic-bezier(0.4, 0, 0.2, 1); /* Balanced */
 --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy, playful */
 --ease-bounce: cubic-bezier(0.68, -0.6, 0.32, 1.6); /* Exaggerated */
 ```
@@ -283,6 +287,7 @@ import { Calendar, Storefront, Handshake } from '@phosphor-icons/react'
 ### Animation Classes
 
 #### Floating Elements
+
 ```css
 .animate-float-slow    /* 4s cycle, 6px travel */
 .animate-float-medium  /* 3s cycle, 4px travel */
@@ -290,6 +295,7 @@ import { Calendar, Storefront, Handshake } from '@phosphor-icons/react'
 ```
 
 #### Entrances
+
 ```css
 .message-entrance      /* Spring physics entrance */
 .menu-entrance         /* Dropdown appear */
@@ -298,6 +304,7 @@ import { Calendar, Storefront, Handshake } from '@phosphor-icons/react'
 ```
 
 #### Interactive
+
 ```css
 .spring-press          /* Button press with spring */
 .chip-hover            /* Lift on hover */
@@ -480,17 +487,17 @@ We have two card styles:
 
 ### Current Sections (in order)
 
-| Section | Component | Description |
-|---------|-----------|-------------|
-| Hero | `Hero.tsx` | Main headline with gradient underline, CTAs |
-| Logo Cloud | `LogoCloud.tsx` | Playful "hopefully soon" infinite scroll |
+| Section          | Component            | Description                                       |
+| ---------------- | -------------------- | ------------------------------------------------- |
+| Hero             | `Hero.tsx`           | Main headline with gradient underline, CTAs       |
+| Logo Cloud       | `LogoCloud.tsx`      | Playful "hopefully soon" infinite scroll          |
 | Features by User | `FeaturesByUser.tsx` | Stakeholder cards (Sponsors, Vendors, Organizers) |
-| How it Works | `CoreConcept.tsx` | 3-step flow with tab selector |
-| AI Agent | `AIAgent.tsx` | Live chat demo with capabilities |
-| Why Open Source | `WhyOpenSource.tsx` | Benefits of open source |
-| FAQ | `FAQ.tsx` | Accordion-style Q&A |
-| Call to Action | `CallToAction.tsx` | Final CTA with trust indicators |
-| Footer | `Footer.tsx` | Links, theme toggle, team attribution |
+| How it Works     | `CoreConcept.tsx`    | 3-step flow with tab selector                     |
+| AI Agent         | `AIAgent.tsx`        | Live chat demo with capabilities                  |
+| Why Open Source  | `WhyOpenSource.tsx`  | Benefits of open source                           |
+| FAQ              | `FAQ.tsx`            | Accordion-style Q&A                               |
+| Call to Action   | `CallToAction.tsx`   | Final CTA with trust indicators                   |
+| Footer           | `Footer.tsx`         | Links, theme toggle, team attribution             |
 
 ### Section Structure
 
@@ -579,6 +586,7 @@ We support system preference and manual toggle via the `dark` class.
 ### Color Contrast
 
 All text colors meet WCAG AA standards:
+
 - Normal text: 4.5:1 minimum
 - Large text: 3:1 minimum
 
@@ -626,16 +634,16 @@ import { useScrollAnimation } from '@/hooks/use-scroll-animation'
 
 ```tsx
 // Card with hover
-"p-6 rounded-2xl border border-border/50 bg-card transition-all hover:shadow-xl hover:-translate-y-1"
+'p-6 rounded-2xl border border-border/50 bg-card transition-all hover:shadow-xl hover:-translate-y-1'
 
 // Section container
-"relative max-w-6xl mx-auto px-6"
+'relative max-w-6xl mx-auto px-6'
 
 // Gradient text
-"bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent"
+'bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent'
 
 // Muted text
-"text-sm text-muted-foreground"
+'text-sm text-muted-foreground'
 ```
 
 ---
@@ -652,4 +660,4 @@ When adding new components or patterns:
 
 ---
 
-*Researched & designed by Hazli · Built by Azmir*
+_Researched & designed by Hazli · Built by Azmir_

@@ -54,8 +54,7 @@ export function ApplicationSuccess() {
           <h1 className="text-3xl font-bold mb-3">Application Submitted!</h1>
           <p className="text-lg text-muted-foreground max-w-md mx-auto mb-8">
             Thank you for your interest in becoming a{' '}
-            {isVendor ? 'vendor partner' : 'sponsor partner'}. We&apos;ve received your
-            application.
+            {isVendor ? 'vendor partner' : 'sponsor partner'}. We&apos;ve received your application.
           </p>
 
           {/* What's Next Card */}
@@ -87,7 +86,12 @@ export function ApplicationSuccess() {
               </div>
 
               <div className="flex gap-3">
-                <div className={cn('flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center', bgColorClass)}>
+                <div
+                  className={cn(
+                    'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center',
+                    bgColorClass
+                  )}
+                >
                   <Icon size={16} weight="duotone" className={colorClass} />
                 </div>
                 <div>

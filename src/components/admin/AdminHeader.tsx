@@ -3,9 +3,10 @@ import { useAuthActions } from '@convex-dev/auth/react'
 import { useQuery } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
-import { Bell, SidebarSimple, SignOut, User, CaretDown, ShieldCheck } from '@phosphor-icons/react'
+import { SidebarSimple, SignOut, User, CaretDown, ShieldCheck } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useState, useRef, useEffect } from 'react'
+import { AdminNotifications } from './AdminNotifications'
 
 interface AdminHeaderProps {
   onMenuClick?: () => void
@@ -48,7 +49,10 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
           >
             <SidebarSimple size={22} weight="duotone" />
           </button>
-          <Link to="/admin" className="lg:hidden font-mono text-lg font-bold flex items-center gap-2">
+          <Link
+            to="/admin"
+            className="lg:hidden font-mono text-lg font-bold flex items-center gap-2"
+          >
             <span className="text-foreground">open</span>
             <span className="text-primary">-</span>
             <span className="text-foreground">event</span>
@@ -63,25 +67,14 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
           <ShieldCheck size={24} weight="duotone" className="text-amber-600 dark:text-amber-400" />
           <div>
             <h1 className="text-lg font-semibold">Admin Panel</h1>
-            <p className="text-xs text-muted-foreground">
-              {roleLabel} - Platform Management
-            </p>
+            <p className="text-xs text-muted-foreground">{roleLabel} - Platform Management</p>
           </div>
         </div>
 
         {/* Right side */}
         <div className="flex items-center gap-2 sm:gap-4">
-          {/* Notifications */}
-          <button
-            className={cn(
-              'relative p-2 rounded-lg text-muted-foreground',
-              'hover:text-foreground hover:bg-muted transition-colors cursor-pointer'
-            )}
-          >
-            <Bell size={20} weight="duotone" />
-            {/* Notification dot */}
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full" />
-          </button>
+          {/* Admin Notifications */}
+          <AdminNotifications />
 
           <ThemeToggle />
 
@@ -103,7 +96,11 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
                 />
               ) : (
                 <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center ring-2 ring-amber-500/30">
-                  <ShieldCheck size={16} weight="duotone" className="text-amber-600 dark:text-amber-400" />
+                  <ShieldCheck
+                    size={16}
+                    weight="duotone"
+                    className="text-amber-600 dark:text-amber-400"
+                  />
                 </div>
               )}
               <CaretDown
@@ -122,16 +119,12 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
                 {/* User info */}
                 <div className="px-3 py-2 border-b border-border">
                   <div className="flex items-center gap-2">
-                    <p className="font-medium text-sm truncate">
-                      {user?.name || 'User'}
-                    </p>
+                    <p className="font-medium text-sm truncate">{user?.name || 'User'}</p>
                     <span className="px-1.5 py-0.5 text-[10px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded">
                       {roleLabel}
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {user?.email}
-                  </p>
+                  <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                 </div>
 
                 {/* Menu items */}

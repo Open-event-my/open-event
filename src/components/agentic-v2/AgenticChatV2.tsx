@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useConvexAuth, useQuery } from 'convex/react'
-import { useAuthToken } from '@convex-dev/auth/react'
+import { useQuery } from 'convex/react'
+import { useHybridAuth } from '@/hooks/useHybridAuth'
 import { api } from '../../../convex/_generated/api'
 import { CheckCircle } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
@@ -34,8 +34,7 @@ export function AgenticChatV2({
   className,
 }: AgenticChatV2Props) {
   const navigate = useNavigate()
-  const { isAuthenticated } = useConvexAuth()
-  const authToken = useAuthToken()
+  const { token: authToken, isAuthenticated } = useHybridAuth()
   const convexUrl = import.meta.env.VITE_CONVEX_URL as string
 
   // AI Usage/Rate limit
@@ -79,41 +78,50 @@ export function AgenticChatV2({
   })
 
   // Handle send
-  const handleSend = useCallback(async (userMessage: string) => {
-    if (chat.isLoading || !isAuthenticated || !authToken || !userMessage.trim()) return
+  const handleSend = useCallback(
+    async (userMessage: string) => {
+      if (chat.isLoading || !isAuthenticated || !authToken || !userMessage.trim()) return
 
-    // Check rate limit before sending
-    if (isRateLimited && !isAdmin) {
-      toast.error(`Daily limit reached. Resets in ${timeUntilReset || 'a few hours'}.`, {
-        action: {
-          label: 'View Usage',
-          onClick: () => navigate('/dashboard/settings'),
-        },
+      // Check rate limit before sending
+      if (isRateLimited && !isAdmin) {
+        toast.error(`Daily limit reached. Resets in ${timeUntilReset || 'a few hours'}.`, {
+          action: {
+            label: 'View Usage',
+            onClick: () => navigate('/dashboard/settings'),
+          },
+        })
+        return
+      }
+
+      const abortController = chat.createAbortController()
+
+      await sendMessage(userMessage, chat.messages, abortController, {
+        onPrepare: chat.prepareForSend,
+        onAddMessage: chat.addMessage,
+        onUpdateMessage: chat.updateMessage,
+        onSetStreaming: chat.setStreaming,
+        onSetActivity: chat.setActivity,
+        onAddExecutingTool: chat.addExecutingTool,
+        onUpdateToolStatus: chat.updateToolStatus,
+        onAddToolResult: chat.addToolResult,
+        onSetPendingConfirmation: chat.setPendingConfirmation,
+        onSetComplete: chat.setComplete,
+        onSetLoading: chat.setLoading,
+        onFinish: chat.finishResponse,
+        onSetLocalRemaining: setLocalRemaining,
       })
-      return
-    }
-
-    const abortController = chat.createAbortController()
-
-    await sendMessage(userMessage, chat.messages, abortController, {
-      onPrepare: chat.prepareForSend,
-      onAddMessage: chat.addMessage,
-      onUpdateMessage: chat.updateMessage,
-      onSetStreaming: chat.setStreaming,
-      onSetActivity: chat.setActivity,
-      onAddExecutingTool: chat.addExecutingTool,
-      onUpdateToolStatus: chat.updateToolStatus,
-      onAddToolResult: chat.addToolResult,
-      onSetPendingConfirmation: chat.setPendingConfirmation,
-      onSetComplete: chat.setComplete,
-      onSetLoading: chat.setLoading,
-      onFinish: chat.finishResponse,
-      onSetLocalRemaining: setLocalRemaining,
-    })
-  }, [
-    chat, isAuthenticated, authToken, isRateLimited, isAdmin,
-    timeUntilReset, navigate, sendMessage
-  ])
+    },
+    [
+      chat,
+      isAuthenticated,
+      authToken,
+      isRateLimited,
+      isAdmin,
+      timeUntilReset,
+      navigate,
+      sendMessage,
+    ]
+  )
 
   // Handle confirm
   const handleConfirm = useCallback(async () => {
@@ -184,39 +192,40 @@ export function AgenticChatV2({
   }, [messages, isStreaming, isLoading, pendingConfirmation])
 
   // Handle quick reply
-  const handleQuickReply = useCallback((value: string) => {
-    if (value === 'yes') {
-      if (pendingConfirmation) {
-        handleConfirm()
-      } else {
-        handleSend('Yes, please create the event.')
+  const handleQuickReply = useCallback(
+    (value: string) => {
+      if (value === 'yes') {
+        if (pendingConfirmation) {
+          handleConfirm()
+        } else {
+          handleSend('Yes, please create the event.')
+        }
+      } else if (value === 'cancel') {
+        if (pendingConfirmation) {
+          handleCancel()
+        } else {
+          handleSend("Cancel, I don't want to create this event.")
+        }
+      } else if (value === 'changes') {
+        handleSend("I'd like to make some changes to the event details.")
       }
-    } else if (value === 'cancel') {
-      if (pendingConfirmation) {
-        handleCancel()
-      } else {
-        handleSend("Cancel, I don't want to create this event.")
-      }
-    } else if (value === 'changes') {
-      handleSend("I'd like to make some changes to the event details.")
-    }
-  }, [pendingConfirmation, handleConfirm, handleCancel, handleSend])
+    },
+    [pendingConfirmation, handleConfirm, handleCancel, handleSend]
+  )
 
   // Compute input disabled state
   const inputDisabled = isLoading || !!pendingConfirmation || (isRateLimited && !isAdmin)
 
   // Compute placeholder
-  const inputPlaceholder = isRateLimited && !isAdmin
-    ? `Daily limit reached. Resets in ${timeUntilReset || 'a few hours'}`
-    : placeholder
+  const inputPlaceholder =
+    isRateLimited && !isAdmin
+      ? `Daily limit reached. Resets in ${timeUntilReset || 'a few hours'}`
+      : placeholder
 
   return (
     <div className={cn('agentic-chat-container', className)}>
       {/* Main Layout */}
-      <div className={cn(
-        'agentic-chat-layout',
-        hasMessages ? 'has-messages' : 'is-empty'
-      )}>
+      <div className={cn('agentic-chat-layout', hasMessages ? 'has-messages' : 'is-empty')}>
         {/* Header */}
         <AgenticHeader
           hasMessages={hasMessages}

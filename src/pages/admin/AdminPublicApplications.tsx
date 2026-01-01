@@ -24,12 +24,7 @@ import {
   CurrencyDollar,
   Sparkle,
 } from '@phosphor-icons/react'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   Dialog,
   DialogContent,
@@ -42,12 +37,40 @@ import {
 type ApplicationStatus = 'submitted' | 'under_review' | 'approved' | 'rejected' | 'converted'
 type ApplicationType = 'vendor' | 'sponsor'
 
-const statusConfig: Record<ApplicationStatus, { bg: string; text: string; label: string; description: string }> = {
-  submitted: { bg: 'bg-blue-500/10', text: 'text-blue-600', label: 'New', description: 'Awaiting initial review' },
-  under_review: { bg: 'bg-amber-500/10', text: 'text-amber-600', label: 'Under Review', description: 'Being evaluated' },
-  approved: { bg: 'bg-green-500/10', text: 'text-green-600', label: 'Approved', description: 'Ready to convert' },
-  rejected: { bg: 'bg-red-500/10', text: 'text-red-600', label: 'Rejected', description: 'Application declined' },
-  converted: { bg: 'bg-purple-500/10', text: 'text-purple-600', label: 'Converted', description: 'Added to directory' },
+const statusConfig: Record<
+  ApplicationStatus,
+  { bg: string; text: string; label: string; description: string }
+> = {
+  submitted: {
+    bg: 'bg-blue-500/10',
+    text: 'text-blue-600',
+    label: 'New',
+    description: 'Awaiting initial review',
+  },
+  under_review: {
+    bg: 'bg-amber-500/10',
+    text: 'text-amber-600',
+    label: 'Under Review',
+    description: 'Being evaluated',
+  },
+  approved: {
+    bg: 'bg-green-500/10',
+    text: 'text-green-600',
+    label: 'Approved',
+    description: 'Ready to convert',
+  },
+  rejected: {
+    bg: 'bg-red-500/10',
+    text: 'text-red-600',
+    label: 'Rejected',
+    description: 'Application declined',
+  },
+  converted: {
+    bg: 'bg-purple-500/10',
+    text: 'text-purple-600',
+    label: 'Converted',
+    description: 'Added to directory',
+  },
 }
 
 const statusFilters = [
@@ -63,7 +86,9 @@ export function AdminPublicApplications() {
   const [statusFilter, setStatusFilter] = useState<ApplicationStatus | 'all'>('submitted')
   const [typeFilter, setTypeFilter] = useState<ApplicationType | 'all'>('all')
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedApplication, setSelectedApplication] = useState<Id<'publicApplications'> | null>(null)
+  const [selectedApplication, setSelectedApplication] = useState<Id<'publicApplications'> | null>(
+    null
+  )
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [showRejectModal, setShowRejectModal] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
@@ -90,10 +115,13 @@ export function AdminPublicApplications() {
   // Calculate status counts
   const statusCounts = useMemo(() => {
     if (!allApplications) return {}
-    return allApplications.reduce((acc, app) => {
-      acc[app.status] = (acc[app.status] || 0) + 1
-      return acc
-    }, {} as Record<string, number>)
+    return allApplications.reduce(
+      (acc, app) => {
+        acc[app.status] = (acc[app.status] || 0) + 1
+        return acc
+      },
+      {} as Record<string, number>
+    )
   }, [allApplications])
 
   const filteredApplications = applications?.filter((app) => {
@@ -119,11 +147,12 @@ export function AdminPublicApplications() {
     }
 
     execute(
-      () => updateStatus({
-        applicationId: selectedApplication,
-        status: 'rejected',
-        rejectionReason: rejectReason,
-      }),
+      () =>
+        updateStatus({
+          applicationId: selectedApplication,
+          status: 'rejected',
+          rejectionReason: rejectReason,
+        }),
       {
         successMessage: 'Application rejected',
         onSuccess: () => {
@@ -150,15 +179,15 @@ export function AdminPublicApplications() {
     }
 
     if (isVendor) {
-      execute(
-        () => convertToVendor({ applicationId: selectedApplication, autoApprove }),
-        { successMessage: successMsg, onSuccess: onSuccessCallback }
-      )
+      execute(() => convertToVendor({ applicationId: selectedApplication, autoApprove }), {
+        successMessage: successMsg,
+        onSuccess: onSuccessCallback,
+      })
     } else {
-      execute(
-        () => convertToSponsor({ applicationId: selectedApplication, autoApprove }),
-        { successMessage: successMsg, onSuccess: onSuccessCallback }
-      )
+      execute(() => convertToSponsor({ applicationId: selectedApplication, autoApprove }), {
+        successMessage: successMsg,
+        onSuccess: onSuccessCallback,
+      })
     }
   }
 
@@ -236,9 +265,7 @@ export function AdminPublicApplications() {
         {/* Status Filter Tabs with Counts */}
         <div className="flex flex-wrap items-center gap-2 pb-2 border-b border-border lg:border-0 lg:pb-0">
           {statusFilters.map((filter) => {
-            const count = filter.value === 'all'
-              ? totalCount
-              : (statusCounts[filter.value] || 0)
+            const count = filter.value === 'all' ? totalCount : statusCounts[filter.value] || 0
             const config = filter.value !== 'all' ? statusConfig[filter.value] : null
             const isActive = statusFilter === filter.value
 
@@ -352,9 +379,15 @@ export function AdminPublicApplications() {
           </div>
         ) : filteredApplications?.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border bg-card p-12 text-center">
-            <ClipboardText size={64} weight="duotone" className="mx-auto text-muted-foreground/30 mb-6" />
+            <ClipboardText
+              size={64}
+              weight="duotone"
+              className="mx-auto text-muted-foreground/30 mb-6"
+            />
             <h3 className="text-lg font-semibold mb-2">
-              {statusFilter === 'all' ? 'No applications yet' : `No ${statusConfig[statusFilter]?.label.toLowerCase()} applications`}
+              {statusFilter === 'all'
+                ? 'No applications yet'
+                : `No ${statusConfig[statusFilter]?.label.toLowerCase()} applications`}
             </h3>
             <p className="text-muted-foreground max-w-sm mx-auto">
               {searchQuery
@@ -526,7 +559,11 @@ export function AdminPublicApplications() {
                       {applicationDetail.contactName}
                     </div>
                     <div className="flex items-center gap-2">
-                      <EnvelopeSimple size={14} weight="duotone" className="text-muted-foreground" />
+                      <EnvelopeSimple
+                        size={14}
+                        weight="duotone"
+                        className="text-muted-foreground"
+                      />
                       {applicationDetail.contactEmail}
                     </div>
                     {applicationDetail.contactPhone && (
@@ -581,26 +618,31 @@ export function AdminPublicApplications() {
                       )}
                       {applicationDetail.vendorPriceRange && (
                         <div className="flex items-center gap-2">
-                          <CurrencyDollar size={14} weight="duotone" className="text-muted-foreground" />
+                          <CurrencyDollar
+                            size={14}
+                            weight="duotone"
+                            className="text-muted-foreground"
+                          />
                           <span className="capitalize">{applicationDetail.vendorPriceRange}</span>
                         </div>
                       )}
                     </div>
-                    {applicationDetail.vendorServices && applicationDetail.vendorServices.length > 0 && (
-                      <div>
-                        <span className="text-muted-foreground text-sm">Services:</span>
-                        <div className="flex flex-wrap gap-1.5 mt-1">
-                          {applicationDetail.vendorServices.map((service) => (
-                            <span
-                              key={service}
-                              className="px-2 py-0.5 text-xs bg-muted rounded-md"
-                            >
-                              {service}
-                            </span>
-                          ))}
+                    {applicationDetail.vendorServices &&
+                      applicationDetail.vendorServices.length > 0 && (
+                        <div>
+                          <span className="text-muted-foreground text-sm">Services:</span>
+                          <div className="flex flex-wrap gap-1.5 mt-1">
+                            {applicationDetail.vendorServices.map((service) => (
+                              <span
+                                key={service}
+                                className="px-2 py-0.5 text-xs bg-muted rounded-md"
+                              >
+                                {service}
+                              </span>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
                   </div>
                 )}
 
@@ -620,32 +662,40 @@ export function AdminPublicApplications() {
                           </span>
                         </div>
                       )}
-                      {(applicationDetail.sponsorBudgetMin || applicationDetail.sponsorBudgetMax) && (
+                      {(applicationDetail.sponsorBudgetMin ||
+                        applicationDetail.sponsorBudgetMax) && (
                         <div className="flex items-center gap-2">
-                          <CurrencyDollar size={14} weight="duotone" className="text-muted-foreground" />
+                          <CurrencyDollar
+                            size={14}
+                            weight="duotone"
+                            className="text-muted-foreground"
+                          />
                           {applicationDetail.sponsorBudgetMin &&
                             `$${applicationDetail.sponsorBudgetMin.toLocaleString()}`}
-                          {applicationDetail.sponsorBudgetMin && applicationDetail.sponsorBudgetMax && ' - '}
+                          {applicationDetail.sponsorBudgetMin &&
+                            applicationDetail.sponsorBudgetMax &&
+                            ' - '}
                           {applicationDetail.sponsorBudgetMax &&
                             `$${applicationDetail.sponsorBudgetMax.toLocaleString()}`}
                         </div>
                       )}
                     </div>
-                    {applicationDetail.sponsorTiers && applicationDetail.sponsorTiers.length > 0 && (
-                      <div>
-                        <span className="text-muted-foreground text-sm">Interested Tiers:</span>
-                        <div className="flex flex-wrap gap-1.5 mt-1">
-                          {applicationDetail.sponsorTiers.map((tier) => (
-                            <span
-                              key={tier}
-                              className="px-2 py-0.5 text-xs bg-purple-500/10 text-purple-600 rounded-md capitalize"
-                            >
-                              {tier}
-                            </span>
-                          ))}
+                    {applicationDetail.sponsorTiers &&
+                      applicationDetail.sponsorTiers.length > 0 && (
+                        <div>
+                          <span className="text-muted-foreground text-sm">Interested Tiers:</span>
+                          <div className="flex flex-wrap gap-1.5 mt-1">
+                            {applicationDetail.sponsorTiers.map((tier) => (
+                              <span
+                                key={tier}
+                                className="px-2 py-0.5 text-xs bg-purple-500/10 text-purple-600 rounded-md capitalize"
+                              >
+                                {tier}
+                              </span>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
                   </div>
                 )}
 
@@ -653,7 +703,9 @@ export function AdminPublicApplications() {
                 {applicationDetail.pastExperience && (
                   <div className="space-y-2">
                     <h3 className="font-medium">Past Experience</h3>
-                    <p className="text-sm text-muted-foreground">{applicationDetail.pastExperience}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {applicationDetail.pastExperience}
+                    </p>
                   </div>
                 )}
 
@@ -661,7 +713,9 @@ export function AdminPublicApplications() {
                 {applicationDetail.additionalNotes && (
                   <div className="space-y-2">
                     <h3 className="font-medium">Additional Notes</h3>
-                    <p className="text-sm text-muted-foreground">{applicationDetail.additionalNotes}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {applicationDetail.additionalNotes}
+                    </p>
                   </div>
                 )}
 
@@ -675,56 +729,58 @@ export function AdminPublicApplications() {
               </div>
 
               {/* Footer Actions */}
-              {applicationDetail.status !== 'converted' && applicationDetail.status !== 'rejected' && (
-                <DialogFooter className="flex-col sm:flex-row gap-2">
-                  <button
-                    onClick={openRejectModal}
-                    className={cn(
-                      'flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium',
-                      'text-red-600 hover:bg-red-500/10 transition-colors'
-                    )}
-                  >
-                    <XCircle size={16} weight="bold" />
-                    Reject
-                  </button>
-                  <div className="flex items-center gap-2">
+              {applicationDetail.status !== 'converted' &&
+                applicationDetail.status !== 'rejected' && (
+                  <DialogFooter className="flex-col sm:flex-row gap-2">
                     <button
-                      onClick={() => handleConvert(false)}
-                      disabled={isLoading}
+                      onClick={openRejectModal}
                       className={cn(
-                        'flex items-center gap-2 px-4 py-2 rounded-lg border border-border',
-                        'text-sm font-medium hover:bg-muted transition-colors',
-                        'disabled:opacity-50 disabled:cursor-not-allowed'
+                        'flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium',
+                        'text-red-600 hover:bg-red-500/10 transition-colors'
                       )}
                     >
-                      <ArrowRight size={16} weight="bold" />
-                      Convert to {applicationDetail.applicationType === 'vendor' ? 'Vendor' : 'Sponsor'}
+                      <XCircle size={16} weight="bold" />
+                      Reject
                     </button>
-                    <button
-                      onClick={() => handleConvert(true)}
-                      disabled={isLoading}
-                      className={cn(
-                        'flex items-center gap-2 px-4 py-2 rounded-lg',
-                        'bg-green-500 text-white text-sm font-medium',
-                        'hover:bg-green-600 transition-colors',
-                        'disabled:opacity-50 disabled:cursor-not-allowed'
-                      )}
-                    >
-                      {isLoading ? (
-                        <>
-                          <CircleNotch size={16} weight="bold" className="animate-spin" />
-                          Converting...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle size={16} weight="bold" />
-                          Convert & Approve
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </DialogFooter>
-              )}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleConvert(false)}
+                        disabled={isLoading}
+                        className={cn(
+                          'flex items-center gap-2 px-4 py-2 rounded-lg border border-border',
+                          'text-sm font-medium hover:bg-muted transition-colors',
+                          'disabled:opacity-50 disabled:cursor-not-allowed'
+                        )}
+                      >
+                        <ArrowRight size={16} weight="bold" />
+                        Convert to{' '}
+                        {applicationDetail.applicationType === 'vendor' ? 'Vendor' : 'Sponsor'}
+                      </button>
+                      <button
+                        onClick={() => handleConvert(true)}
+                        disabled={isLoading}
+                        className={cn(
+                          'flex items-center gap-2 px-4 py-2 rounded-lg',
+                          'bg-green-500 text-white text-sm font-medium',
+                          'hover:bg-green-600 transition-colors',
+                          'disabled:opacity-50 disabled:cursor-not-allowed'
+                        )}
+                      >
+                        {isLoading ? (
+                          <>
+                            <CircleNotch size={16} weight="bold" className="animate-spin" />
+                            Converting...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle size={16} weight="bold" />
+                            Convert & Approve
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </DialogFooter>
+                )}
             </>
           )}
         </DialogContent>

@@ -45,16 +45,12 @@ describe('SearchResultsCard', () => {
   describe('empty state', () => {
     it('should show empty message for vendors', () => {
       render(<SearchResultsCard type="vendors" results={[]} />)
-      expect(
-        screen.getByText(/no vendors found matching your criteria/i)
-      ).toBeInTheDocument()
+      expect(screen.getByText(/no vendors found matching your criteria/i)).toBeInTheDocument()
     })
 
     it('should show empty message for sponsors', () => {
       render(<SearchResultsCard type="sponsors" results={[]} />)
-      expect(
-        screen.getByText(/no sponsors found matching your criteria/i)
-      ).toBeInTheDocument()
+      expect(screen.getByText(/no sponsors found matching your criteria/i)).toBeInTheDocument()
     })
   })
 
@@ -94,9 +90,7 @@ describe('SearchResultsCard', () => {
     })
 
     it('should show verified badge for verified vendors', () => {
-      const { container } = render(
-        <SearchResultsCard type="vendors" results={mockVendors} />
-      )
+      const { container } = render(<SearchResultsCard type="vendors" results={mockVendors} />)
       // CheckCircle icons for verified vendors
       const verifiedBadges = container.querySelectorAll('.text-blue-500')
       expect(verifiedBadges.length).toBeGreaterThanOrEqual(1)
@@ -137,13 +131,7 @@ describe('SearchResultsCard', () => {
   describe('interactions', () => {
     it('should call onSelect when vendor is clicked', () => {
       const onSelect = vi.fn()
-      render(
-        <SearchResultsCard
-          type="vendors"
-          results={mockVendors}
-          onSelect={onSelect}
-        />
-      )
+      render(<SearchResultsCard type="vendors" results={mockVendors} onSelect={onSelect} />)
 
       fireEvent.click(screen.getByText('Gourmet Catering Co.'))
       expect(onSelect).toHaveBeenCalledWith('vendor-1')
@@ -151,13 +139,7 @@ describe('SearchResultsCard', () => {
 
     it('should call onSelect when sponsor is clicked', () => {
       const onSelect = vi.fn()
-      render(
-        <SearchResultsCard
-          type="sponsors"
-          results={mockSponsors}
-          onSelect={onSelect}
-        />
-      )
+      render(<SearchResultsCard type="sponsors" results={mockSponsors} onSelect={onSelect} />)
 
       fireEvent.click(screen.getByText('TechCorp Inc.'))
       expect(onSelect).toHaveBeenCalledWith('sponsor-1')
@@ -174,22 +156,14 @@ describe('SearchResultsCard', () => {
   describe('className prop', () => {
     it('should apply custom className', () => {
       const { container } = render(
-        <SearchResultsCard
-          type="vendors"
-          results={mockVendors}
-          className="custom-class"
-        />
+        <SearchResultsCard type="vendors" results={mockVendors} className="custom-class" />
       )
       expect(container.firstChild).toHaveClass('custom-class')
     })
 
     it('should apply className on empty state', () => {
       const { container } = render(
-        <SearchResultsCard
-          type="vendors"
-          results={[]}
-          className="empty-custom-class"
-        />
+        <SearchResultsCard type="vendors" results={[]} className="empty-custom-class" />
       )
       expect(container.firstChild).toHaveClass('empty-custom-class')
     })

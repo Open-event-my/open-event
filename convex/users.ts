@@ -1,6 +1,7 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { assertRole, getCurrentUser } from './lib/auth'
+import { isValidEmail } from './lib/emailValidation'
 
 // List users - superadmin only
 export const list = query({
@@ -62,8 +63,7 @@ export const create = mutation({
     await assertRole(ctx, 'superadmin')
 
     // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(args.email)) {
+    if (!isValidEmail(args.email)) {
       throw new Error('Invalid email format')
     }
 

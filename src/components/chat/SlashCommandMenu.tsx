@@ -103,9 +103,7 @@ function SlashCommandMenuInner({
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-border/50 bg-muted/30">
         <Command size={14} weight="bold" className="text-muted-foreground" />
-        <span className="text-xs text-muted-foreground font-medium">
-          Commands
-        </span>
+        <span className="text-xs text-muted-foreground font-medium">Commands</span>
         <span className="text-xs text-muted-foreground/50 ml-auto">
           ↑↓ to navigate · Enter to select
         </span>
@@ -120,16 +118,16 @@ function SlashCommandMenuInner({
           return (
             <button
               key={command.id}
-              ref={(el) => { itemRefs.current[index] = el }}
+              ref={(el) => {
+                itemRefs.current[index] = el
+              }}
               onClick={() => onSelect(command)}
               onMouseEnter={() => setSelectedIndex(index)}
               className={cn(
                 'w-full flex items-center gap-3 px-3 py-2.5',
                 'transition-colors duration-[var(--duration-fast)]',
                 'text-left',
-                isSelected
-                  ? 'bg-accent text-accent-foreground'
-                  : 'hover:bg-muted/50'
+                isSelected ? 'bg-accent text-accent-foreground' : 'hover:bg-muted/50'
               )}
               role="option"
               aria-selected={isSelected}
@@ -143,9 +141,7 @@ function SlashCommandMenuInner({
                 <Icon
                   size={18}
                   weight="duotone"
-                  className={cn(
-                    isSelected ? 'text-primary' : 'text-muted-foreground'
-                  )}
+                  className={cn(isSelected ? 'text-primary' : 'text-muted-foreground')}
                 />
               </div>
               <div className="flex-1 min-w-0">
@@ -157,9 +153,7 @@ function SlashCommandMenuInner({
                     </kbd>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground truncate">
-                  {command.description}
-                </p>
+                <p className="text-xs text-muted-foreground truncate">{command.description}</p>
               </div>
             </button>
           )
@@ -194,8 +188,7 @@ export function SlashCommandMenu({
     () =>
       commands.filter(
         (cmd) =>
-          cmd.name.toLowerCase().includes(query) ||
-          cmd.description.toLowerCase().includes(query)
+          cmd.name.toLowerCase().includes(query) || cmd.description.toLowerCase().includes(query)
       ),
     [commands, query]
   )

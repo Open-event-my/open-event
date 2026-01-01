@@ -40,7 +40,9 @@ export function ApprovalScene({ progress }: ApprovalSceneProps) {
             <h3 className="font-mono font-semibold text-sm">Sponsor Decision</h3>
             <p className="text-xs text-muted-foreground">Review and approve application</p>
           </div>
-          <Badge variant="secondary" className="text-xs">Pending</Badge>
+          <Badge variant="secondary" className="text-xs">
+            Pending
+          </Badge>
         </div>
 
         {/* Content */}
@@ -58,7 +60,9 @@ export function ApprovalScene({ progress }: ApprovalSceneProps) {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Tier</span>
-              <Badge variant="outline" className="text-xs font-mono">Gold</Badge>
+              <Badge variant="outline" className="text-xs font-mono">
+                Gold
+              </Badge>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Budget</span>
@@ -99,10 +103,10 @@ export function ApprovalScene({ progress }: ApprovalSceneProps) {
                 showSuccess
                   ? 'bg-green-500 text-white'
                   : buttonPressed
-                  ? 'bg-primary/80 text-primary-foreground scale-95'
-                  : approveGlow
-                  ? 'bg-primary text-primary-foreground ring-2 ring-primary/50 ring-offset-2'
-                  : 'bg-primary text-primary-foreground'
+                    ? 'bg-primary/80 text-primary-foreground scale-95'
+                    : approveGlow
+                      ? 'bg-primary text-primary-foreground ring-2 ring-primary/50 ring-offset-2'
+                      : 'bg-primary text-primary-foreground'
               )}
             >
               {showSuccess ? (

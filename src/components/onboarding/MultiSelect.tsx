@@ -13,12 +13,7 @@ interface MultiSelectProps {
   columns?: 2 | 3
 }
 
-export function MultiSelect({
-  options,
-  selected,
-  onChange,
-  columns = 2,
-}: MultiSelectProps) {
+export function MultiSelect({ options, selected, onChange, columns = 2 }: MultiSelectProps) {
   const toggleOption = (value: string) => {
     if (selected.includes(value)) {
       onChange(selected.filter((v) => v !== value))
@@ -56,10 +51,12 @@ export function MultiSelect({
             }}
           >
             <div className="flex items-center justify-between gap-2">
-              <span className={cn(
-                'text-sm sm:text-base font-medium transition-colors',
-                isSelected ? 'text-primary' : 'text-foreground'
-              )}>
+              <span
+                className={cn(
+                  'text-sm sm:text-base font-medium transition-colors',
+                  isSelected ? 'text-primary' : 'text-foreground'
+                )}
+              >
                 {option.label}
               </span>
               <div

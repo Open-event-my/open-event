@@ -40,11 +40,7 @@ describe('cn utility', () => {
   })
 
   it('should handle complex Tailwind merging', () => {
-    const result = cn(
-      'text-sm text-gray-500',
-      'text-lg',
-      'hover:text-blue-500'
-    )
+    const result = cn('text-sm text-gray-500', 'text-lg', 'hover:text-blue-500')
     expect(result).toBe('text-gray-500 text-lg hover:text-blue-500')
   })
 

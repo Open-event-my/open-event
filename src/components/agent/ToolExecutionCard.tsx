@@ -18,12 +18,7 @@ interface ToolExecutionCardProps {
   className?: string
 }
 
-export function ToolExecutionCard({
-  toolName,
-  status,
-  result,
-  className,
-}: ToolExecutionCardProps) {
+export function ToolExecutionCard({ toolName, status, result, className }: ToolExecutionCardProps) {
   const config = getToolConfig(toolName)
   const Icon = config.icon
   const label = config.executingLabel
@@ -68,12 +63,8 @@ export function ToolExecutionCard({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">{label}</span>
-          {status === 'success' && (
-            <Check size={14} weight="bold" className="text-emerald-500" />
-          )}
-          {status === 'error' && (
-            <X size={14} weight="bold" className="text-red-500" />
-          )}
+          {status === 'success' && <Check size={14} weight="bold" className="text-emerald-500" />}
+          {status === 'error' && <X size={14} weight="bold" className="text-red-500" />}
         </div>
         {result && (
           <p

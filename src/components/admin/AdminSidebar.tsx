@@ -13,21 +13,31 @@ import {
   ArrowLeft,
   ClipboardText,
   Sparkle,
+  ClockCounterClockwise,
+  Gauge,
+  UserGear,
+  Flag,
+  Buildings,
 } from '@phosphor-icons/react'
 
 const navigationItems = [
   { label: 'Overview', icon: House, path: '/admin' },
   { label: 'Users', icon: Users, path: '/admin/users' },
+  { label: 'Organizations', icon: Buildings, path: '/admin/organizations' },
   { label: 'Vendors', icon: Storefront, path: '/admin/vendors' },
   { label: 'Sponsors', icon: Handshake, path: '/admin/sponsors' },
   { label: 'Applications', icon: ClipboardText, path: '/admin/applications' },
   { label: 'Moderation', icon: ShieldCheck, path: '/admin/moderation' },
+  { label: 'Event Moderation', icon: Flag, path: '/admin/event-moderation' },
   { label: 'AI Usage', icon: Sparkle, path: '/admin/ai-usage' },
+  { label: 'Audit Logs', icon: ClockCounterClockwise, path: '/admin/audit-logs' },
+  { label: 'Rate Limits', icon: Gauge, path: '/admin/rate-limits' },
 ]
 
-const bottomItems = [
-  { label: 'Settings', icon: Gear, path: '/admin/settings' },
-]
+// Superadmin-only navigation items
+const superadminItems = [{ label: 'Admin Management', icon: UserGear, path: '/admin/admins' }]
+
+const bottomItems = [{ label: 'Settings', icon: Gear, path: '/admin/settings' }]
 
 export function AdminSidebar() {
   const location = useLocation()
@@ -36,6 +46,7 @@ export function AdminSidebar() {
   // Only show "Back to Dashboard" for admins who also act as organizers
   // Superadmins are pure platform managers, they don't need organizer dashboard
   const showBackToDashboard = currentUser?.role === 'admin'
+  const isSuperadmin = currentUser?.role === 'superadmin'
 
   const isActive = (path: string) => {
     if (path === '/admin') {
@@ -94,6 +105,36 @@ export function AdminSidebar() {
             </Link>
           )
         })}
+
+        {/* Superadmin-only section */}
+        {isSuperadmin && (
+          <>
+            <div className="pt-4 pb-2">
+              <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Superadmin
+              </p>
+            </div>
+            {superadminItems.map((item) => {
+              const Icon = item.icon
+              const active = isActive(item.path)
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={cn(
+                    'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                    active
+                      ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  )}
+                >
+                  <Icon size={20} weight={active ? 'duotone' : 'regular'} />
+                  {item.label}
+                </Link>
+              )
+            })}
+          </>
+        )}
       </nav>
 
       {/* Bottom Navigation */}

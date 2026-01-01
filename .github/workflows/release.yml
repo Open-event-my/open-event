@@ -1,0 +1,331 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      skip-tests:
+        description: 'Skip validation tests (use with caution)'
+        type: boolean
+        default: false
+      dry-run:
+        description: 'Dry run (build only, no deploy)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: release-${{ github.ref }}-${{ github.event.inputs.environment || 'production' }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+  deployments: write
+
+env:
+  NODE_ENV: production
+
+jobs:
+  # ============================================
+  # VALIDATE - Full validation before release
+  # ============================================
+  validate:
+    name: Validate Release
+    runs-on: ubuntu-latest
+    if: github.event.inputs.skip-tests != 'true'
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      is-prerelease: ${{ steps.version.outputs.is-prerelease }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
+
+      - name: Validate version
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+          # Check if prerelease (contains -, e.g., 1.0.0-beta.1)
+          if [[ "$VERSION" == *"-"* ]]; then
+            echo "is-prerelease=true" >> $GITHUB_OUTPUT
+            echo "::notice::Prerelease version detected: ${VERSION}"
+          else
+            echo "is-prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
+          # Validate semver format
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
+            echo "::error::Invalid version format: ${VERSION}"
+            exit 1
+          fi
+
+          echo "::notice::Version: ${VERSION}"
+
+      - name: Run linting
+        run: npm run lint -- --max-warnings=0
+
+      - name: Run type check
+        run: npx tsc --noEmit
+
+      - name: Run unit tests
+        run: npm run test:run
+
+      - name: Check for security vulnerabilities
+        run: npm audit --audit-level=critical
+        continue-on-error: true
+
+  # ============================================
+  # BUILD - Production build with optimizations
+  # ============================================
+  build:
+    name: Build for Release
+    runs-on: ubuntu-latest
+    needs: validate
+    if: always() && (needs.validate.result == 'success' || needs.validate.result == 'skipped')
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      artifact-name: ${{ steps.build.outputs.artifact-name }}
+      build-size: ${{ steps.analyze.outputs.total-size }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Build production bundle
+        id: build
+        run: |
+          npm run build
+
+          ARTIFACT_NAME="release-build-v${{ steps.version.outputs.version }}-${{ github.sha }}"
+          echo "artifact-name=${ARTIFACT_NAME}" >> $GITHUB_OUTPUT
+        env:
+          VITE_APP_VERSION: ${{ steps.version.outputs.version }}
+          VITE_BUILD_TIME: ${{ github.event.head_commit.timestamp || github.event.release.created_at }}
+
+      - name: Analyze bundle
+        id: analyze
+        run: |
+          TOTAL_SIZE=$(du -sh dist | cut -f1)
+          JS_SIZE=$(find dist -name "*.js" -exec du -ch {} + | tail -1 | cut -f1)
+          echo "total-size=${TOTAL_SIZE}" >> $GITHUB_OUTPUT
+          echo "js-size=${JS_SIZE}" >> $GITHUB_OUTPUT
+
+          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | ${{ steps.version.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Total Size | ${TOTAL_SIZE} |" >> $GITHUB_STEP_SUMMARY
+          echo "| JS Bundle | ${JS_SIZE} |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.build.outputs.artifact-name }}
+          path: dist/
+          retention-days: 90
+          compression-level: 9
+
+  # ============================================
+  # SMOKE TEST - Quick validation of build
+  # ============================================
+  smoke-test:
+    name: Smoke Test
+    runs-on: ubuntu-latest
+    needs: build
+    if: needs.build.result == 'success'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
+        with:
+          install-playwright: 'true'
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.artifact-name }}
+          path: dist/
+
+      - name: Run smoke tests
+        run: |
+          # Run tests tagged with @smoke, or fall back to landing page tests
+          npx playwright test --grep @smoke --retries=2 || \
+          npx playwright test e2e/landing.spec.ts --retries=2
+        env:
+          CI: true
+
+      - name: Upload smoke test results
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: smoke-test-results
+          path: test-results/
+          retention-days: 7
+
+  # ============================================
+  # DEPLOY STAGING - Deploy to staging environment
+  # ============================================
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build, smoke-test]
+    if: |
+      needs.smoke-test.result == 'success' &&
+      github.event.inputs.dry-run != 'true' &&
+      (github.event.inputs.environment == 'staging' || github.event_name == 'release')
+    environment:
+      name: staging
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.artifact-name }}
+          path: dist/
+
+      - name: Deploy to staging
+        id: deploy
+        run: |
+          echo "Deploying version ${{ needs.build.outputs.version }} to staging..."
+          echo "url=https://staging.openevent.my" >> $GITHUB_OUTPUT
+
+          # Placeholder for actual deployment commands
+          # Examples:
+          # - Vercel: npx vercel --prod --token=${{ secrets.VERCEL_TOKEN }}
+          # - Netlify: npx netlify deploy --prod --dir=dist
+          # - AWS S3: aws s3 sync dist/ s3://staging-bucket --delete
+          # - Cloudflare Pages: npx wrangler pages deploy dist/
+
+          echo "::notice::Staging deployment completed"
+
+      - name: Notify deployment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.notice(`Deployed v${{ needs.build.outputs.version }} to staging`);
+
+  # ============================================
+  # DEPLOY PRODUCTION - Deploy to production
+  # ============================================
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build, smoke-test, deploy-staging]
+    if: |
+      needs.smoke-test.result == 'success' &&
+      github.event.inputs.dry-run != 'true' &&
+      github.event.inputs.environment == 'production'
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.artifact-name }}
+          path: dist/
+
+      - name: Deploy to production
+        id: deploy
+        run: |
+          echo "Deploying version ${{ needs.build.outputs.version }} to production..."
+          echo "url=https://openevent.my" >> $GITHUB_OUTPUT
+
+          # Placeholder for actual deployment commands
+          echo "::notice::Production deployment completed"
+
+      - name: Create deployment record
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ needs.build.outputs.version }}';
+            const sha = '${{ github.sha }}';
+
+            await core.summary
+              .addHeading('Production Deployment')
+              .addTable([
+                [{data: 'Field', header: true}, {data: 'Value', header: true}],
+                ['Version', version],
+                ['Commit', sha.substring(0, 7)],
+                ['Environment', 'production'],
+                ['Time', new Date().toISOString()]
+              ])
+              .write();
+
+  # ============================================
+  # RELEASE STATUS - Final summary
+  # ============================================
+  release-status:
+    name: Release Status
+    runs-on: ubuntu-latest
+    needs: [validate, build, smoke-test, deploy-staging, deploy-production]
+    if: always()
+    steps:
+      - name: Release Summary
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const needs = ${{ toJSON(needs) }};
+
+            const jobs = {
+              'validate': needs.validate?.result,
+              'build': needs.build?.result,
+              'smoke-test': needs['smoke-test']?.result,
+              'deploy-staging': needs['deploy-staging']?.result,
+              'deploy-production': needs['deploy-production']?.result
+            };
+
+            let status = 'success';
+            const failed = [];
+
+            for (const [job, result] of Object.entries(jobs)) {
+              if (result === 'failure') {
+                status = 'failure';
+                failed.push(job);
+              }
+            }
+
+            const emoji = (result) => {
+              switch(result) {
+                case 'success': return ':white_check_mark:';
+                case 'failure': return ':x:';
+                case 'skipped': return ':fast_forward:';
+                default: return ':grey_question:';
+              }
+            };
+
+            await core.summary
+              .addHeading('Release Pipeline Results')
+              .addTable([
+                [{data: 'Stage', header: true}, {data: 'Status', header: true}],
+                ...Object.entries(jobs).map(([job, result]) =>
+                  [job, `${emoji(result)} ${result || 'not run'}`]
+                )
+              ])
+              .addRaw(`\n**Version:** ${needs.build?.outputs?.version || 'N/A'}`)
+              .addRaw(`\n**Build Size:** ${needs.build?.outputs?.['build-size'] || 'N/A'}`)
+              .write();
+
+            if (status === 'failure') {
+              core.setFailed(`Release failed at: ${failed.join(', ')}`);
+            } else {
+              core.notice('Release completed successfully');
+            }

@@ -1,9 +1,5 @@
-import {
-  ShapeUtil,
-  HTMLContainer,
-  Rectangle2d,
-  type TLOnResizeHandler,
-} from 'tldraw'
+import { ShapeUtil, HTMLContainer, Rectangle2d } from 'tldraw'
+import type { TLResizeInfo } from '@tldraw/editor'
 import type { TaskCardShape, TaskCardProps } from '@/lib/playground/types'
 import { CheckSquare, Calendar, Flag } from '@phosphor-icons/react'
 
@@ -47,7 +43,7 @@ export class TaskCardShapeUtil extends ShapeUtil<TaskCardShape> {
     return true
   }
 
-  override onResize: TLOnResizeHandler<TaskCardShape> = (shape, info) => {
+  override onResize = (_shape: TaskCardShape, info: TLResizeInfo<TaskCardShape>) => {
     return {
       props: {
         w: Math.max(200, info.initialBounds.width * info.scaleX),
@@ -59,7 +55,7 @@ export class TaskCardShapeUtil extends ShapeUtil<TaskCardShape> {
   component(shape: TaskCardShape) {
     const { title, checklist, dueDate, priority, status } = shape.props
 
-    const completedCount = checklist.filter(item => item.completed).length
+    const completedCount = checklist.filter((item) => item.completed).length
     const totalCount = checklist.length
 
     const priorityColors = {
@@ -70,9 +66,9 @@ export class TaskCardShapeUtil extends ShapeUtil<TaskCardShape> {
     }
 
     const statusColors = {
-      'todo': 'bg-gray-500/10 text-gray-500',
+      todo: 'bg-gray-500/10 text-gray-500',
       'in-progress': 'bg-blue-500/10 text-blue-500',
-      'done': 'bg-green-500/10 text-green-500',
+      done: 'bg-green-500/10 text-green-500',
     }
 
     return (
@@ -87,7 +83,9 @@ export class TaskCardShapeUtil extends ShapeUtil<TaskCardShape> {
             <span className="text-xs font-semibold text-blue-500 uppercase tracking-wide">
               Task
             </span>
-            <span className={`ml-auto text-[10px] px-2 py-0.5 rounded-full font-medium ${statusColors[status]}`}>
+            <span
+              className={`ml-auto text-[10px] px-2 py-0.5 rounded-full font-medium ${statusColors[status]}`}
+            >
               {status.replace('-', ' ')}
             </span>
           </div>
@@ -120,7 +118,9 @@ export class TaskCardShapeUtil extends ShapeUtil<TaskCardShape> {
                   <span>{dueDate}</span>
                 </div>
               )}
-              <div className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium ${priorityColors[priority]}`}>
+              <div
+                className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium ${priorityColors[priority]}`}
+              >
                 <Flag size={10} weight="duotone" />
                 <span className="capitalize">{priority}</span>
               </div>
@@ -132,13 +132,6 @@ export class TaskCardShapeUtil extends ShapeUtil<TaskCardShape> {
   }
 
   indicator(shape: TaskCardShape) {
-    return (
-      <rect
-        width={shape.props.w}
-        height={shape.props.h}
-        rx={12}
-        ry={12}
-      />
-    )
+    return <rect width={shape.props.w} height={shape.props.h} rx={12} ry={12} />
   }
 }

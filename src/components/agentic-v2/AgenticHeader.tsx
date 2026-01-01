@@ -14,7 +14,7 @@ export const AgenticHeader = memo(function AgenticHeader({
   onClear,
   onNavigateToSettings,
 }: AgenticHeaderProps) {
-  const quotaPercentage = promptsLimit > 0 ? (promptsRemaining / promptsLimit) : 0
+  const quotaPercentage = promptsLimit > 0 ? promptsRemaining / promptsLimit : 0
   const circumference = 2 * Math.PI * 6 // r=6
 
   return (
@@ -35,9 +35,7 @@ export const AgenticHeader = memo(function AgenticHeader({
         {/* Badge row - scrollable on tiny screens */}
         <div className="agentic-header-badges">
           {/* Beta badge */}
-          <span className="agentic-badge agentic-badge-beta">
-            Beta
-          </span>
+          <span className="agentic-badge agentic-badge-beta">Beta</span>
 
           {/* Quota with progress ring */}
           {!isAdmin && (
@@ -100,17 +98,13 @@ export const AgenticHeader = memo(function AgenticHeader({
       </div>
 
       {!hasMessages && (
-        <h1 className="agentic-header-title">
-          {isRateLimited ? 'Daily limit reached' : subtitle}
-        </h1>
+        <h1 className="agentic-header-title">{isRateLimited ? 'Daily limit reached' : subtitle}</h1>
       )}
 
       {isRateLimited && !isAdmin && !hasMessages && (
         <p className="text-sm text-muted-foreground mt-2">
           Resets in{' '}
-          <span className="font-medium text-foreground">
-            {timeUntilReset || 'a few hours'}
-          </span>
+          <span className="font-medium text-foreground">{timeUntilReset || 'a few hours'}</span>
         </p>
       )}
     </div>

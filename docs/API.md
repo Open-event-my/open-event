@@ -57,12 +57,14 @@ All API requests (except public endpoints) require an API key.
 Include your API key in requests using one of these methods:
 
 **Option 1: X-API-Key Header (Recommended)**
+
 ```bash
 curl -H "X-API-Key: oe_live_abc123..." \
   https://your-project.convex.site/api/v1/events
 ```
 
 **Option 2: Authorization Header**
+
 ```bash
 curl -H "Authorization: Bearer oe_live_abc123..." \
   https://your-project.convex.site/api/v1/events
@@ -79,18 +81,18 @@ oe_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 ### Permission Scopes
 
-| Permission | Description |
-|------------|-------------|
-| `events:read` | Read events |
-| `events:write` | Create and update events |
-| `events:delete` | Delete events |
-| `vendors:read` | Read vendor directory |
-| `sponsors:read` | Read sponsor directory |
-| `tasks:read` | Read event tasks |
-| `tasks:write` | Create and update tasks |
-| `budget:read` | Read budget items |
-| `budget:write` | Create and update budget |
-| `*` | Full access (admin) |
+| Permission      | Description              |
+| --------------- | ------------------------ |
+| `events:read`   | Read events              |
+| `events:write`  | Create and update events |
+| `events:delete` | Delete events            |
+| `vendors:read`  | Read vendor directory    |
+| `sponsors:read` | Read sponsor directory   |
+| `tasks:read`    | Read event tasks         |
+| `tasks:write`   | Create and update tasks  |
+| `budget:read`   | Read budget items        |
+| `budget:write`  | Create and update budget |
+| `*`             | Full access (admin)      |
 
 ---
 
@@ -100,8 +102,8 @@ API requests are rate limited to protect the service.
 
 ### Default Limits
 
-| Tier | Limit |
-|------|-------|
+| Tier    | Limit               |
+| ------- | ------------------- |
 | Default | 1,000 requests/hour |
 
 ### Rate Limit Headers
@@ -158,7 +160,7 @@ All responses follow a consistent JSON envelope.
   "error": {
     "code": "ERROR_CODE",
     "message": "Human-readable error message",
-    "details": []  // Optional additional details
+    "details": [] // Optional additional details
   }
 }
 ```
@@ -201,11 +203,11 @@ GET /api/v1/events
 
 **Query Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `page` | number | Page number (default: 1) |
-| `limit` | number | Items per page (default: 20, max: 100) |
-| `status` | string | Filter by status: `draft`, `planning`, `active`, `completed`, `cancelled` |
+| Parameter | Type   | Description                                                               |
+| --------- | ------ | ------------------------------------------------------------------------- |
+| `page`    | number | Page number (default: 1)                                                  |
+| `limit`   | number | Items per page (default: 20, max: 100)                                    |
+| `status`  | string | Filter by status: `draft`, `planning`, `active`, `completed`, `cancelled` |
 
 **Example:**
 
@@ -272,22 +274,22 @@ POST /api/v1/events
 
 **Request Body:**
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `title` | string | ✅ | Event title (max 200 chars) |
-| `startDate` | number | ✅ | Unix timestamp (milliseconds) |
-| `description` | string | | Event description (max 10,000 chars) |
-| `eventType` | string | | Type: `conference`, `hackathon`, `workshop`, `meetup`, etc. |
-| `status` | string | | Status: `draft` (default), `planning`, `active` |
-| `locationType` | string | | `in-person`, `virtual`, `hybrid` |
-| `venueName` | string | | Venue name |
-| `venueAddress` | string | | Venue address |
-| `virtualPlatform` | string | | Virtual platform URL |
-| `expectedAttendees` | number | | Expected number of attendees |
-| `budget` | number | | Event budget |
-| `budgetCurrency` | string | | Currency code (e.g., `USD`) |
-| `endDate` | number | | End date (Unix timestamp) |
-| `timezone` | string | | Timezone (e.g., `America/New_York`) |
+| Field               | Type   | Required | Description                                                 |
+| ------------------- | ------ | -------- | ----------------------------------------------------------- |
+| `title`             | string | ✅       | Event title (max 200 chars)                                 |
+| `startDate`         | number | ✅       | Unix timestamp (milliseconds)                               |
+| `description`       | string |          | Event description (max 10,000 chars)                        |
+| `eventType`         | string |          | Type: `conference`, `hackathon`, `workshop`, `meetup`, etc. |
+| `status`            | string |          | Status: `draft` (default), `planning`, `active`             |
+| `locationType`      | string |          | `in-person`, `virtual`, `hybrid`                            |
+| `venueName`         | string |          | Venue name                                                  |
+| `venueAddress`      | string |          | Venue address                                               |
+| `virtualPlatform`   | string |          | Virtual platform URL                                        |
+| `expectedAttendees` | number |          | Expected number of attendees                                |
+| `budget`            | number |          | Event budget                                                |
+| `budgetCurrency`    | string |          | Currency code (e.g., `USD`)                                 |
+| `endDate`           | number |          | End date (Unix timestamp)                                   |
+| `timezone`          | string |          | Timezone (e.g., `America/New_York`)                         |
 
 **Example:**
 
@@ -391,12 +393,12 @@ GET /api/v1/vendors
 
 **Query Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `page` | number | Page number |
-| `limit` | number | Items per page |
-| `category` | string | Filter by category |
-| `search` | string | Search by name/description |
+| Parameter  | Type   | Description                |
+| ---------- | ------ | -------------------------- |
+| `page`     | number | Page number                |
+| `limit`    | number | Items per page             |
+| `category` | string | Filter by category         |
+| `search`   | string | Search by name/description |
 
 **Example:**
 
@@ -429,12 +431,12 @@ GET /api/v1/sponsors
 
 **Query Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `page` | number | Page number |
-| `limit` | number | Items per page |
-| `industry` | string | Filter by industry |
-| `search` | string | Search by name/description |
+| Parameter  | Type   | Description                |
+| ---------- | ------ | -------------------------- |
+| `page`     | number | Page number                |
+| `limit`    | number | Items per page             |
+| `industry` | string | Filter by industry         |
+| `search`   | string | Search by name/description |
 
 ---
 
@@ -460,11 +462,11 @@ POST /api/v1/webhooks
 
 **Request Body:**
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | string | ✅ | Webhook name |
-| `url` | string | ✅ | HTTPS endpoint URL |
-| `events` | string[] | ✅ | Events to subscribe to |
+| Field    | Type     | Required | Description            |
+| -------- | -------- | -------- | ---------------------- |
+| `name`   | string   | ✅       | Webhook name           |
+| `url`    | string   | ✅       | HTTPS endpoint URL     |
+| `events` | string[] | ✅       | Events to subscribe to |
 
 **Example:**
 
@@ -513,12 +515,12 @@ PATCH /api/v1/webhooks/:id
 
 **Request Body:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `name` | string | New name |
-| `url` | string | New URL |
+| Field    | Type     | Description             |
+| -------- | -------- | ----------------------- |
+| `name`   | string   | New name                |
+| `url`    | string   | New URL                 |
 | `events` | string[] | New event subscriptions |
-| `status` | string | `active` or `paused` |
+| `status` | string   | `active` or `paused`    |
 
 ---
 
@@ -544,13 +546,13 @@ Lists events marked as public.
 
 **Query Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `eventType` | string | Filter by event type |
-| `locationType` | string | Filter by location type |
-| `seekingVendors` | boolean | Only events seeking vendors |
+| Parameter         | Type    | Description                  |
+| ----------------- | ------- | ---------------------------- |
+| `eventType`       | string  | Filter by event type         |
+| `locationType`    | string  | Filter by location type      |
+| `seekingVendors`  | boolean | Only events seeking vendors  |
 | `seekingSponsors` | boolean | Only events seeking sponsors |
-| `search` | string | Search query |
+| `search`          | string  | Search query                 |
 
 ---
 
@@ -564,10 +566,10 @@ Lists approved vendors (limited fields, no contact info).
 
 **Query Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
+| Parameter  | Type   | Description        |
+| ---------- | ------ | ------------------ |
 | `category` | string | Filter by category |
-| `search` | string | Search query |
+| `search`   | string | Search query       |
 
 ---
 
@@ -587,20 +589,20 @@ Webhooks allow you to receive real-time notifications when events occur.
 
 ### Available Events
 
-| Event | Description |
-|-------|-------------|
-| `event.created` | New event created |
-| `event.updated` | Event details updated |
-| `event.deleted` | Event deleted |
-| `event.status_changed` | Event status changed |
-| `vendor.applied` | Vendor applied to event |
-| `vendor.confirmed` | Vendor confirmed for event |
-| `vendor.declined` | Vendor declined |
-| `sponsor.applied` | Sponsor applied to event |
-| `sponsor.confirmed` | Sponsor confirmed |
-| `sponsor.declined` | Sponsor declined |
-| `task.created` | Task created |
-| `task.completed` | Task completed |
+| Event                  | Description                |
+| ---------------------- | -------------------------- |
+| `event.created`        | New event created          |
+| `event.updated`        | Event details updated      |
+| `event.deleted`        | Event deleted              |
+| `event.status_changed` | Event status changed       |
+| `vendor.applied`       | Vendor applied to event    |
+| `vendor.confirmed`     | Vendor confirmed for event |
+| `vendor.declined`      | Vendor declined            |
+| `sponsor.applied`      | Sponsor applied to event   |
+| `sponsor.confirmed`    | Sponsor confirmed          |
+| `sponsor.declined`     | Sponsor declined           |
+| `task.created`         | Task created               |
+| `task.completed`       | Task completed             |
 
 ### Webhook Payload
 
@@ -622,19 +624,13 @@ Webhooks allow you to receive real-time notifications when events occur.
 Webhooks are signed with your webhook secret. Verify signatures to ensure authenticity:
 
 ```javascript
-const crypto = require('crypto');
+const crypto = require('crypto')
 
 function verifyWebhookSignature(payload, signature, timestamp, secret) {
-  const signedPayload = `${timestamp}.${payload}`;
-  const expectedSignature = crypto
-    .createHmac('sha256', secret)
-    .update(signedPayload)
-    .digest('hex');
-  
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expectedSignature)
-  );
+  const signedPayload = `${timestamp}.${payload}`
+  const expectedSignature = crypto.createHmac('sha256', secret).update(signedPayload).digest('hex')
+
+  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))
 }
 ```
 
@@ -642,12 +638,12 @@ function verifyWebhookSignature(payload, signature, timestamp, secret) {
 
 Webhook requests include:
 
-| Header | Description |
-|--------|-------------|
-| `X-OpenEvent-Signature` | HMAC-SHA256 signature |
-| `X-OpenEvent-Timestamp` | Request timestamp |
-| `X-OpenEvent-Event` | Event type |
-| `X-OpenEvent-Delivery-Id` | Unique delivery ID |
+| Header                    | Description           |
+| ------------------------- | --------------------- |
+| `X-OpenEvent-Signature`   | HMAC-SHA256 signature |
+| `X-OpenEvent-Timestamp`   | Request timestamp     |
+| `X-OpenEvent-Event`       | Event type            |
+| `X-OpenEvent-Delivery-Id` | Unique delivery ID    |
 
 ### Retry Policy
 
@@ -664,15 +660,15 @@ After 5 consecutive failures, the webhook is automatically disabled.
 
 ## Error Codes
 
-| Code | HTTP Status | Description |
-|------|-------------|-------------|
-| `UNAUTHORIZED` | 401 | Invalid or missing API key |
-| `FORBIDDEN` | 403 | Insufficient permissions |
-| `NOT_FOUND` | 404 | Resource not found |
-| `BAD_REQUEST` | 400 | Invalid request |
-| `VALIDATION_ERROR` | 400 | Request validation failed |
-| `RATE_LIMIT_EXCEEDED` | 429 | Too many requests |
-| `INTERNAL_ERROR` | 500 | Server error |
+| Code                  | HTTP Status | Description                |
+| --------------------- | ----------- | -------------------------- |
+| `UNAUTHORIZED`        | 401         | Invalid or missing API key |
+| `FORBIDDEN`           | 403         | Insufficient permissions   |
+| `NOT_FOUND`           | 404         | Resource not found         |
+| `BAD_REQUEST`         | 400         | Invalid request            |
+| `VALIDATION_ERROR`    | 400         | Request validation failed  |
+| `RATE_LIMIT_EXCEEDED` | 429         | Too many requests          |
+| `INTERNAL_ERROR`      | 500         | Server error               |
 
 ---
 
@@ -687,15 +683,15 @@ async function listEvents(apiKey) {
     headers: {
       'X-API-Key': apiKey,
     },
-  });
-  
-  const data = await response.json();
-  
+  })
+
+  const data = await response.json()
+
   if (!data.success) {
-    throw new Error(data.error.message);
+    throw new Error(data.error.message)
   }
-  
-  return data.data;
+
+  return data.data
 }
 
 // Create event
@@ -707,15 +703,15 @@ async function createEvent(apiKey, eventData) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(eventData),
-  });
-  
-  const data = await response.json();
-  
+  })
+
+  const data = await response.json()
+
   if (!data.success) {
-    throw new Error(data.error.message);
+    throw new Error(data.error.message)
   }
-  
-  return data.data;
+
+  return data.data
 }
 ```
 
@@ -733,10 +729,10 @@ def list_events():
         headers={'X-API-Key': API_KEY}
     )
     data = response.json()
-    
+
     if not data['success']:
         raise Exception(data['error']['message'])
-    
+
     return data['data']
 
 def create_event(event_data):
@@ -749,10 +745,10 @@ def create_event(event_data):
         json=event_data
     )
     data = response.json()
-    
+
     if not data['success']:
         raise Exception(data['error']['message'])
-    
+
     return data['data']
 
 # Usage
@@ -811,4 +807,3 @@ curl -X DELETE \
 - API key authentication
 - Rate limiting
 - Public endpoints
-

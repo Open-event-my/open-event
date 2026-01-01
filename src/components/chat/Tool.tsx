@@ -56,7 +56,6 @@ const toolIcons: Record<string, typeof Wrench> = {
   addSponsorToEvent: Handshake,
 }
 
-
 // ============================================================================
 // Tool Display Names
 // ============================================================================
@@ -123,9 +122,7 @@ export function Tool({
           </div>
         )
       default:
-        return (
-          <CircleNotch size={16} weight="duotone" className="text-muted-foreground" />
-        )
+        return <CircleNotch size={16} weight="duotone" className="text-muted-foreground" />
     }
   })()
 
@@ -157,13 +154,15 @@ export function Tool({
         )}
       >
         {/* Tool icon with subtle background */}
-        <span className={cn(
-          'p-1.5 rounded-md',
-          status === 'executing' && 'bg-primary/10 text-primary',
-          status === 'success' && 'bg-emerald-500/10 text-emerald-600',
-          status === 'error' && 'bg-destructive/10 text-destructive',
-          status === 'pending' && 'bg-muted text-muted-foreground',
-        )}>
+        <span
+          className={cn(
+            'p-1.5 rounded-md',
+            status === 'executing' && 'bg-primary/10 text-primary',
+            status === 'success' && 'bg-emerald-500/10 text-emerald-600',
+            status === 'error' && 'bg-destructive/10 text-destructive',
+            status === 'pending' && 'bg-muted text-muted-foreground'
+          )}
+        >
           <ToolIcon size={14} weight="duotone" />
         </span>
 
@@ -203,7 +202,9 @@ export function Tool({
               <div
                 className={cn(
                   'text-sm p-2 rounded-md',
-                  result.success ? 'bg-green-500/10 text-green-700 dark:text-green-400' : 'bg-destructive/10 text-destructive'
+                  result.success
+                    ? 'bg-green-500/10 text-green-700 dark:text-green-400'
+                    : 'bg-destructive/10 text-destructive'
                 )}
               >
                 {result.summary}
@@ -236,9 +237,5 @@ export interface ToolListProps {
 }
 
 export function ToolList({ children, className }: ToolListProps) {
-  return (
-    <div className={cn('space-y-2', className)}>
-      {children}
-    </div>
-  )
+  return <div className={cn('space-y-2', className)}>{children}</div>
 }

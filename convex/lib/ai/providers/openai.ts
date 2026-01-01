@@ -6,20 +6,17 @@
  */
 
 import OpenAI from 'openai'
-import type {
-  AIProvider,
-  AIMessage,
-  AITool,
-  AIProviderConfig,
-  AIStreamChunk,
-} from '../types'
+import type { AIProvider, AIMessage, AITool, AIProviderConfig, AIStreamChunk } from '../types'
 
 export class OpenAIProvider implements AIProvider {
   readonly name = 'openai'
   private client: OpenAI
 
   constructor(apiKey: string) {
-    this.client = new OpenAI({ apiKey })
+    this.client = new OpenAI({
+      apiKey,
+      dangerouslyAllowBrowser: true, // Allow in test/development environments
+    })
   }
 
   /**
@@ -150,9 +147,7 @@ export class OpenAIProvider implements AIProvider {
   /**
    * Convert our message format to OpenAI's format.
    */
-  private convertMessages(
-    messages: AIMessage[]
-  ): OpenAI.Chat.ChatCompletionMessageParam[] {
+  private convertMessages(messages: AIMessage[]): OpenAI.Chat.ChatCompletionMessageParam[] {
     return messages.map((msg) => {
       if (msg.role === 'tool') {
         return {
@@ -184,9 +179,7 @@ export class OpenAIProvider implements AIProvider {
   /**
    * Convert our tool format to OpenAI's format.
    */
-  private convertTools(
-    tools: AITool[]
-  ): OpenAI.Chat.ChatCompletionTool[] {
+  private convertTools(tools: AITool[]): OpenAI.Chat.ChatCompletionTool[] {
     return tools.map((tool) => ({
       type: 'function' as const,
       function: {

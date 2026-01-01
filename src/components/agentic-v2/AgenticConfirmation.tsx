@@ -68,11 +68,7 @@ export function AgenticConfirmation({
 
       {/* Actions */}
       <div className="agentic-confirm-v2-actions">
-        <button
-          onClick={onConfirm}
-          disabled={isLoading}
-          className="agentic-confirm-v2-btn primary"
-        >
+        <button onClick={onConfirm} disabled={isLoading} className="agentic-confirm-v2-btn primary">
           {isLoading ? (
             <>
               <CircleNotch size={16} weight="bold" className="animate-spin" />
@@ -127,24 +123,15 @@ function EventPreview({ args }: { args: Record<string, unknown> }) {
       <div className="grid grid-cols-1 xs:grid-cols-2 gap-2 xs:gap-3 text-sm">
         {startDate && (
           <DetailItem icon={Calendar}>
-            {startDate}{startTime ? ` at ${startTime}` : ''}
+            {startDate}
+            {startTime ? ` at ${startTime}` : ''}
           </DetailItem>
         )}
-        {locationType && (
-          <DetailItem icon={MapPin}>
-            {venueName || locationType}
-          </DetailItem>
-        )}
+        {locationType && <DetailItem icon={MapPin}>{venueName || locationType}</DetailItem>}
         {expectedAttendees && (
-          <DetailItem icon={Users}>
-            {expectedAttendees.toLocaleString()}
-          </DetailItem>
+          <DetailItem icon={Users}>{expectedAttendees.toLocaleString()}</DetailItem>
         )}
-        {budget && (
-          <DetailItem icon={CurrencyDollar}>
-            ${budget.toLocaleString()}
-          </DetailItem>
-        )}
+        {budget && <DetailItem icon={CurrencyDollar}>${budget.toLocaleString()}</DetailItem>}
       </div>
     </div>
   )
@@ -171,9 +158,7 @@ function GenericPreview({ args }: { args: Record<string, unknown> }) {
         </div>
       ))}
       {entries.length > 4 && (
-        <div className="text-xs text-muted-foreground pt-1">
-          +{entries.length - 4} more fields
-        </div>
+        <div className="text-xs text-muted-foreground pt-1">+{entries.length - 4} more fields</div>
       )}
     </div>
   )

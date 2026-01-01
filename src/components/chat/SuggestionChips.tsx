@@ -1,4 +1,10 @@
-import { CalendarPlus, Storefront, HandCoins, MagnifyingGlass, Question } from '@phosphor-icons/react'
+import {
+  CalendarPlus,
+  Storefront,
+  HandCoins,
+  MagnifyingGlass,
+  Question,
+} from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import type { ComponentType } from 'react'
 import type { IconProps } from '@phosphor-icons/react'
@@ -68,9 +74,7 @@ export function SuggestionChips({
 }: SuggestionChipsProps) {
   return (
     <div className={cn('suggestion-chips-container', className)}>
-      <p className="text-sm text-muted-foreground mb-3 text-center">
-        What would you like to do?
-      </p>
+      <p className="text-sm text-muted-foreground mb-3 text-center">What would you like to do?</p>
       <div className="flex flex-wrap justify-center gap-2">
         {chips.map((chip, index) => {
           const Icon = chip.icon

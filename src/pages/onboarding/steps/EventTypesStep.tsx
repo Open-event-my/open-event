@@ -20,11 +20,7 @@ export function EventTypesStep({ onNext, onBack, currentData }: StepProps) {
         description="Select all that apply"
       />
 
-      <MultiSelect
-        options={eventTypeOptions}
-        selected={selected}
-        onChange={setSelected}
-      />
+      <MultiSelect options={eventTypeOptions} selected={selected} onChange={setSelected} />
 
       <TypeformNavigation
         onPrevious={onBack}

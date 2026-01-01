@@ -5,6 +5,7 @@ import { getCurrentUser } from './lib/auth'
 // Save or update organizer profile (onboarding data)
 export const saveProfile = mutation({
   args: {
+    accessToken: v.optional(v.string()),
     organizationName: v.optional(v.string()),
     organizationType: v.optional(v.string()),
     eventTypes: v.optional(v.array(v.string())),
@@ -14,7 +15,8 @@ export const saveProfile = mutation({
     referralSource: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const user = await getCurrentUser(ctx)
+    const { accessToken, ...profileData } = args
+    const user = await getCurrentUser(ctx, accessToken)
     if (!user) {
       throw new Error('Not authenticated')
     }
@@ -28,7 +30,7 @@ export const saveProfile = mutation({
     if (existingProfile) {
       // Update existing profile
       await ctx.db.patch(existingProfile._id, {
-        ...args,
+        ...profileData,
         updatedAt: Date.now(),
       })
       return existingProfile._id
@@ -36,7 +38,7 @@ export const saveProfile = mutation({
       // Create new profile
       const profileId = await ctx.db.insert('organizerProfiles', {
         userId: user._id,
-        ...args,
+        ...profileData,
         createdAt: Date.now(),
       })
       return profileId
@@ -46,9 +48,11 @@ export const saveProfile = mutation({
 
 // Get current user's organizer profile
 export const getMyProfile = query({
-  args: {},
-  handler: async (ctx) => {
-    const user = await getCurrentUser(ctx)
+  args: {
+    accessToken: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx, args.accessToken)
     if (!user) {
       return null
     }

@@ -2,7 +2,15 @@ import { useState } from 'react'
 import { useQuery, useMutation } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
-import { MagnifyingGlass, Handshake, CheckCircle, CurrencyDollar, Globe, EnvelopeSimple, Plus } from '@phosphor-icons/react'
+import {
+  MagnifyingGlass,
+  Handshake,
+  CheckCircle,
+  CurrencyDollar,
+  Globe,
+  EnvelopeSimple,
+  Plus,
+} from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import {
@@ -70,7 +78,10 @@ export function SponsorsPage() {
   const displayIndustries = industries?.length ? ['All', ...industries] : defaultIndustries
 
   // Filter events that are in planning or active status
-  const availableEvents = myEvents?.filter(e => e.status === 'planning' || e.status === 'active' || e.status === 'draft') || []
+  const availableEvents =
+    myEvents?.filter(
+      (e) => e.status === 'planning' || e.status === 'active' || e.status === 'draft'
+    ) || []
 
   const formatBudget = (min?: number, max?: number) => {
     if (!min && !max) return null
@@ -200,6 +211,7 @@ export function SponsorsPage() {
                   <img
                     src={sponsor.logoUrl}
                     alt={sponsor.name}
+                    loading="lazy"
                     className="w-12 h-12 rounded-lg object-cover"
                   />
                 ) : (
@@ -214,7 +226,9 @@ export function SponsorsPage() {
                       <CheckCircle size={16} weight="fill" className="text-blue-500 shrink-0" />
                     )}
                   </div>
-                  <span className="text-xs text-muted-foreground capitalize">{sponsor.industry}</span>
+                  <span className="text-xs text-muted-foreground capitalize">
+                    {sponsor.industry}
+                  </span>
                 </div>
               </div>
 
@@ -243,7 +257,9 @@ export function SponsorsPage() {
               {formatBudget(sponsor.budgetMin, sponsor.budgetMax) && (
                 <div className="flex items-center gap-1 text-muted-foreground mb-4">
                   <CurrencyDollar size={14} weight="bold" />
-                  <span className="text-xs">{formatBudget(sponsor.budgetMin, sponsor.budgetMax)}</span>
+                  <span className="text-xs">
+                    {formatBudget(sponsor.budgetMin, sponsor.budgetMax)}
+                  </span>
                 </div>
               )}
 
@@ -252,7 +268,8 @@ export function SponsorsPage() {
                 <div className="mb-4">
                   <span className="text-xs text-muted-foreground">
                     Interested in: {sponsor.targetEventTypes.slice(0, 3).join(', ')}
-                    {sponsor.targetEventTypes.length > 3 && ` +${sponsor.targetEventTypes.length - 3} more`}
+                    {sponsor.targetEventTypes.length > 3 &&
+                      ` +${sponsor.targetEventTypes.length - 3} more`}
                   </span>
                 </div>
               )}
@@ -350,14 +367,16 @@ export function SponsorsPage() {
                 </p>
                 {formatBudget(selectedSponsor.budgetMin, selectedSponsor.budgetMax) && (
                   <p className="text-muted-foreground">
-                    Budget Range: {formatBudget(selectedSponsor.budgetMin, selectedSponsor.budgetMax)}
+                    Budget Range:{' '}
+                    {formatBudget(selectedSponsor.budgetMin, selectedSponsor.budgetMax)}
                   </p>
                 )}
-                {selectedSponsor.sponsorshipTiers && selectedSponsor.sponsorshipTiers.length > 0 && (
-                  <p className="text-muted-foreground">
-                    Tiers: {selectedSponsor.sponsorshipTiers.join(', ')}
-                  </p>
-                )}
+                {selectedSponsor.sponsorshipTiers &&
+                  selectedSponsor.sponsorshipTiers.length > 0 && (
+                    <p className="text-muted-foreground">
+                      Tiers: {selectedSponsor.sponsorshipTiers.join(', ')}
+                    </p>
+                  )}
               </div>
             )}
           </div>
@@ -371,7 +390,12 @@ export function SponsorsPage() {
             </button>
             <button
               onClick={handleSendInquiry}
-              disabled={isSending || !selectedEventId || !inquiryMessage.trim() || availableEvents.length === 0}
+              disabled={
+                isSending ||
+                !selectedEventId ||
+                !inquiryMessage.trim() ||
+                availableEvents.length === 0
+              }
               className={cn(
                 'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium',
                 'bg-primary text-primary-foreground hover:bg-primary/90 transition-colors',

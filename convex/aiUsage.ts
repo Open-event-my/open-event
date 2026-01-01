@@ -62,7 +62,10 @@ function getTimeUntilReset(): { hours: number; minutes: number; formatted: strin
 /**
  * Get usage status based on percentage used
  */
-function getUsageStatus(used: number, limit: number): 'normal' | 'warning' | 'critical' | 'exceeded' {
+function getUsageStatus(
+  used: number,
+  limit: number
+): 'normal' | 'warning' | 'critical' | 'exceeded' {
   if (used >= limit) return 'exceeded'
   const percentage = used / limit
   if (percentage >= RATE_LIMIT_CONFIG.CRITICAL_THRESHOLD) return 'critical'
@@ -461,11 +464,9 @@ export const checkAndIncrementUsage = internalMutation({
 export const getAllUsageStats = query({
   args: {
     limit: v.optional(v.number()),
-    sortBy: v.optional(v.union(
-      v.literal('promptCount'),
-      v.literal('totalPrompts'),
-      v.literal('updatedAt')
-    )),
+    sortBy: v.optional(
+      v.union(v.literal('promptCount'), v.literal('totalPrompts'), v.literal('updatedAt'))
+    ),
   },
   handler: async (ctx, args) => {
     const admin = await getCurrentUser(ctx)
@@ -558,7 +559,8 @@ export const getUsageAnalytics = query({
       totalPromptsToday,
       totalPromptsAllTime,
       averagePromptsPerUser: totalUsers > 0 ? Math.round(totalPromptsAllTime / totalUsers) : 0,
-      averagePromptsToday: activeUsersToday > 0 ? Math.round(totalPromptsToday / activeUsersToday) : 0,
+      averagePromptsToday:
+        activeUsersToday > 0 ? Math.round(totalPromptsToday / activeUsersToday) : 0,
       defaultDailyLimit: RATE_LIMIT_CONFIG.FREE_DAILY_LIMIT,
       config: RATE_LIMIT_CONFIG,
     }

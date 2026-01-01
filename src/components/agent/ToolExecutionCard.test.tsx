@@ -22,31 +22,21 @@ describe('ToolExecutionCard', () => {
     })
 
     it('should render result summary when provided', () => {
-      render(
-        <ToolExecutionCard
-          toolName="createEvent"
-          status="success"
-          result={mockResult}
-        />
-      )
+      render(<ToolExecutionCard toolName="createEvent" status="success" result={mockResult} />)
       expect(screen.getByText('Created event "Test Event"')).toBeInTheDocument()
     })
   })
 
   describe('status states', () => {
     it('should apply pending styles', () => {
-      const { container } = render(
-        <ToolExecutionCard toolName="createEvent" status="pending" />
-      )
+      const { container } = render(<ToolExecutionCard toolName="createEvent" status="pending" />)
       const card = container.firstChild as HTMLElement
       expect(card.className).toContain('border-border')
       expect(card.className).toContain('bg-muted/50')
     })
 
     it('should apply executing styles and show spinner', () => {
-      const { container } = render(
-        <ToolExecutionCard toolName="createEvent" status="executing" />
-      )
+      const { container } = render(<ToolExecutionCard toolName="createEvent" status="executing" />)
       const card = container.firstChild as HTMLElement
       expect(card.className).toContain('border-primary/30')
       expect(card.className).toContain('bg-primary/5')
@@ -57,11 +47,7 @@ describe('ToolExecutionCard', () => {
 
     it('should apply success styles and show check icon', () => {
       const { container } = render(
-        <ToolExecutionCard
-          toolName="createEvent"
-          status="success"
-          result={mockResult}
-        />
+        <ToolExecutionCard toolName="createEvent" status="success" result={mockResult} />
       )
       const card = container.firstChild as HTMLElement
       expect(card.className).toContain('border-emerald-500/30')
@@ -76,11 +62,7 @@ describe('ToolExecutionCard', () => {
         summary: 'Failed to create event',
       }
       const { container } = render(
-        <ToolExecutionCard
-          toolName="createEvent"
-          status="error"
-          result={errorResult}
-        />
+        <ToolExecutionCard toolName="createEvent" status="error" result={errorResult} />
       )
       const card = container.firstChild as HTMLElement
       expect(card.className).toContain('border-red-500/30')
@@ -108,11 +90,7 @@ describe('ToolExecutionCard', () => {
   describe('className prop', () => {
     it('should apply custom className', () => {
       const { container } = render(
-        <ToolExecutionCard
-          toolName="createEvent"
-          status="pending"
-          className="custom-class"
-        />
+        <ToolExecutionCard toolName="createEvent" status="pending" className="custom-class" />
       )
       const card = container.firstChild as HTMLElement
       expect(card.className).toContain('custom-class')

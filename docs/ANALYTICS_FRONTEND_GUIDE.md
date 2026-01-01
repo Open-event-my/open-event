@@ -41,7 +41,7 @@ async function getEventTrends() {
       'X-API-Key': API_KEY,
     },
   })
-  
+
   const data = await response.json()
   return data
 }
@@ -74,6 +74,7 @@ headers: {
 **Never expose your API key in client-side code!** Instead:
 
 1. **Use environment variables:**
+
    ```javascript
    const API_KEY = import.meta.env.VITE_API_KEY
    ```
@@ -89,13 +90,13 @@ headers: {
 
 ## Endpoints Overview
 
-| Endpoint | Description | Use Case |
-|----------|-------------|----------|
-| `/analytics/events/trends` | Event trends over time | Show charts/graphs of event creation |
-| `/analytics/events/performance` | Overall performance metrics | Dashboard summary cards |
-| `/analytics/events/comparative` | Period comparisons | "This month vs last month" widgets |
-| `/analytics/budget` | Budget analytics | Budget tracking dashboard |
-| `/analytics/engagement` | Vendor/sponsor engagement | Engagement metrics table |
+| Endpoint                        | Description                 | Use Case                             |
+| ------------------------------- | --------------------------- | ------------------------------------ |
+| `/analytics/events/trends`      | Event trends over time      | Show charts/graphs of event creation |
+| `/analytics/events/performance` | Overall performance metrics | Dashboard summary cards              |
+| `/analytics/events/comparative` | Period comparisons          | "This month vs last month" widgets   |
+| `/analytics/budget`             | Budget analytics            | Budget tracking dashboard            |
+| `/analytics/engagement`         | Vendor/sponsor engagement   | Engagement metrics table             |
 
 ---
 
@@ -117,21 +118,18 @@ async function getEventTrends(period = 'month', startDate, endDate) {
   if (startDate) params.append('startDate', startDate)
   if (endDate) params.append('endDate', endDate)
 
-  const response = await fetch(
-    `${BASE_URL}/analytics/events/trends?${params}`,
-    {
-      headers: {
-        'X-API-Key': API_KEY,
-      },
-    }
-  )
+  const response = await fetch(`${BASE_URL}/analytics/events/trends?${params}`, {
+    headers: {
+      'X-API-Key': API_KEY,
+    },
+  })
 
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`)
   }
 
   const result = await response.json()
-  
+
   if (!result.success) {
     throw new Error(result.error.message)
   }
@@ -229,7 +227,7 @@ async function getEventPerformance(startDate, endDate) {
   }
 
   const result = await response.json()
-  
+
   if (!result.success) {
     throw new Error(result.error.message)
   }
@@ -301,21 +299,18 @@ Compare current period with previous period.
  * @param {string} period - 'week' | 'month' | 'year'
  */
 async function getComparativeAnalytics(period = 'month') {
-  const response = await fetch(
-    `${BASE_URL}/analytics/events/comparative?period=${period}`,
-    {
-      headers: {
-        'X-API-Key': API_KEY,
-      },
-    }
-  )
+  const response = await fetch(`${BASE_URL}/analytics/events/comparative?period=${period}`, {
+    headers: {
+      'X-API-Key': API_KEY,
+    },
+  })
 
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`)
   }
 
   const result = await response.json()
-  
+
   if (!result.success) {
     throw new Error(result.error.message)
   }
@@ -362,16 +357,22 @@ function ComparisonWidget() {
       <div className="comparison-grid">
         <div>
           <h3>Events</h3>
-          <p>{current.totalEvents} vs {previous.totalEvents}</p>
+          <p>
+            {current.totalEvents} vs {previous.totalEvents}
+          </p>
           <span className={changes.totalEvents > 0 ? 'positive' : 'negative'}>
-            {changes.totalEvents > 0 ? '+' : ''}{changes.totalEvents}%
+            {changes.totalEvents > 0 ? '+' : ''}
+            {changes.totalEvents}%
           </span>
         </div>
         <div>
           <h3>Budget</h3>
-          <p>${current.totalBudget.toLocaleString()} vs ${previous.totalBudget.toLocaleString()}</p>
+          <p>
+            ${current.totalBudget.toLocaleString()} vs ${previous.totalBudget.toLocaleString()}
+          </p>
           <span className={changes.totalBudget > 0 ? 'positive' : 'negative'}>
-            {changes.totalBudget > 0 ? '+' : ''}{changes.totalBudget}%
+            {changes.totalBudget > 0 ? '+' : ''}
+            {changes.totalBudget}%
           </span>
         </div>
       </div>
@@ -412,7 +413,7 @@ async function getBudgetAnalytics(startDate, endDate) {
   }
 
   const result = await response.json()
-  
+
   if (!result.success) {
     throw new Error(result.error.message)
   }
@@ -464,7 +465,7 @@ async function getEngagementAnalytics(startDate, endDate) {
   }
 
   const result = await response.json()
-  
+
   if (!result.success) {
     throw new Error(result.error.message)
   }
@@ -533,13 +534,13 @@ interface ApiResponse<T> {
 
 ### Common Error Codes
 
-| Code | HTTP Status | Description |
-|------|-------------|-------------|
-| `UNAUTHORIZED` | 401 | Invalid or missing API key |
-| `FORBIDDEN` | 403 | API key doesn't have `analytics:read` permission |
-| `RATE_LIMIT_EXCEEDED` | 429 | Too many requests |
-| `BAD_REQUEST` | 400 | Invalid query parameters |
-| `INTERNAL_ERROR` | 500 | Server error |
+| Code                  | HTTP Status | Description                                      |
+| --------------------- | ----------- | ------------------------------------------------ |
+| `UNAUTHORIZED`        | 401         | Invalid or missing API key                       |
+| `FORBIDDEN`           | 403         | API key doesn't have `analytics:read` permission |
+| `RATE_LIMIT_EXCEEDED` | 429         | Too many requests                                |
+| `BAD_REQUEST`         | 400         | Invalid query parameters                         |
+| `INTERNAL_ERROR`      | 500         | Server error                                     |
 
 ### Error Handling Example
 
@@ -548,7 +549,7 @@ async function fetchAnalytics(endpoint, params = {}) {
   try {
     const queryString = new URLSearchParams(params).toString()
     const url = `${BASE_URL}${endpoint}${queryString ? `?${queryString}` : ''}`
-    
+
     const response = await fetch(url, {
       headers: {
         'X-API-Key': API_KEY,
@@ -604,7 +605,7 @@ class AnalyticsClient {
   async request(endpoint, params = {}) {
     const queryString = new URLSearchParams(params).toString()
     const url = `${this.baseUrl}${endpoint}${queryString ? `?${queryString}` : ''}`
-    
+
     const response = await fetch(url, {
       headers: {
         'X-API-Key': this.apiKey,
@@ -691,10 +692,7 @@ const endDate = new Date()
 const startDate = new Date()
 startDate.setDate(startDate.getDate() - 30)
 
-const trends = await getEventTrends('day', 
-  dateToTimestamp(startDate),
-  dateToTimestamp(endDate)
-)
+const trends = await getEventTrends('day', dateToTimestamp(startDate), dateToTimestamp(endDate))
 ```
 
 ### 4. TypeScript Support
@@ -770,10 +768,10 @@ function AnalyticsDashboard() {
         const [metricsData, trendsData] = await Promise.all([
           fetch(`${BASE_URL}/analytics/events/performance`, {
             headers: { 'X-API-Key': API_KEY },
-          }).then(r => r.json()),
+          }).then((r) => r.json()),
           fetch(`${BASE_URL}/analytics/events/trends?period=month`, {
             headers: { 'X-API-Key': API_KEY },
-          }).then(r => r.json()),
+          }).then((r) => r.json()),
         ])
 
         if (metricsData.success) setMetrics(metricsData.data)
@@ -794,20 +792,11 @@ function AnalyticsDashboard() {
   return (
     <div className="analytics-dashboard">
       <h1>Analytics Dashboard</h1>
-      
+
       <div className="metrics-grid">
-        <MetricCard
-          title="Total Events"
-          value={metrics.totalEvents}
-        />
-        <MetricCard
-          title="Completion Rate"
-          value={`${metrics.completionRate}%`}
-        />
-        <MetricCard
-          title="Vendor Conversion"
-          value={`${metrics.vendorMetrics.conversionRate}%`}
-        />
+        <MetricCard title="Total Events" value={metrics.totalEvents} />
+        <MetricCard title="Completion Rate" value={`${metrics.completionRate}%`} />
+        <MetricCard title="Vendor Conversion" value={`${metrics.vendorMetrics.conversionRate}%`} />
         <MetricCard
           title="Sponsor Conversion"
           value={`${metrics.sponsorMetrics.conversionRate}%`}
@@ -836,9 +825,7 @@ function TrendsChart({ data }) {
     <div className="chart">
       {data.map((trend) => (
         <div key={trend.period} className="trend-bar">
-          <div className="trend-label">
-            {new Date(trend.period).toLocaleDateString()}
-          </div>
+          <div className="trend-label">{new Date(trend.period).toLocaleDateString()}</div>
           <div className="trend-value">{trend.totalEvents} events</div>
         </div>
       ))}
@@ -860,4 +847,3 @@ export default AnalyticsDashboard
 ---
 
 **Happy coding! 🚀**
-

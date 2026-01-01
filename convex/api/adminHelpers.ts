@@ -19,7 +19,7 @@ export const listUsers = query({
   args: {},
   handler: async (ctx) => {
     const users = await ctx.db.query('users').collect()
-    return users.map(u => ({
+    return users.map((u) => ({
       _id: u._id,
       email: u.email,
       name: u.name,
@@ -53,13 +53,13 @@ async function hashApiKey(key: string): Promise<string> {
   const data = encoder.encode(key)
   const hashBuffer = await crypto.subtle.digest('SHA-256', data)
   const hashArray = Array.from(new Uint8Array(hashBuffer))
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
 /**
  * Create an API key for testing
  * Run this from the Convex Dashboard!
- * 
+ *
  * Steps:
  * 1. First run listUsers to find a user ID
  * 2. Then run createTestApiKey with that user ID
@@ -125,7 +125,7 @@ export const createTestUser = mutation({
     // Check if user already exists
     const existing = await ctx.db
       .query('users')
-      .filter(q => q.eq(q.field('email'), args.email))
+      .filter((q) => q.eq(q.field('email'), args.email))
       .first()
 
     if (existing) {
@@ -152,4 +152,3 @@ export const createTestUser = mutation({
     }
   },
 })
-

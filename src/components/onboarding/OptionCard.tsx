@@ -38,17 +38,14 @@ export function OptionCard({
       )}
       style={{ animationDelay: `${delay}ms`, animationFillMode: 'backwards' }}
     >
-      <div className={cn(
-        'flex items-center',
-        compact ? 'gap-2.5 sm:gap-3' : 'gap-3'
-      )}>
+      <div className={cn('flex items-center', compact ? 'gap-2.5 sm:gap-3' : 'gap-3')}>
         {IconComponent && (
           <div
             className={cn(
               'shrink-0 rounded-lg flex items-center justify-center transition-all duration-200',
               compact ? 'w-9 h-9 sm:w-10 sm:h-10' : 'w-10 h-10 sm:w-11 sm:h-11',
-              isSelected 
-                ? 'bg-primary/15 text-primary' 
+              isSelected
+                ? 'bg-primary/15 text-primary'
                 : 'bg-muted/80 text-muted-foreground group-hover:bg-muted group-hover:text-foreground'
             )}
           >
@@ -60,36 +57,42 @@ export function OptionCard({
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <p className={cn(
-            'font-medium transition-colors',
-            compact ? 'text-sm sm:text-base' : 'text-sm sm:text-base',
-            isSelected ? 'text-primary' : 'text-foreground'
-          )}>
+          <p
+            className={cn(
+              'font-medium transition-colors',
+              compact ? 'text-sm sm:text-base' : 'text-sm sm:text-base',
+              isSelected ? 'text-primary' : 'text-foreground'
+            )}
+          >
             {label}
           </p>
           {description && (
-            <p className={cn(
-              'text-muted-foreground mt-0.5 leading-snug',
-              compact ? 'text-xs sm:text-sm' : 'text-xs sm:text-sm'
-            )}>
+            <p
+              className={cn(
+                'text-muted-foreground mt-0.5 leading-snug',
+                compact ? 'text-xs sm:text-sm' : 'text-xs sm:text-sm'
+              )}
+            >
               {description}
             </p>
           )}
         </div>
-        <div className={cn(
-          'shrink-0 rounded-full flex items-center justify-center transition-all duration-200',
-          compact ? 'w-5 h-5 sm:w-6 sm:h-6' : 'w-6 h-6',
-          isSelected 
-            ? 'bg-primary scale-100' 
-            : 'bg-muted/50 scale-90 opacity-0 group-hover:opacity-50'
-        )}>
-          <Check 
-            size={compact ? 12 : 14} 
-            weight="bold" 
+        <div
+          className={cn(
+            'shrink-0 rounded-full flex items-center justify-center transition-all duration-200',
+            compact ? 'w-5 h-5 sm:w-6 sm:h-6' : 'w-6 h-6',
+            isSelected
+              ? 'bg-primary scale-100'
+              : 'bg-muted/50 scale-90 opacity-0 group-hover:opacity-50'
+          )}
+        >
+          <Check
+            size={compact ? 12 : 14}
+            weight="bold"
             className={cn(
               'transition-colors',
               isSelected ? 'text-primary-foreground' : 'text-muted-foreground'
-            )} 
+            )}
           />
         </div>
       </div>

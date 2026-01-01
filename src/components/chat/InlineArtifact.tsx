@@ -136,10 +136,7 @@ export function InlineArtifact({
       >
         {/* Icon with type color */}
         <div
-          className={cn(
-            'w-8 h-8 rounded-lg flex items-center justify-center',
-            'bg-background/50'
-          )}
+          className={cn('w-8 h-8 rounded-lg flex items-center justify-center', 'bg-background/50')}
         >
           <Icon size={18} weight="duotone" className={config.accentColor} />
         </div>
@@ -158,27 +155,16 @@ export function InlineArtifact({
                 e.stopPropagation()
                 handleCopy()
               }}
-              className={cn(
-                'icon-btn p-1.5',
-                copied && 'text-emerald-400'
-              )}
+              className={cn('icon-btn p-1.5', copied && 'text-emerald-400')}
               aria-label={copied ? 'Copied!' : 'Copy content'}
             >
-              {copied ? (
-                <Check size={14} weight="bold" />
-              ) : (
-                <Copy size={14} weight="duotone" />
-              )}
+              {copied ? <Check size={14} weight="bold" /> : <Copy size={14} weight="duotone" />}
             </button>
           )}
 
           {/* Expand/collapse indicator */}
           <div className="text-muted-foreground">
-            {expanded ? (
-              <CaretUp size={16} weight="bold" />
-            ) : (
-              <CaretDown size={16} weight="bold" />
-            )}
+            {expanded ? <CaretUp size={16} weight="bold" /> : <CaretDown size={16} weight="bold" />}
           </div>
         </div>
       </button>
@@ -210,12 +196,7 @@ export interface CompactArtifactProps {
   className?: string
 }
 
-export function CompactArtifact({
-  type,
-  title,
-  onClick,
-  className,
-}: CompactArtifactProps) {
+export function CompactArtifact({ type, title, onClick, className }: CompactArtifactProps) {
   const config = typeConfigs[type]
   const Icon = config.icon
 

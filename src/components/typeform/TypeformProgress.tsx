@@ -7,11 +7,7 @@ export interface TypeformProgressProps {
   className?: string
 }
 
-export function TypeformProgress({
-  current,
-  total,
-  className,
-}: TypeformProgressProps) {
+export function TypeformProgress({ current, total, className }: TypeformProgressProps) {
   const percentage = Math.round((current / total) * 100)
 
   return (

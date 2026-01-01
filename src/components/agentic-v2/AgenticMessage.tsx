@@ -43,15 +43,12 @@ export function AgenticMessage({
 }: AgenticMessageProps) {
   const isUser = role === 'user'
   const showStreaming = isStreaming && isLatest && !isUser
-  const showQuickReplies = isLatest && !isUser && !isStreaming && quickReplies && quickReplies.length > 0
+  const showQuickReplies =
+    isLatest && !isUser && !isStreaming && quickReplies && quickReplies.length > 0
 
   return (
     <div
-      className={cn(
-        'flex agentic-message',
-        isUser ? 'justify-end' : 'justify-start',
-        className
-      )}
+      className={cn('flex agentic-message', isUser ? 'justify-end' : 'justify-start', className)}
     >
       {/* Content - No avatars, Typeform style */}
       <div className={cn('flex flex-col gap-2', isUser ? 'items-end' : 'items-start')}>
@@ -75,9 +72,7 @@ export function AgenticMessage({
 
         {/* Timestamp */}
         {timestamp && !showStreaming && (
-          <span className="text-[10px] text-muted-foreground/50 px-1">
-            {formatTime(timestamp)}
-          </span>
+          <span className="text-[10px] text-muted-foreground/50 px-1">{formatTime(timestamp)}</span>
         )}
 
         {/* Quick Replies - Typeform style animated buttons */}

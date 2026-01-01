@@ -2,7 +2,17 @@ import { useState } from 'react'
 import { useQuery, useMutation } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
-import { MagnifyingGlass, Storefront, Star, CheckCircle, MapPin, EnvelopeSimple, Plus, Phone, Globe } from '@phosphor-icons/react'
+import {
+  MagnifyingGlass,
+  Storefront,
+  Star,
+  CheckCircle,
+  MapPin,
+  EnvelopeSimple,
+  Plus,
+  Phone,
+  Globe,
+} from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import {
@@ -69,7 +79,10 @@ export function VendorsPage() {
   const displayCategories = categories?.length ? ['All', ...categories] : defaultCategories
 
   // Filter events that are in planning or active status
-  const availableEvents = myEvents?.filter(e => e.status === 'planning' || e.status === 'active' || e.status === 'draft') || []
+  const availableEvents =
+    myEvents?.filter(
+      (e) => e.status === 'planning' || e.status === 'active' || e.status === 'draft'
+    ) || []
 
   const openInquiryModal = (vendor: Vendor) => {
     setSelectedVendor(vendor)
@@ -162,7 +175,11 @@ export function VendorsPage() {
         </div>
       ) : vendors.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border bg-card p-12 text-center">
-          <Storefront size={64} weight="duotone" className="mx-auto text-muted-foreground/30 mb-6" />
+          <Storefront
+            size={64}
+            weight="duotone"
+            className="mx-auto text-muted-foreground/30 mb-6"
+          />
           <h3 className="text-lg font-semibold mb-2">
             {search ? 'No vendors found' : 'Vendor marketplace coming soon'}
           </h3>
@@ -191,7 +208,9 @@ export function VendorsPage() {
                       <CheckCircle size={16} weight="fill" className="text-blue-500 shrink-0" />
                     )}
                   </div>
-                  <span className="text-xs text-muted-foreground capitalize">{vendor.category}</span>
+                  <span className="text-xs text-muted-foreground capitalize">
+                    {vendor.category}
+                  </span>
                 </div>
               </div>
 
@@ -350,7 +369,12 @@ export function VendorsPage() {
             </button>
             <button
               onClick={handleSendInquiry}
-              disabled={isSending || !selectedEventId || !inquiryMessage.trim() || availableEvents.length === 0}
+              disabled={
+                isSending ||
+                !selectedEventId ||
+                !inquiryMessage.trim() ||
+                availableEvents.length === 0
+              }
               className={cn(
                 'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium',
                 'bg-primary text-primary-foreground hover:bg-primary/90 transition-colors',

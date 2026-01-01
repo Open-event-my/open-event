@@ -90,8 +90,8 @@ export function EventDirectory() {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">Event Directory</h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Discover events looking for vendors and sponsors. Connect with organizers
-            and grow your business through event partnerships.
+            Discover events looking for vendors and sponsors. Connect with organizers and grow your
+            business through event partnerships.
           </p>
         </div>
 
@@ -184,12 +184,14 @@ export function EventDirectory() {
 
         {/* Events Grid */}
         {!events ? (
-          <div className="text-center py-12 text-muted-foreground">
-            Loading events...
-          </div>
+          <div className="text-center py-12 text-muted-foreground">Loading events...</div>
         ) : events.length === 0 ? (
           <div className="text-center py-12">
-            <Calendar size={48} weight="duotone" className="mx-auto mb-4 text-muted-foreground/50" />
+            <Calendar
+              size={48}
+              weight="duotone"
+              className="mx-auto mb-4 text-muted-foreground/50"
+            />
             <h3 className="text-lg font-semibold mb-2">No Events Found</h3>
             <p className="text-muted-foreground">
               Try adjusting your filters or check back later for new opportunities.
@@ -198,110 +200,105 @@ export function EventDirectory() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {events.map((event) => (
-                <Link
-                  key={event._id}
-                  to={`/events/${event._id}`}
-                  className={cn(
-                    'block p-5 rounded-xl border border-border bg-card',
-                    'hover:border-primary/50 hover:shadow-lg transition-all group'
+              <Link
+                key={event._id}
+                to={`/events/${event._id}`}
+                className={cn(
+                  'block p-5 rounded-xl border border-border bg-card',
+                  'hover:border-primary/50 hover:shadow-lg transition-all group'
+                )}
+              >
+                {/* Event Type Badge */}
+                <div className="flex items-center justify-between mb-3">
+                  {event.eventType && (
+                    <span className="px-2 py-1 text-xs font-medium bg-primary/10 text-primary rounded-md">
+                      {event.eventType}
+                    </span>
                   )}
-                >
-                  {/* Event Type Badge */}
-                  <div className="flex items-center justify-between mb-3">
-                    {event.eventType && (
-                      <span className="px-2 py-1 text-xs font-medium bg-primary/10 text-primary rounded-md">
-                        {event.eventType}
+                  <div className="flex gap-2">
+                    {event.seekingVendors && (
+                      <span className="p-1.5 rounded-md bg-orange-500/10">
+                        <Storefront size={14} weight="duotone" className="text-orange-500" />
                       </span>
                     )}
-                    <div className="flex gap-2">
-                      {event.seekingVendors && (
-                        <span className="p-1.5 rounded-md bg-orange-500/10">
-                          <Storefront size={14} weight="duotone" className="text-orange-500" />
-                        </span>
-                      )}
-                      {event.seekingSponsors && (
-                        <span className="p-1.5 rounded-md bg-purple-500/10">
-                          <Handshake size={14} weight="duotone" className="text-purple-500" />
-                        </span>
-                      )}
-                    </div>
+                    {event.seekingSponsors && (
+                      <span className="p-1.5 rounded-md bg-purple-500/10">
+                        <Handshake size={14} weight="duotone" className="text-purple-500" />
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Title */}
+                <h3 className="font-semibold text-lg mb-2 group-hover:text-primary transition-colors">
+                  {event.title}
+                </h3>
+
+                {/* Description */}
+                {event.description && (
+                  <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+                    {event.description}
+                  </p>
+                )}
+
+                {/* Event Details */}
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <Calendar size={14} weight="duotone" />
+                    <span>{formatDate(event.startDate)}</span>
                   </div>
 
-                  {/* Title */}
-                  <h3 className="font-semibold text-lg mb-2 group-hover:text-primary transition-colors">
-                    {event.title}
-                  </h3>
-
-                  {/* Description */}
-                  {event.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
-                      {event.description}
-                    </p>
-                  )}
-
-                  {/* Event Details */}
-                  <div className="space-y-2 text-sm text-muted-foreground">
+                  {event.venueName && (
                     <div className="flex items-center gap-2">
-                      <Calendar size={14} weight="duotone" />
-                      <span>{formatDate(event.startDate)}</span>
-                    </div>
-
-                    {event.venueName && (
-                      <div className="flex items-center gap-2">
-                        <MapPin size={14} weight="duotone" />
-                        <span className="truncate">{event.venueName}</span>
-                      </div>
-                    )}
-
-                    {event.locationType && (
-                      <div className="flex items-center gap-2">
-                        {renderLocationIcon(event.locationType)}
-                        <span className="capitalize">{event.locationType}</span>
-                      </div>
-                    )}
-
-                    {event.expectedAttendees && (
-                      <div className="flex items-center gap-2">
-                        <Users size={14} weight="duotone" />
-                        <span>{event.expectedAttendees.toLocaleString()} expected attendees</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* What They Need */}
-                  {event.vendorCategories && event.vendorCategories.length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-border">
-                      <p className="text-xs font-medium text-muted-foreground mb-2">
-                        Looking for:
-                      </p>
-                      <div className="flex flex-wrap gap-1">
-                        {event.vendorCategories.slice(0, 3).map((cat) => (
-                          <span
-                            key={cat}
-                            className="px-2 py-0.5 text-xs bg-muted rounded-md"
-                          >
-                            {cat}
-                          </span>
-                        ))}
-                        {event.vendorCategories.length > 3 && (
-                          <span className="px-2 py-0.5 text-xs text-muted-foreground">
-                            +{event.vendorCategories.length - 3} more
-                          </span>
-                        )}
-                      </div>
+                      <MapPin size={14} weight="duotone" />
+                      <span className="truncate">{event.venueName}</span>
                     </div>
                   )}
 
-                  {/* View Details */}
-                  <div className="mt-4 flex items-center text-sm font-medium text-primary">
-                    View Details
-                    <ArrowRight
-                      size={16}
-                      weight="bold"
-                      className="ml-1 group-hover:translate-x-1 transition-transform"
-                    />
+                  {event.locationType && (
+                    <div className="flex items-center gap-2">
+                      {renderLocationIcon(event.locationType)}
+                      <span className="capitalize">{event.locationType}</span>
+                    </div>
+                  )}
+
+                  {event.expectedAttendees && (
+                    <div className="flex items-center gap-2">
+                      <Users size={14} weight="duotone" />
+                      <span>{event.expectedAttendees.toLocaleString()} expected attendees</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* What They Need */}
+                {event.vendorCategories && event.vendorCategories.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-border">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Looking for:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {event.vendorCategories.slice(0, 3).map((cat) => (
+                        <span key={cat} className="px-2 py-0.5 text-xs bg-muted rounded-md">
+                          {cat}
+                        </span>
+                      ))}
+                      {event.vendorCategories.length > 3 && (
+                        <span className="px-2 py-0.5 text-xs text-muted-foreground">
+                          +{event.vendorCategories.length - 3} more
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </Link>
+                )}
+
+                {/* View Details */}
+                <div className="mt-4 flex items-center text-sm font-medium text-primary">
+                  View Details
+                  <ArrowRight
+                    size={16}
+                    weight="bold"
+                    className="ml-1 group-hover:translate-x-1 transition-transform"
+                  />
+                </div>
+              </Link>
             ))}
           </div>
         )}
@@ -310,9 +307,7 @@ export function EventDirectory() {
       {/* Footer */}
       <footer className="border-t border-border mt-12 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-muted-foreground">
-          <p>
-            &copy; {new Date().getFullYear()} open-event. All rights reserved.
-          </p>
+          <p>&copy; {new Date().getFullYear()} open-event. All rights reserved.</p>
         </div>
       </footer>
     </div>

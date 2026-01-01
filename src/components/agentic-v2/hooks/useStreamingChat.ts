@@ -90,15 +90,11 @@ export function useStreamingChat({
 
           if (response.status === 429) {
             callbacks.onSetLocalRemaining(0)
-            throw new Error(
-              errorData?.message || 'Daily limit reached. Please try again tomorrow.'
-            )
+            throw new Error(errorData?.message || 'Daily limit reached. Please try again tomorrow.')
           }
 
           throw new Error(
-            errorData?.error ||
-              errorData?.message ||
-              `HTTP error! status: ${response.status}`
+            errorData?.error || errorData?.message || `HTTP error! status: ${response.status}`
           )
         }
 
@@ -217,9 +213,7 @@ export function useStreamingChat({
                     }
 
                     if (doneData.pendingConfirmations.length > 0) {
-                      callbacks.onSetPendingConfirmation(
-                        doneData.pendingConfirmations[0]
-                      )
+                      callbacks.onSetPendingConfirmation(doneData.pendingConfirmations[0])
                       callbacks.onSetLoading(false)
                       callbacks.onSetStreaming(false)
                     }
@@ -250,10 +244,7 @@ export function useStreamingChat({
           const error = err instanceof Error ? err : new Error('Unknown error')
           if (error.message.includes('rate limit')) {
             toast.error('Too many requests. Please wait a moment.')
-          } else if (
-            error.message.includes('API key') ||
-            error.message.includes('OPENAI')
-          ) {
+          } else if (error.message.includes('API key') || error.message.includes('OPENAI')) {
             toast.error('AI service unavailable. Please check configuration.')
           } else if (error.message.includes('Unauthorized')) {
             toast.error('Please sign in to use the AI assistant.')
@@ -290,9 +281,7 @@ export function useStreamingChat({
         name: pendingConfirmation.name,
         status: 'executing',
       })
-      callbacks.onSetActivity(
-        toolDisplayNames[pendingConfirmation.name] || 'Executing'
-      )
+      callbacks.onSetActivity(toolDisplayNames[pendingConfirmation.name] || 'Executing')
 
       try {
         const httpUrl = convexUrl.replace('.convex.cloud', '.convex.site')
@@ -313,10 +302,7 @@ export function useStreamingChat({
           data?: { eventId?: string }
         }
 
-        callbacks.onUpdateToolStatus(
-          pendingConfirmation.id,
-          result.success ? 'success' : 'error'
-        )
+        callbacks.onUpdateToolStatus(pendingConfirmation.id, result.success ? 'success' : 'error')
 
         callbacks.onAddToolResult({
           toolCallId: result.toolCallId || pendingConfirmation.id,
@@ -330,10 +316,7 @@ export function useStreamingChat({
         if (result.success) {
           toast.success(result.summary)
 
-          if (
-            pendingConfirmation.name === 'createEvent' &&
-            result.data?.eventId
-          ) {
+          if (pendingConfirmation.name === 'createEvent' && result.data?.eventId) {
             callbacks.onSetComplete(true)
 
             const confirmationMsgId = `assistant-confirm-${Date.now()}`
@@ -358,8 +341,7 @@ export function useStreamingChat({
 
         callbacks.onSetPendingConfirmation(null)
       } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : 'Failed to confirm action'
+        const errorMessage = err instanceof Error ? err.message : 'Failed to confirm action'
         toast.error(errorMessage)
       } finally {
         callbacks.onSetLoading(false)

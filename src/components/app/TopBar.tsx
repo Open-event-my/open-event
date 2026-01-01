@@ -1,17 +1,10 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { useAuthActions } from '@convex-dev/auth/react'
-import { useQuery } from 'convex/react'
-import { api } from '../../../convex/_generated/api'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { Logo } from '@/components/ui/logo'
-import {
-  Bell,
-  SidebarSimple,
-  SignOut,
-  User,
-  CaretDown,
-  ShieldCheck,
-} from '@phosphor-icons/react'
+import { NotificationBell } from '@/components/notifications'
+import { useAuth } from '@/contexts/AuthContext'
+import { useAuthActions } from '@convex-dev/auth/react'
+import { SidebarSimple, SignOut, User, CaretDown, ShieldCheck } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useState, useRef, useEffect } from 'react'
 
@@ -26,10 +19,10 @@ const mainNavItems = [
 ]
 
 export function TopBar({ onMenuClick, sidebarCollapsed }: TopBarProps) {
-  const { signOut } = useAuthActions()
+  const { user, signOut: customSignOut } = useAuth()
+  const { signOut: convexSignOut } = useAuthActions()
   const navigate = useNavigate()
   const location = useLocation()
-  const user = useQuery(api.queries.auth.getCurrentUser)
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -48,8 +41,17 @@ export function TopBar({ onMenuClick, sidebarCollapsed }: TopBarProps) {
   }, [])
 
   const handleSignOut = async () => {
-    await signOut()
-    navigate('/sign-in')
+    try {
+      // Sign out from both auth systems
+      await Promise.all([
+        customSignOut().catch(() => {}), // Ignore errors, continue with sign out
+        convexSignOut().catch(() => {}), // Ignore errors, continue with sign out
+      ])
+    } catch {
+      // Ignore errors, still navigate to sign-in
+    } finally {
+      navigate('/sign-in')
+    }
   }
 
   return (
@@ -88,19 +90,19 @@ export function TopBar({ onMenuClick, sidebarCollapsed }: TopBarProps) {
                 to={item.path}
                 className={cn(
                   'px-3 py-1.5 text-[14px] font-medium transition-all duration-150 relative flex items-center gap-2',
-                  active
-                    ? 'text-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
+                  active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
                 )}
               >
                 {item.label}
                 {item.badge && (
-                  <span className={cn(
-                    "rounded-full font-medium",
-                    item.muted
-                      ? "px-1 py-0.5 text-[9px] bg-muted text-muted-foreground"
-                      : "px-1.5 py-0.5 text-[10px] bg-purple/10 text-purple"
-                  )}>
+                  <span
+                    className={cn(
+                      'rounded-full font-medium',
+                      item.muted
+                        ? 'px-1 py-0.5 text-[9px] bg-muted text-muted-foreground'
+                        : 'px-1.5 py-0.5 text-[10px] bg-purple/10 text-purple'
+                    )}
+                  >
                     {item.badge}
                   </span>
                 )}
@@ -115,16 +117,7 @@ export function TopBar({ onMenuClick, sidebarCollapsed }: TopBarProps) {
         {/* Right side */}
         <div className="flex items-center gap-1 ml-auto">
           {/* Notifications */}
-          <button
-            className={cn(
-              'relative p-2 rounded-lg text-muted-foreground',
-              'hover:text-foreground hover:bg-muted transition-all duration-150 cursor-pointer touch-manipulation'
-            )}
-            title="Notifications"
-          >
-            <Bell size={18} weight="regular" />
-            <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-purple rounded-full" />
-          </button>
+          <NotificationBell />
 
           <ThemeToggle />
 
@@ -169,9 +162,7 @@ export function TopBar({ onMenuClick, sidebarCollapsed }: TopBarProps) {
                   <p className="font-medium text-sm text-foreground truncate">
                     {user?.name || 'User'}
                   </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {user?.email}
-                  </p>
+                  <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                 </div>
 
                 {/* Menu items */}

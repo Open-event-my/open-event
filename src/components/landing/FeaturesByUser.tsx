@@ -80,8 +80,14 @@ export function FeaturesByUser() {
         >
           <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-muted border border-border/50 mb-4 sm:mb-6">
             <UsersThree size={14} className="sm:hidden text-muted-foreground" weight="duotone" />
-            <UsersThree size={16} className="hidden sm:block text-muted-foreground" weight="duotone" />
-            <span className="text-xs sm:text-sm font-medium text-muted-foreground">Built for everyone</span>
+            <UsersThree
+              size={16}
+              className="hidden sm:block text-muted-foreground"
+              weight="duotone"
+            />
+            <span className="text-xs sm:text-sm font-medium text-muted-foreground">
+              Built for everyone
+            </span>
           </div>
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight">
             Everyone wins.
@@ -142,10 +148,9 @@ function StakeholderCard({
     >
       {/* Clean header with soft icon */}
       <div className="flex items-center gap-3 mb-5">
-        <div className={cn(
-          'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
-          iconBg
-        )}>
+        <div
+          className={cn('w-10 h-10 rounded-xl flex items-center justify-center shrink-0', iconBg)}
+        >
           <HeaderIcon size={20} className={iconColor} weight="duotone" />
         </div>
         <div className="min-w-0">
@@ -175,7 +180,11 @@ function StakeholderCard({
       <div className="mt-5 pt-4 border-t border-border/30">
         <button className="flex items-center gap-1.5 text-sm font-medium text-foreground/70 hover:text-foreground transition-colors group/btn">
           Learn more
-          <ArrowRight size={14} weight="bold" className="transition-transform group-hover/btn:translate-x-0.5" />
+          <ArrowRight
+            size={14}
+            weight="bold"
+            className="transition-transform group-hover/btn:translate-x-0.5"
+          />
         </button>
       </div>
     </div>

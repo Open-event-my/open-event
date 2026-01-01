@@ -69,7 +69,7 @@ export const findAllDuplicates = query({
           const roleHierarchy: Record<string, number> = { superadmin: 3, admin: 2, organizer: 1 }
           const currentLevel = roleHierarchy[u.role || 'organizer'] || 1
           const bestLevel = roleHierarchy[best] || 1
-          return currentLevel > bestLevel ? (u.role || 'organizer') : best
+          return currentLevel > bestLevel ? u.role || 'organizer' : best
         }, 'organizer'),
       }))
 
@@ -314,4 +314,3 @@ export const syncUserRoleByEmail = mutation({
     }
   },
 })
-

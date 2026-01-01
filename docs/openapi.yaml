@@ -1,0 +1,1152 @@
+openapi: 3.1.0
+info:
+  title: Open Event API
+  description: |
+    The Open Event API allows you to programmatically manage events, access vendor/sponsor directories, 
+    and receive real-time notifications via webhooks.
+
+    ## Authentication
+    All API requests (except public endpoints) require an API key. Include your API key using:
+    - `X-API-Key` header (recommended)
+    - `Authorization: Bearer <key>` header
+
+    ## Rate Limiting
+    - Default: 1,000 requests/hour
+    - Rate limit headers included in all responses
+
+    ## Response Format
+    All responses follow a consistent JSON envelope with `success`, `data`, and optional `meta` fields.
+  version: 1.0.0
+  contact:
+    name: Open Event Support
+    url: https://github.com/hazlijohar95/open-event/issues
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://{project}.convex.site/api/v1
+    description: Production server
+    variables:
+      project:
+        default: your-project
+        description: Your Convex project name
+  - url: http://localhost:5173/api/v1
+    description: Development server
+
+tags:
+  - name: Events
+    description: Event management operations
+  - name: Vendors
+    description: Vendor directory operations
+  - name: Sponsors
+    description: Sponsor directory operations
+  - name: Webhooks
+    description: Webhook management operations
+  - name: Public
+    description: Public endpoints (no authentication required)
+
+security:
+  - ApiKeyAuth: []
+  - BearerAuth: []
+
+paths:
+  /events:
+    get:
+      tags:
+        - Events
+      summary: List events
+      description: Retrieve a paginated list of events for the authenticated user's organization
+      operationId: listEvents
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: status
+          in: query
+          description: Filter by event status
+          schema:
+            $ref: '#/components/schemas/EventStatus'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Event'
+                      meta:
+                        $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+    post:
+      tags:
+        - Events
+      summary: Create event
+      description: Create a new event
+      operationId: createEvent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+      responses:
+        '201':
+          description: Event created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          eventId:
+                            type: string
+                            description: ID of the created event
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /events/{eventId}:
+    get:
+      tags:
+        - Events
+      summary: Get event
+      description: Retrieve a specific event by ID
+      operationId: getEvent
+      parameters:
+        - $ref: '#/components/parameters/EventIdParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Event'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags:
+        - Events
+      summary: Update event
+      description: Update an existing event
+      operationId: updateEvent
+      parameters:
+        - $ref: '#/components/parameters/EventIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEventRequest'
+      responses:
+        '200':
+          description: Event updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Events
+      summary: Delete event
+      description: Delete an event. Cannot delete active events with confirmed vendors/sponsors.
+      operationId: deleteEvent
+      parameters:
+        - $ref: '#/components/parameters/EventIdParam'
+      responses:
+        '200':
+          description: Event deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /vendors:
+    get:
+      tags:
+        - Vendors
+      summary: List vendors
+      description: Retrieve a paginated list of vendors
+      operationId: listVendors
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: category
+          in: query
+          description: Filter by vendor category
+          schema:
+            type: string
+        - name: search
+          in: query
+          description: Search by name or description
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Vendor'
+                      meta:
+                        $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+  /vendors/categories:
+    get:
+      tags:
+        - Vendors
+      summary: Get vendor categories
+      description: Retrieve list of available vendor categories
+      operationId: getVendorCategories
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: string
+
+  /sponsors:
+    get:
+      tags:
+        - Sponsors
+      summary: List sponsors
+      description: Retrieve a paginated list of sponsors
+      operationId: listSponsors
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: industry
+          in: query
+          description: Filter by industry
+          schema:
+            type: string
+        - name: search
+          in: query
+          description: Search by name or description
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Sponsor'
+                      meta:
+                        $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+  /webhooks:
+    get:
+      tags:
+        - Webhooks
+      summary: List webhooks
+      description: Retrieve all webhooks for the authenticated user
+      operationId: listWebhooks
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Webhook'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags:
+        - Webhooks
+      summary: Create webhook
+      description: Create a new webhook subscription
+      operationId: createWebhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWebhookRequest'
+      responses:
+        '201':
+          description: Webhook created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          secret:
+                            type: string
+                            description: Webhook signing secret. Save this securely - you won't see it again.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /webhooks/{webhookId}:
+    patch:
+      tags:
+        - Webhooks
+      summary: Update webhook
+      description: Update an existing webhook
+      operationId: updateWebhook
+      parameters:
+        - name: webhookId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateWebhookRequest'
+      responses:
+        '200':
+          description: Webhook updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Webhooks
+      summary: Delete webhook
+      description: Delete a webhook subscription
+      operationId: deleteWebhook
+      parameters:
+        - name: webhookId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Webhook deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /webhooks/events:
+    get:
+      tags:
+        - Webhooks
+      summary: Get available webhook events
+      description: Retrieve list of available webhook event types
+      operationId: getWebhookEvents
+      security: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/WebhookEventType'
+
+  /public/events:
+    get:
+      tags:
+        - Public
+      summary: List public events
+      description: Retrieve a list of events marked as public (no authentication required)
+      operationId: listPublicEvents
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: eventType
+          in: query
+          description: Filter by event type
+          schema:
+            $ref: '#/components/schemas/EventType'
+        - name: locationType
+          in: query
+          description: Filter by location type
+          schema:
+            $ref: '#/components/schemas/LocationType'
+        - name: seekingVendors
+          in: query
+          description: Only events seeking vendors
+          schema:
+            type: boolean
+        - name: seekingSponsors
+          in: query
+          description: Only events seeking sponsors
+          schema:
+            type: boolean
+        - name: search
+          in: query
+          description: Search query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/PublicEvent'
+                      meta:
+                        $ref: '#/components/schemas/PaginationMeta'
+
+  /public/vendors:
+    get:
+      tags:
+        - Public
+      summary: List public vendors
+      description: Retrieve a list of approved vendors (limited fields, no contact info)
+      operationId: listPublicVendors
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: category
+          in: query
+          description: Filter by category
+          schema:
+            type: string
+        - name: search
+          in: query
+          description: Search query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/PublicVendor'
+                      meta:
+                        $ref: '#/components/schemas/PaginationMeta'
+
+  /public/vendors/categories:
+    get:
+      tags:
+        - Public
+      summary: Get public vendor categories
+      description: Retrieve list of available vendor categories
+      operationId: getPublicVendorCategories
+      security: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: string
+
+  /health:
+    get:
+      tags:
+        - Public
+      summary: Health check
+      description: Check API health status
+      operationId: healthCheck
+      security: []
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  timestamp:
+                    type: integer
+                    format: int64
+
+  /health/config:
+    get:
+      tags:
+        - Public
+      summary: Configuration health check
+      description: Check configuration status
+      operationId: configHealthCheck
+      security: []
+      responses:
+        '200':
+          description: Configuration status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy, degraded, unhealthy]
+                  checks:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        status:
+                          type: string
+                        message:
+                          type: string
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: 'API key for authentication (format: oe_live_xxx or oe_test_xxx)'
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: 'Bearer token authentication (use API key as token)'
+
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      description: Page number (1-indexed)
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    LimitParam:
+      name: limit
+      in: query
+      description: Items per page
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    EventIdParam:
+      name: eventId
+      in: path
+      required: true
+      description: Event ID
+      schema:
+        type: string
+
+  schemas:
+    SuccessResponse:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+          example: true
+
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              description: Error code
+            message:
+              type: string
+              description: Human-readable error message
+            details:
+              type: array
+              items:
+                type: object
+              description: Additional error details
+
+    PaginationMeta:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: Total number of items
+        page:
+          type: integer
+          description: Current page number
+        limit:
+          type: integer
+          description: Items per page
+        totalPages:
+          type: integer
+          description: Total number of pages
+        hasMore:
+          type: boolean
+          description: Whether there are more pages
+
+    EventStatus:
+      type: string
+      enum:
+        - draft
+        - planning
+        - active
+        - completed
+        - cancelled
+      description: Event status
+
+    EventType:
+      type: string
+      enum:
+        - conference
+        - hackathon
+        - workshop
+        - meetup
+        - seminar
+        - webinar
+        - networking
+        - exhibition
+        - other
+      description: Type of event
+
+    LocationType:
+      type: string
+      enum:
+        - in-person
+        - virtual
+        - hybrid
+      description: Event location type
+
+    Event:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: Unique event ID
+        title:
+          type: string
+          description: Event title
+        description:
+          type: string
+          description: Event description
+        startDate:
+          type: integer
+          format: int64
+          description: Start date (Unix timestamp in milliseconds)
+        endDate:
+          type: integer
+          format: int64
+          description: End date (Unix timestamp in milliseconds)
+        status:
+          $ref: '#/components/schemas/EventStatus'
+        eventType:
+          $ref: '#/components/schemas/EventType'
+        locationType:
+          $ref: '#/components/schemas/LocationType'
+        venueName:
+          type: string
+          description: Venue name
+        venueAddress:
+          type: string
+          description: Venue address
+        virtualPlatform:
+          type: string
+          description: Virtual platform URL
+        expectedAttendees:
+          type: integer
+          description: Expected number of attendees
+        budget:
+          type: number
+          description: Event budget
+        budgetCurrency:
+          type: string
+          description: Budget currency code
+        timezone:
+          type: string
+          description: Event timezone
+        createdAt:
+          type: integer
+          format: int64
+          description: Creation timestamp
+
+    PublicEvent:
+      type: object
+      properties:
+        _id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        startDate:
+          type: integer
+          format: int64
+        endDate:
+          type: integer
+          format: int64
+        eventType:
+          $ref: '#/components/schemas/EventType'
+        locationType:
+          $ref: '#/components/schemas/LocationType'
+        venueName:
+          type: string
+        seekingVendors:
+          type: boolean
+        seekingSponsors:
+          type: boolean
+
+    CreateEventRequest:
+      type: object
+      required:
+        - title
+        - startDate
+      properties:
+        title:
+          type: string
+          maxLength: 200
+          description: Event title
+        startDate:
+          type: integer
+          format: int64
+          description: Start date (Unix timestamp in milliseconds)
+        description:
+          type: string
+          maxLength: 10000
+          description: Event description
+        eventType:
+          $ref: '#/components/schemas/EventType'
+        status:
+          $ref: '#/components/schemas/EventStatus'
+        locationType:
+          $ref: '#/components/schemas/LocationType'
+        venueName:
+          type: string
+        venueAddress:
+          type: string
+        virtualPlatform:
+          type: string
+        expectedAttendees:
+          type: integer
+        budget:
+          type: number
+        budgetCurrency:
+          type: string
+        endDate:
+          type: integer
+          format: int64
+        timezone:
+          type: string
+
+    UpdateEventRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 10000
+        startDate:
+          type: integer
+          format: int64
+        endDate:
+          type: integer
+          format: int64
+        status:
+          $ref: '#/components/schemas/EventStatus'
+        eventType:
+          $ref: '#/components/schemas/EventType'
+        locationType:
+          $ref: '#/components/schemas/LocationType'
+        venueName:
+          type: string
+        venueAddress:
+          type: string
+        virtualPlatform:
+          type: string
+        expectedAttendees:
+          type: integer
+        budget:
+          type: number
+        budgetCurrency:
+          type: string
+        timezone:
+          type: string
+
+    Vendor:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        contactEmail:
+          type: string
+        contactPhone:
+          type: string
+        website:
+          type: string
+        verified:
+          type: boolean
+        rating:
+          type: number
+        createdAt:
+          type: integer
+          format: int64
+
+    PublicVendor:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        website:
+          type: string
+        verified:
+          type: boolean
+        rating:
+          type: number
+
+    Sponsor:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        industry:
+          type: string
+        contactEmail:
+          type: string
+        contactPhone:
+          type: string
+        website:
+          type: string
+        verified:
+          type: boolean
+        createdAt:
+          type: integer
+          format: int64
+
+    Webhook:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        url:
+          type: string
+          format: uri
+        events:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum:
+            - active
+            - paused
+            - disabled
+        createdAt:
+          type: integer
+          format: int64
+        lastTriggered:
+          type: integer
+          format: int64
+
+    CreateWebhookRequest:
+      type: object
+      required:
+        - name
+        - url
+        - events
+      properties:
+        name:
+          type: string
+          description: Webhook name
+        url:
+          type: string
+          format: uri
+          description: HTTPS endpoint URL
+        events:
+          type: array
+          items:
+            type: string
+          description: Events to subscribe to
+
+    UpdateWebhookRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+          format: uri
+        events:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum:
+            - active
+            - paused
+
+    WebhookEventType:
+      type: string
+      enum:
+        - event.created
+        - event.updated
+        - event.deleted
+        - event.status_changed
+        - vendor.applied
+        - vendor.confirmed
+        - vendor.declined
+        - sponsor.applied
+        - sponsor.confirmed
+        - sponsor.declined
+        - task.created
+        - task.completed
+      description: Available webhook event types
+
+    WebhookPayload:
+      type: object
+      description: Webhook delivery payload
+      properties:
+        id:
+          type: string
+          description: Unique webhook delivery ID
+        event:
+          type: string
+          description: Event type
+        timestamp:
+          type: integer
+          format: int64
+          description: Event timestamp
+        data:
+          type: object
+          description: Event-specific data
+
+  responses:
+    BadRequest:
+      description: Bad request - invalid input
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: BAD_REQUEST
+              message: Invalid request parameters
+              details:
+                - field: title
+                  message: Title is required
+
+    Unauthorized:
+      description: Unauthorized - invalid or missing API key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: UNAUTHORIZED
+              message: Invalid or missing API key
+
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: FORBIDDEN
+              message: Insufficient permissions for this operation
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: NOT_FOUND
+              message: Resource not found
+
+    RateLimitExceeded:
+      description: Rate limit exceeded
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+          description: Request limit per hour
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+          description: Remaining requests in current window
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+          description: Unix timestamp when the rate limit resets
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds until rate limit resets
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: RATE_LIMIT_EXCEEDED
+              message: Rate limit exceeded. Try again in 1832 seconds.
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: INTERNAL_ERROR
+              message: An unexpected error occurred

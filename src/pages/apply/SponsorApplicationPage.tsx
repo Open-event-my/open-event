@@ -3,6 +3,7 @@ import { useMutation, useQuery } from 'convex/react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../../../convex/_generated/api'
 import { cn } from '@/lib/utils'
+import { isValidEmail } from '@/lib/validation'
 import {
   TypeformLayout,
   TypeformTransition,
@@ -129,8 +130,7 @@ export function SponsorApplicationPage() {
           setError('Email is required')
           return false
         }
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (!emailRegex.test(formData.contactEmail)) {
+        if (!isValidEmail(formData.contactEmail)) {
           setError('Please enter a valid email address')
           return false
         }
@@ -182,10 +182,12 @@ export function SponsorApplicationPage() {
         contactPhone: formData.contactPhone || undefined,
         website: formData.website || undefined,
         industry: formData.industry,
-        sponsorshipTiers: formData.sponsorshipTiers.length > 0 ? formData.sponsorshipTiers : undefined,
+        sponsorshipTiers:
+          formData.sponsorshipTiers.length > 0 ? formData.sponsorshipTiers : undefined,
         budgetMin: formData.budgetMin ? parseInt(formData.budgetMin) : undefined,
         budgetMax: formData.budgetMax ? parseInt(formData.budgetMax) : undefined,
-        targetEventTypes: formData.targetEventTypes.length > 0 ? formData.targetEventTypes : undefined,
+        targetEventTypes:
+          formData.targetEventTypes.length > 0 ? formData.targetEventTypes : undefined,
         targetAudience: formData.targetAudience || undefined,
         pastExperience: formData.pastExperience || undefined,
         additionalNotes: formData.additionalNotes || undefined,
@@ -233,10 +235,7 @@ export function SponsorApplicationPage() {
               error={error || undefined}
               autoFocus
             />
-            <TypeformNavigation
-              onNext={nextStep}
-              canGoNext={canProceed()}
-            />
+            <TypeformNavigation onNext={nextStep} canGoNext={canProceed()} />
           </div>
         )
 
@@ -261,11 +260,7 @@ export function SponsorApplicationPage() {
               ))}
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
-            <TypeformNavigation
-              onPrevious={prevStep}
-              onNext={nextStep}
-              canGoNext={canProceed()}
-            />
+            <TypeformNavigation onPrevious={prevStep} onNext={nextStep} canGoNext={canProceed()} />
           </div>
         )
 
@@ -283,10 +278,7 @@ export function SponsorApplicationPage() {
               onChange={(e) => updateField('description', e.target.value)}
               rows={4}
             />
-            <TypeformNavigation
-              onPrevious={prevStep}
-              onNext={nextStep}
-            />
+            <TypeformNavigation onPrevious={prevStep} onNext={nextStep} />
           </div>
         )
 
@@ -309,10 +301,7 @@ export function SponsorApplicationPage() {
               value={formData.website}
               onChange={(e) => updateField('website', e.target.value)}
             />
-            <TypeformNavigation
-              onPrevious={prevStep}
-              onNext={nextStep}
-            />
+            <TypeformNavigation onPrevious={prevStep} onNext={nextStep} />
           </div>
         )
 
@@ -346,10 +335,7 @@ export function SponsorApplicationPage() {
                 </button>
               ))}
             </div>
-            <TypeformNavigation
-              onPrevious={prevStep}
-              onNext={nextStep}
-            />
+            <TypeformNavigation onPrevious={prevStep} onNext={nextStep} />
           </div>
         )
 
@@ -380,10 +366,7 @@ export function SponsorApplicationPage() {
                 onChange={(e) => updateField('budgetMax', e.target.value)}
               />
             </div>
-            <TypeformNavigation
-              onPrevious={prevStep}
-              onNext={nextStep}
-            />
+            <TypeformNavigation onPrevious={prevStep} onNext={nextStep} />
           </div>
         )
 
@@ -417,10 +400,7 @@ export function SponsorApplicationPage() {
                 </button>
               ))}
             </div>
-            <TypeformNavigation
-              onPrevious={prevStep}
-              onNext={nextStep}
-            />
+            <TypeformNavigation onPrevious={prevStep} onNext={nextStep} />
           </div>
         )
 
@@ -437,10 +417,7 @@ export function SponsorApplicationPage() {
               value={formData.targetAudience}
               onChange={(e) => updateField('targetAudience', e.target.value)}
             />
-            <TypeformNavigation
-              onPrevious={prevStep}
-              onNext={nextStep}
-            />
+            <TypeformNavigation onPrevious={prevStep} onNext={nextStep} />
           </div>
         )
 
@@ -458,10 +435,7 @@ export function SponsorApplicationPage() {
               onChange={(e) => updateField('pastExperience', e.target.value)}
               rows={5}
             />
-            <TypeformNavigation
-              onPrevious={prevStep}
-              onNext={nextStep}
-            />
+            <TypeformNavigation onPrevious={prevStep} onNext={nextStep} />
           </div>
         )
 
@@ -479,10 +453,7 @@ export function SponsorApplicationPage() {
               onChange={(e) => updateField('additionalNotes', e.target.value)}
               rows={4}
             />
-            <TypeformNavigation
-              onPrevious={prevStep}
-              onNext={nextStep}
-            />
+            <TypeformNavigation onPrevious={prevStep} onNext={nextStep} />
           </div>
         )
 
@@ -505,10 +476,7 @@ export function SponsorApplicationPage() {
                 </option>
               ))}
             </TypeformSelect>
-            <TypeformNavigation
-              onPrevious={prevStep}
-              onNext={nextStep}
-            />
+            <TypeformNavigation onPrevious={prevStep} onNext={nextStep} />
           </div>
         )
 
@@ -531,11 +499,7 @@ export function SponsorApplicationPage() {
               error={error || undefined}
               autoFocus
             />
-            <TypeformNavigation
-              onPrevious={prevStep}
-              onNext={nextStep}
-              canGoNext={canProceed()}
-            />
+            <TypeformNavigation onPrevious={prevStep} onNext={nextStep} canGoNext={canProceed()} />
           </div>
         )
 
@@ -559,11 +523,7 @@ export function SponsorApplicationPage() {
               error={error || undefined}
               autoFocus
             />
-            <TypeformNavigation
-              onPrevious={prevStep}
-              onNext={nextStep}
-              canGoNext={canProceed()}
-            />
+            <TypeformNavigation onPrevious={prevStep} onNext={nextStep} canGoNext={canProceed()} />
           </div>
         )
 
@@ -585,10 +545,7 @@ export function SponsorApplicationPage() {
               value={formData.contactPhone}
               onChange={(e) => updateField('contactPhone', e.target.value)}
             />
-            <TypeformNavigation
-              onPrevious={prevStep}
-              onNext={nextStep}
-            />
+            <TypeformNavigation onPrevious={prevStep} onNext={nextStep} />
           </div>
         )
 

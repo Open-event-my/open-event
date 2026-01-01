@@ -19,7 +19,11 @@ export interface AgenticAvatarProps {
  * AgenticAvatar - Enhanced avatar with brand integration
  * Features animated gradient border during streaming
  */
-export function AgenticAvatar({ isStreaming = false, isUser = false, className }: AgenticAvatarProps) {
+export function AgenticAvatar({
+  isStreaming = false,
+  isUser = false,
+  className,
+}: AgenticAvatarProps) {
   if (isUser) {
     return (
       <div className={cn('w-9 h-9 flex-shrink-0', className)}>

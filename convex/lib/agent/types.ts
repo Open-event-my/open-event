@@ -148,6 +148,14 @@ export interface VendorSearchResult {
   verified: boolean
 }
 
+export interface VendorRecommendation extends VendorSearchResult {
+  matchScore: number
+  /** Array of specific reasons why this vendor is recommended */
+  matchReasons: string[]
+  /** Human-readable summary of why this vendor is a good fit */
+  whyRecommended: string
+}
+
 export interface SponsorSearchResult {
   id: Id<'sponsors'>
   name: string
@@ -156,4 +164,12 @@ export interface SponsorSearchResult {
   budgetRange?: string
   sponsorshipTiers?: string[]
   verified: boolean
+}
+
+export interface SponsorRecommendation extends SponsorSearchResult {
+  matchScore: number
+  /** Array of specific reasons why this sponsor is recommended */
+  matchReasons: string[]
+  /** Human-readable summary of why this sponsor is a good fit */
+  whyRecommended: string
 }

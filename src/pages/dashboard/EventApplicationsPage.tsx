@@ -17,6 +17,7 @@ import {
   Eye,
   MagnifyingGlass,
   User,
+  Warning,
 } from '@phosphor-icons/react'
 
 type ApplicationStatus = 'pending' | 'under_review' | 'accepted' | 'rejected' | 'withdrawn'
@@ -42,16 +43,22 @@ export function EventApplicationsPage() {
   const [statusFilter, setStatusFilter] = useState<ApplicationStatus | 'all'>('pending')
   const [typeFilter, setTypeFilter] = useState<'all' | 'vendor' | 'sponsor'>('all')
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedApplication, setSelectedApplication] = useState<Id<'eventApplications'> | null>(null)
+  const [selectedApplication, setSelectedApplication] = useState<Id<'eventApplications'> | null>(
+    null
+  )
   const [rejectReason, setRejectReason] = useState('')
   const [showRejectModal, setShowRejectModal] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
 
-  const event = useQuery(api.events.get, eventId ? { id: eventId as Id<'events'> } : 'skip')
+  // Validate eventId - reject invalid values like "new", "edit", etc.
+  const isValidEventId =
+    eventId && eventId !== 'new' && eventId !== 'edit' && /^[a-z0-9]+$/.test(eventId)
+
+  const event = useQuery(api.events.get, isValidEventId ? { id: eventId as Id<'events'> } : 'skip')
 
   const applications = useQuery(
     api.eventApplications.listByEvent,
-    eventId
+    isValidEventId
       ? {
           eventId: eventId as Id<'events'>,
           status: statusFilter === 'all' ? undefined : statusFilter,
@@ -139,10 +146,59 @@ export function EventApplicationsPage() {
 
   const selectedApp = filteredApplications?.find((a) => a._id === selectedApplication)
 
-  if (!event) {
+  // Invalid eventId state (e.g., "new", "edit")
+  if (!isValidEventId) {
+    return (
+      <div className="text-center py-16">
+        <Warning size={64} weight="duotone" className="mx-auto text-muted-foreground/30 mb-6" />
+        <h2 className="text-xl font-semibold mb-2">Invalid event ID</h2>
+        <p className="text-muted-foreground mb-6">
+          The event ID in the URL is invalid. Please navigate to a valid event's applications page.
+        </p>
+        <Link
+          to="/dashboard/events"
+          className={cn(
+            'inline-flex items-center gap-2 px-4 py-2.5 rounded-lg',
+            'bg-primary text-primary-foreground font-medium text-sm',
+            'hover:bg-primary/90 transition-colors'
+          )}
+        >
+          <ArrowLeft size={18} weight="bold" />
+          Back to Events
+        </Link>
+      </div>
+    )
+  }
+
+  // Loading state
+  if (event === undefined) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <p className="text-muted-foreground">Loading event...</p>
+      </div>
+    )
+  }
+
+  // Not found state
+  if (event === null) {
+    return (
+      <div className="text-center py-16">
+        <Warning size={64} weight="duotone" className="mx-auto text-muted-foreground/30 mb-6" />
+        <h2 className="text-xl font-semibold mb-2">Event not found</h2>
+        <p className="text-muted-foreground mb-6">
+          The event you're looking for doesn't exist or you don't have permission to view it.
+        </p>
+        <Link
+          to="/dashboard/events"
+          className={cn(
+            'inline-flex items-center gap-2 px-4 py-2.5 rounded-lg',
+            'bg-primary text-primary-foreground font-medium text-sm',
+            'hover:bg-primary/90 transition-colors'
+          )}
+        >
+          <ArrowLeft size={18} weight="bold" />
+          Back to Events
+        </Link>
       </div>
     )
   }
@@ -246,9 +302,7 @@ export function EventApplicationsPage() {
       {/* Applications List */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         {!applications ? (
-          <div className="p-8 text-center text-muted-foreground">
-            Loading applications...
-          </div>
+          <div className="p-8 text-center text-muted-foreground">Loading applications...</div>
         ) : filteredApplications?.length === 0 ? (
           <div className="p-8 text-center">
             <User size={48} weight="duotone" className="mx-auto mb-4 text-muted-foreground/50" />
@@ -261,10 +315,7 @@ export function EventApplicationsPage() {
               const isVendor = app.applicantType === 'vendor'
 
               return (
-                <div
-                  key={app._id}
-                  className="p-4 hover:bg-muted/30 transition-colors"
-                >
+                <div key={app._id} className="p-4 hover:bg-muted/30 transition-colors">
                   <div className="flex items-start justify-between gap-4">
                     {/* Applicant Info */}
                     <div className="flex-1 min-w-0">
@@ -439,10 +490,7 @@ export function EventApplicationsPage() {
       {/* Reject Modal */}
       {showRejectModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setShowRejectModal(false)}
-          />
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowRejectModal(false)} />
           <div className="relative bg-background rounded-xl border border-border p-6 w-full max-w-md mx-4 shadow-xl">
             <h3 className="text-lg font-semibold mb-4">Reject Application</h3>
             <p className="text-sm text-muted-foreground mb-4">
@@ -485,10 +533,7 @@ export function EventApplicationsPage() {
       {/* Detail Modal */}
       {showDetailModal && selectedApp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setShowDetailModal(false)}
-          />
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowDetailModal(false)} />
           <div className="relative bg-background rounded-xl border border-border p-6 w-full max-w-lg mx-4 shadow-xl max-h-[80vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-4">Application Details</h3>
 
@@ -499,18 +544,26 @@ export function EventApplicationsPage() {
                 <p className="font-semibold">{selectedApp.applicantDetails?.name}</p>
                 <p className="text-sm text-muted-foreground capitalize">
                   {selectedApp.applicantType}
-                  {selectedApp.applicantDetails?.category && ` - ${selectedApp.applicantDetails.category}`}
-                  {selectedApp.applicantDetails?.industry && ` - ${selectedApp.applicantDetails.industry}`}
+                  {selectedApp.applicantDetails?.category &&
+                    ` - ${selectedApp.applicantDetails.category}`}
+                  {selectedApp.applicantDetails?.industry &&
+                    ` - ${selectedApp.applicantDetails.industry}`}
                 </p>
               </div>
 
               {/* Contact */}
-              {(selectedApp.contactName || selectedApp.contactEmail || selectedApp.contactPhone) && (
+              {(selectedApp.contactName ||
+                selectedApp.contactEmail ||
+                selectedApp.contactPhone) && (
                 <div>
                   <p className="text-sm font-medium text-muted-foreground mb-1">Contact</p>
                   {selectedApp.contactName && <p>{selectedApp.contactName}</p>}
-                  {selectedApp.contactEmail && <p className="text-sm">{selectedApp.contactEmail}</p>}
-                  {selectedApp.contactPhone && <p className="text-sm">{selectedApp.contactPhone}</p>}
+                  {selectedApp.contactEmail && (
+                    <p className="text-sm">{selectedApp.contactEmail}</p>
+                  )}
+                  {selectedApp.contactPhone && (
+                    <p className="text-sm">{selectedApp.contactPhone}</p>
+                  )}
                 </div>
               )}
 
@@ -525,7 +578,9 @@ export function EventApplicationsPage() {
               {/* Proposed Services */}
               {selectedApp.proposedServices && selectedApp.proposedServices.length > 0 && (
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-1">Proposed Services</p>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">
+                    Proposed Services
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {selectedApp.proposedServices.map((service, i) => (
                       <span key={i} className="px-2 py-1 text-xs bg-muted rounded-md">

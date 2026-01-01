@@ -86,7 +86,7 @@ export const createEvent = internalMutation({
     }
 
     // Validate date is not too far in the past
-    const oneYearAgo = Date.now() - (365 * 24 * 60 * 60 * 1000)
+    const oneYearAgo = Date.now() - 365 * 24 * 60 * 60 * 1000
     if (args.startDate < oneYearAgo) {
       throw new Error('Event date cannot be more than one year in the past')
     }
@@ -207,7 +207,7 @@ export const updateEvent = internalMutation({
       if (!isValidStatusTransition(event.status, args.status)) {
         throw new Error(
           `Invalid status transition: cannot change from "${event.status}" to "${args.status}". ` +
-          `Allowed transitions: ${VALID_STATUS_TRANSITIONS[event.status]?.join(', ') || 'none'}`
+            `Allowed transitions: ${VALID_STATUS_TRANSITIONS[event.status]?.join(', ') || 'none'}`
         )
       }
     }
@@ -216,7 +216,7 @@ export const updateEvent = internalMutation({
     const { userId: _userId, eventId: _eventId, ...updates } = args
     void _userId // Intentionally unused - excluded from updates
     void _eventId // Intentionally unused - excluded from updates
-    
+
     // Filter out undefined values
     const cleanUpdates = Object.fromEntries(
       Object.entries(updates).filter(([, v]) => v !== undefined)
@@ -277,7 +277,9 @@ export const deleteEvent = internalMutation({
         .first()
 
       if (confirmedVendors || confirmedSponsors) {
-        throw new Error('Cannot delete active event with confirmed vendors or sponsors. Cancel the event first.')
+        throw new Error(
+          'Cannot delete active event with confirmed vendors or sponsors. Cancel the event first.'
+        )
       }
     }
 
@@ -399,4 +401,3 @@ export const getEventById = internalQuery({
     return event
   },
 })
-

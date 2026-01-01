@@ -47,3 +47,17 @@ export function formatDateTime(timestamp: number): string {
     minute: '2-digit',
   })
 }
+
+/**
+ * Format a number as currency
+ * @param amount - Amount in dollars (not cents)
+ * @param currency - Currency code (e.g., 'USD', 'MYR')
+ */
+export function formatCurrency(amount: number, currency = 'USD'): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount)
+}

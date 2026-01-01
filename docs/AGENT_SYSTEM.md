@@ -25,13 +25,13 @@ The AI Agent System enables natural language event creation through an intellige
 
 ### Capabilities
 
-| Capability | Description |
-|------------|-------------|
-| **Event Creation** | Parse natural language into structured event data |
-| **Vendor Search** | Find catering, AV, photography, and other providers |
-| **Sponsor Discovery** | Connect with companies interested in sponsoring |
-| **Event Management** | Update details, view information, manage attendees |
-| **Contextual Awareness** | Remembers user preferences and past events |
+| Capability               | Description                                         |
+| ------------------------ | --------------------------------------------------- |
+| **Event Creation**       | Parse natural language into structured event data   |
+| **Vendor Search**        | Find catering, AV, photography, and other providers |
+| **Sponsor Discovery**    | Connect with companies interested in sponsoring     |
+| **Event Management**     | Update details, view information, manage attendees  |
+| **Contextual Awareness** | Remembers user preferences and past events          |
 
 ### System Flow
 
@@ -202,6 +202,7 @@ The AI Agent System enables natural language event creation through an intellige
 Main chat endpoint with streaming responses.
 
 **Request:**
+
 ```typescript
 {
   messages: CoreMessage[]  // Conversation history
@@ -224,6 +225,7 @@ data: {"type":"finish","finishReason":"tool-calls"}
 ```
 
 **Headers:**
+
 ```
 Content-Type: text/event-stream
 Access-Control-Allow-Origin: *
@@ -236,6 +238,7 @@ Access-Control-Allow-Origin: *
 Execute a tool (auto-execute tools only).
 
 **Request:**
+
 ```typescript
 {
   toolCallId: string
@@ -245,6 +248,7 @@ Execute a tool (auto-execute tools only).
 ```
 
 **Response:**
+
 ```typescript
 // For tools requiring confirmation:
 {
@@ -272,6 +276,7 @@ Execute a tool (auto-execute tools only).
 Execute a user-confirmed tool.
 
 **Request:**
+
 ```typescript
 {
   toolCallId: string
@@ -282,6 +287,7 @@ Execute a user-confirmed tool.
 ```
 
 **Response:**
+
 ```typescript
 {
   toolCallId: string
@@ -336,11 +342,13 @@ Execute a user-confirmed tool.
 The recommendation tools use scoring algorithms to find the best matches:
 
 **getRecommendedVendors** scores based on:
+
 - Vendor rating (0-50 points)
 - Verified status (+20 points)
 - Price range alignment with event budget (+15 points)
 
 **getRecommendedSponsors** scores based on:
+
 - Verified status (+20 points)
 - Target event type match (+30 points)
 - Budget alignment with event size (+10-20 points)
@@ -639,11 +647,11 @@ The recommendation tools use scoring algorithms to find the best matches:
 
 ```typescript
 // users
-by_email: ['email']            // Fast lookup by email
+by_email: ['email'] // Fast lookup by email
 
 // events
-by_organizer: ['organizerId']  // User's events
-by_status: ['status']          // Filter by status
+by_organizer: ['organizerId'] // User's events
+by_status: ['status'] // Filter by status
 ```
 
 ---
@@ -833,11 +841,13 @@ npm run test:coverage
 All agent tool executions are protected with multiple layers of security:
 
 ### Authentication
+
 - All mutations require a valid authenticated user via `getCurrentUser(ctx)`
 - Unauthenticated requests are rejected with "Not authenticated" error
 - User identity is derived from the session, never from client input
 
 ### Authorization
+
 - **Event ownership**: Only the event organizer can modify their events
 - **Resource verification**: Before adding vendors/sponsors, the system verifies:
   - The event exists and belongs to the current user
@@ -845,11 +855,13 @@ All agent tool executions are protected with multiple layers of security:
 - **Duplicate prevention**: Attempts to add the same vendor/sponsor twice are handled gracefully
 
 ### Input Validation
+
 - All inputs are validated using Convex validators (`v.id()`, `v.string()`, `v.number()`, etc.)
 - Status values are whitelisted: only valid statuses like `'inquiry'`, `'negotiating'`, `'confirmed'`, `'declined'` are accepted
 - Invalid status transitions are rejected with clear error messages
 
 ### Audit Trail
+
 - All database records include `createdAt` timestamps
 - Updates include `updatedAt` timestamps
 - Relationships track status history through status field changes
@@ -860,13 +872,13 @@ All agent tool executions are protected with multiple layers of security:
 
 ### Common Issues
 
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| "Unauthorized" error | Missing auth | Ensure user is signed in |
-| "No OpenAI API key" | Missing env var | Set `OPENAI_API_KEY` in Convex Dashboard |
-| Tool not executing | Requires confirmation | Check if tool needs user confirmation |
-| Empty search results | No data | Seed database with test vendors/sponsors |
-| Streaming not working | CORS issues | Check HTTP headers in `http.ts` |
+| Issue                 | Cause                 | Solution                                 |
+| --------------------- | --------------------- | ---------------------------------------- |
+| "Unauthorized" error  | Missing auth          | Ensure user is signed in                 |
+| "No OpenAI API key"   | Missing env var       | Set `OPENAI_API_KEY` in Convex Dashboard |
+| Tool not executing    | Requires confirmation | Check if tool needs user confirmation    |
+| Empty search results  | No data               | Seed database with test vendors/sponsors |
+| Streaming not working | CORS issues           | Check HTTP headers in `http.ts`          |
 
 ### Debug Logging
 
@@ -875,7 +887,10 @@ The HTTP endpoint includes debug logging:
 ```typescript
 onStepFinish: async ({ toolCalls, toolResults }) => {
   if (toolCalls && toolCalls.length > 0) {
-    console.log('Tool calls:', toolCalls.map(tc => tc.toolName))
+    console.log(
+      'Tool calls:',
+      toolCalls.map((tc) => tc.toolName)
+    )
   }
   if (toolResults && toolResults.length > 0) {
     console.log('Tool results:', toolResults.length)
@@ -891,7 +906,7 @@ Currently, there's no rate limiting implemented. Consider adding:
 
 ```typescript
 // Future enhancement
-const RATE_LIMIT = 10  // requests per minute
+const RATE_LIMIT = 10 // requests per minute
 const rateLimiter = new RateLimiter(RATE_LIMIT)
 ```
 

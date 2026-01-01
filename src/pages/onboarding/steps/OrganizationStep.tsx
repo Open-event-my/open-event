@@ -1,12 +1,7 @@
 import { useState } from 'react'
 import { TypeformQuestion, TypeformNavigation, TypeformInput } from '@/components/typeform'
 import { OptionCard } from '@/components/onboarding'
-import {
-  Buildings,
-  Heart,
-  Bank,
-  Users,
-} from '@phosphor-icons/react'
+import { Buildings, Heart, Bank, Users } from '@phosphor-icons/react'
 import type { StepProps, OrganizationType } from '@/types/onboarding'
 
 const orgTypes: { value: OrganizationType; label: string; icon: typeof Buildings }[] = [

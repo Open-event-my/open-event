@@ -8,6 +8,7 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { assertRole, getCurrentUser } from './lib/auth'
+import { internal } from './_generated/api'
 
 // ============================================================================
 // Queries
@@ -36,12 +37,7 @@ export const getModerationLogs = query({
       )
     ),
     targetType: v.optional(
-      v.union(
-        v.literal('user'),
-        v.literal('vendor'),
-        v.literal('sponsor'),
-        v.literal('event')
-      )
+      v.union(v.literal('user'), v.literal('vendor'), v.literal('sponsor'), v.literal('event'))
     ),
     limit: v.optional(v.number()),
   },
@@ -354,5 +350,269 @@ export const getMyModerationStatus = query({
       suspendedAt: user.suspendedAt,
       suspendedReason: user.suspendedReason,
     }
+  },
+})
+
+// ============================================================================
+// Event Moderation
+// ============================================================================
+
+/**
+ * Get flagged events for admin review
+ * Accessible by admin and superadmin
+ */
+export const getFlaggedEvents = query({
+  args: {
+    severity: v.optional(v.union(v.literal('low'), v.literal('medium'), v.literal('high'))),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    await assertRole(ctx, 'admin')
+
+    let events
+
+    // Query by flagged status
+    if (args.severity) {
+      events = await ctx.db
+        .query('events')
+        .withIndex('by_flagged_severity', (q) =>
+          q.eq('flagged', true).eq('flaggedSeverity', args.severity)
+        )
+        .order('desc')
+        .collect()
+    } else {
+      events = await ctx.db
+        .query('events')
+        .withIndex('by_flagged', (q) => q.eq('flagged', true))
+        .order('desc')
+        .collect()
+    }
+
+    // Apply limit
+    const limit = args.limit || 50
+    const limitedEvents = events.slice(0, limit)
+
+    // Enrich with organizer and flagger info
+    const enrichedEvents = await Promise.all(
+      limitedEvents.map(async (event) => {
+        const organizer = await ctx.db.get(event.organizerId)
+        const flaggedByUser = event.flaggedBy ? await ctx.db.get(event.flaggedBy) : null
+
+        return {
+          _id: event._id,
+          title: event.title,
+          description: event.description,
+          status: event.status,
+          startDate: event.startDate,
+          flagged: event.flagged,
+          flaggedAt: event.flaggedAt,
+          flaggedReason: event.flaggedReason,
+          flaggedSeverity: event.flaggedSeverity,
+          flaggedByName: flaggedByUser?.name || 'Unknown',
+          organizerName: organizer?.name || 'Unknown',
+          organizerEmail: organizer?.email || 'Unknown',
+          organizerId: event.organizerId,
+          createdAt: event.createdAt,
+        }
+      })
+    )
+
+    return enrichedEvents
+  },
+})
+
+/**
+ * Get flagged events count for dashboard
+ */
+export const getFlaggedEventsCount = query({
+  args: {},
+  handler: async (ctx) => {
+    await assertRole(ctx, 'admin')
+
+    const flaggedEvents = await ctx.db
+      .query('events')
+      .withIndex('by_flagged', (q) => q.eq('flagged', true))
+      .collect()
+
+    const counts = {
+      total: flaggedEvents.length,
+      low: 0,
+      medium: 0,
+      high: 0,
+    }
+
+    for (const event of flaggedEvents) {
+      if (event.flaggedSeverity === 'low') counts.low++
+      else if (event.flaggedSeverity === 'medium') counts.medium++
+      else if (event.flaggedSeverity === 'high') counts.high++
+    }
+
+    return counts
+  },
+})
+
+/**
+ * Flag an event for review
+ * Accessible by admin and superadmin
+ */
+export const flagEvent = mutation({
+  args: {
+    eventId: v.id('events'),
+    reason: v.string(),
+    severity: v.union(v.literal('low'), v.literal('medium'), v.literal('high')),
+  },
+  handler: async (ctx, args) => {
+    const admin = await assertRole(ctx, 'admin')
+
+    const event = await ctx.db.get(args.eventId)
+    if (!event) {
+      throw new Error('Event not found')
+    }
+
+    // Already flagged
+    if (event.flagged) {
+      throw new Error('Event is already flagged')
+    }
+
+    const now = Date.now()
+
+    // Update event with flag
+    await ctx.db.patch(args.eventId, {
+      flagged: true,
+      flaggedAt: now,
+      flaggedReason: args.reason,
+      flaggedSeverity: args.severity,
+      flaggedBy: admin._id,
+      updatedAt: now,
+    })
+
+    // Log the action
+    await ctx.db.insert('moderationLogs', {
+      adminId: admin._id,
+      action: 'event_flagged',
+      targetType: 'event',
+      targetId: args.eventId,
+      reason: args.reason,
+      metadata: {
+        eventTitle: event.title,
+        severity: args.severity,
+        organizerId: event.organizerId,
+      },
+      createdAt: now,
+    })
+
+    // Create admin notification for flagged content
+    await ctx.runMutation(internal.adminNotifications.createFlaggedContentNotification, {
+      eventId: args.eventId,
+      eventTitle: event.title || 'Untitled Event',
+      reason: args.reason,
+      severity: args.severity,
+      flaggedByName: admin.name || admin.email || 'Admin',
+    })
+
+    return { success: true }
+  },
+})
+
+/**
+ * Remove flag from an event
+ * Accessible by admin and superadmin
+ */
+export const unflagEvent = mutation({
+  args: {
+    eventId: v.id('events'),
+    reason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const admin = await assertRole(ctx, 'admin')
+
+    const event = await ctx.db.get(args.eventId)
+    if (!event) {
+      throw new Error('Event not found')
+    }
+
+    // Not flagged
+    if (!event.flagged) {
+      throw new Error('Event is not flagged')
+    }
+
+    const now = Date.now()
+
+    // Remove flag from event
+    await ctx.db.patch(args.eventId, {
+      flagged: undefined,
+      flaggedAt: undefined,
+      flaggedReason: undefined,
+      flaggedSeverity: undefined,
+      flaggedBy: undefined,
+      updatedAt: now,
+    })
+
+    // Log the action
+    await ctx.db.insert('moderationLogs', {
+      adminId: admin._id,
+      action: 'event_unflagged',
+      targetType: 'event',
+      targetId: args.eventId,
+      reason: args.reason || 'Flag removed',
+      metadata: {
+        eventTitle: event.title,
+        previousSeverity: event.flaggedSeverity,
+        previousReason: event.flaggedReason,
+      },
+      createdAt: now,
+    })
+
+    return { success: true }
+  },
+})
+
+/**
+ * Remove a flagged event (set status to removed)
+ * Accessible by admin and superadmin
+ */
+export const removeEvent = mutation({
+  args: {
+    eventId: v.id('events'),
+    reason: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const admin = await assertRole(ctx, 'admin')
+
+    const event = await ctx.db.get(args.eventId)
+    if (!event) {
+      throw new Error('Event not found')
+    }
+
+    const now = Date.now()
+    const previousStatus = event.status
+
+    // Update event status to cancelled (effectively removing it)
+    await ctx.db.patch(args.eventId, {
+      status: 'cancelled',
+      flagged: undefined,
+      flaggedAt: undefined,
+      flaggedReason: undefined,
+      flaggedSeverity: undefined,
+      flaggedBy: undefined,
+      updatedAt: now,
+    })
+
+    // Log the action
+    await ctx.db.insert('moderationLogs', {
+      adminId: admin._id,
+      action: 'event_removed',
+      targetType: 'event',
+      targetId: args.eventId,
+      reason: args.reason,
+      metadata: {
+        eventTitle: event.title,
+        previousStatus,
+        organizerId: event.organizerId,
+      },
+      createdAt: now,
+    })
+
+    return { success: true }
   },
 })

@@ -171,7 +171,9 @@ export function useGitHubData(): GitHubData {
         const [repoRes, contributorsRes, commitsRes, releasesRes, languagesRes] =
           await Promise.allSettled([
             fetch(`${baseUrl}/repos/${REPO_OWNER}/${REPO_NAME}`, { headers }),
-            fetch(`${baseUrl}/repos/${REPO_OWNER}/${REPO_NAME}/contributors?per_page=50`, { headers }),
+            fetch(`${baseUrl}/repos/${REPO_OWNER}/${REPO_NAME}/contributors?per_page=50`, {
+              headers,
+            }),
             fetch(`${baseUrl}/repos/${REPO_OWNER}/${REPO_NAME}/commits?per_page=10`, { headers }),
             fetch(`${baseUrl}/repos/${REPO_OWNER}/${REPO_NAME}/releases?per_page=10`, { headers }),
             fetch(`${baseUrl}/repos/${REPO_OWNER}/${REPO_NAME}/languages`, { headers }),
@@ -211,7 +213,7 @@ export function useGitHubData(): GitHubData {
         }
 
         const apiContributors = Array.isArray(contributors) ? contributors : []
-        const hasClaudeAlready = apiContributors.some(c => c.login === 'Claude')
+        const hasClaudeAlready = apiContributors.some((c) => c.login === 'Claude')
         const mergedContributors = hasClaudeAlready
           ? apiContributors
           : [...apiContributors, claudeContributor]

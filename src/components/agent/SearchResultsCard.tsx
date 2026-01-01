@@ -36,12 +36,7 @@ interface SearchResultsCardProps {
   className?: string
 }
 
-export function SearchResultsCard({
-  type,
-  results,
-  onSelect,
-  className,
-}: SearchResultsCardProps) {
+export function SearchResultsCard({ type, results, onSelect, className }: SearchResultsCardProps) {
   if (results.length === 0) {
     return (
       <div className={cn('p-4 rounded-lg bg-muted/50 text-center', className)}>
@@ -60,18 +55,10 @@ export function SearchResultsCard({
       <div className="grid grid-cols-1 gap-2">
         {type === 'vendors'
           ? (results as VendorResult[]).map((vendor) => (
-              <VendorCard
-                key={vendor.id}
-                vendor={vendor}
-                onSelect={onSelect}
-              />
+              <VendorCard key={vendor.id} vendor={vendor} onSelect={onSelect} />
             ))
           : (results as SponsorResult[]).map((sponsor) => (
-              <SponsorCard
-                key={sponsor.id}
-                sponsor={sponsor}
-                onSelect={onSelect}
-              />
+              <SponsorCard key={sponsor.id} sponsor={sponsor} onSelect={onSelect} />
             ))}
       </div>
     </div>
@@ -165,10 +152,7 @@ function SponsorCard({
         {sponsor.sponsorshipTiers && sponsor.sponsorshipTiers.length > 0 && (
           <div className="flex gap-1 mt-1.5">
             {sponsor.sponsorshipTiers.slice(0, 3).map((tier) => (
-              <span
-                key={tier}
-                className="text-xs bg-muted px-1.5 py-0.5 rounded capitalize"
-              >
+              <span key={tier} className="text-xs bg-muted px-1.5 py-0.5 rounded capitalize">
                 {tier}
               </span>
             ))}

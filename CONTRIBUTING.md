@@ -127,12 +127,12 @@ git checkout -b feature/your-feature-name
 
 ### Branch Naming Convention
 
-| Type | Format | Example |
-|------|--------|---------|
-| Feature | `feature/description` | `feature/add-calendar-view` |
-| Bug fix | `fix/description` | `fix/event-date-picker` |
-| Docs | `docs/description` | `docs/update-readme` |
-| Refactor | `refactor/description` | `refactor/auth-flow` |
+| Type     | Format                 | Example                     |
+| -------- | ---------------------- | --------------------------- |
+| Feature  | `feature/description`  | `feature/add-calendar-view` |
+| Bug fix  | `fix/description`      | `fix/event-date-picker`     |
+| Docs     | `docs/description`     | `docs/update-readme`        |
+| Refactor | `refactor/description` | `refactor/auth-flow`        |
 
 ### 2. Make Your Changes
 
@@ -209,11 +209,7 @@ useEffect(() => {
 ```tsx
 import { cn } from '@/lib/utils'
 import { Calendar } from '@phosphor-icons/react'
-
-<div className={cn(
-  'p-4 rounded-lg',
-  isActive && 'bg-primary'
-)}>
+;<div className={cn('p-4 rounded-lg', isActive && 'bg-primary')}>
   <Calendar size={24} weight="duotone" />
 </div>
 ```
@@ -261,16 +257,16 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/):
 
 ### Types
 
-| Type | Description |
-|------|-------------|
-| `feat` | New feature |
-| `fix` | Bug fix |
-| `docs` | Documentation changes |
-| `style` | Code style (formatting, semicolons) |
-| `refactor` | Code refactoring |
-| `perf` | Performance improvements |
-| `test` | Adding or updating tests |
-| `chore` | Maintenance tasks |
+| Type       | Description                         |
+| ---------- | ----------------------------------- |
+| `feat`     | New feature                         |
+| `fix`      | Bug fix                             |
+| `docs`     | Documentation changes               |
+| `style`    | Code style (formatting, semicolons) |
+| `refactor` | Code refactoring                    |
+| `perf`     | Performance improvements            |
+| `test`     | Adding or updating tests            |
+| `chore`    | Maintenance tasks                   |
 
 ### Examples
 
@@ -301,12 +297,14 @@ git commit -m "refactor(dashboard): extract stats component for reuse"
 ### Before Submitting
 
 1. **Sync with upstream:**
+
    ```bash
    git fetch upstream
    git rebase upstream/main
    ```
 
 2. **Run all checks:**
+
    ```bash
    npm run test:run
    npm run lint
@@ -318,6 +316,7 @@ git commit -m "refactor(dashboard): extract stats component for reuse"
 ### Submitting
 
 1. Push your branch:
+
    ```bash
    git push origin feature/your-feature-name
    ```

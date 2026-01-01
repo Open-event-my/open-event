@@ -15,6 +15,8 @@
 [![Convex](https://img.shields.io/badge/Convex-Backend-f97316?style=flat-square)](https://convex.dev/)
 [![PWA](https://img.shields.io/badge/PWA-Ready-8b5cf6?style=flat-square&logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
 [![Stars](https://img.shields.io/github/stars/hazlijohar95/open-event?style=flat-square&color=fbbf24)](https://github.com/hazlijohar95/open-event/stargazers)
+[![CI](https://img.shields.io/github/actions/workflow/status/hazlijohar95/open-event/ci.yml?style=flat-square&label=CI)](https://github.com/hazlijohar95/open-event/actions/workflows/ci.yml)
+[![codecov](https://img.shields.io/codecov/c/github/hazlijohar95/open-event?style=flat-square&color=22c55e)](https://codecov.io/gh/hazlijohar95/open-event)
 
 [Live Demo](https://openevent.my) · [Report Bug](https://github.com/hazlijohar95/open-event/issues) · [Request Feature](https://github.com/hazlijohar95/open-event/issues)
 
@@ -33,18 +35,21 @@ Open Event is a **comprehensive event management platform** that connects three 
 <td align="center" width="33%">
 
 ### 🎪 Organizers
+
 Create and manage events with AI assistance, track budgets, coordinate vendors, and find sponsors.
 
 </td>
 <td align="center" width="33%">
 
 ### 🛠️ Vendors
+
 Showcase your services, discover event opportunities, and get hired by organizers.
 
 </td>
 <td align="center" width="33%">
 
 ### 💎 Sponsors
+
 Find events to support, manage sponsorship tiers, and track your brand investments.
 
 </td>
@@ -59,7 +64,7 @@ Find events to support, manage sponsorship tiers, and track your brand investmen
 <summary><b>🤖 AI Event Assistant</b> — Create events through natural conversation</summary>
 <br />
 
-> *"I want to create a tech conference for 200 developers next month"*
+> _"I want to create a tech conference for 200 developers next month"_
 
 The AI assistant understands your intent and creates events, finds vendors, and discovers sponsors automatically.
 
@@ -130,7 +135,7 @@ The AI assistant understands your intent and creates events, finds vendors, and 
 
 ### Prerequisites
 
-- **Node.js** 18+ 
+- **Node.js** 18+
 - **npm** 9+ or **pnpm**
 - [Convex](https://convex.dev) account (free)
 
@@ -187,15 +192,15 @@ npm run dev:all
 </tr>
 </table>
 
-| Layer | Technologies |
-|-------|-------------|
+| Layer        | Technologies                                                     |
+| ------------ | ---------------------------------------------------------------- |
 | **Frontend** | React 19, TypeScript, Vite 7, TailwindCSS 4, ShadCN UI, Radix UI |
-| **Backend** | Convex (real-time database + serverless functions) |
-| **Auth** | Convex Auth (Google OAuth, Email/Password) |
-| **AI** | OpenAI GPT-4o-mini with function calling |
-| **Testing** | Vitest, React Testing Library, Playwright |
-| **Icons** | Phosphor Icons (duotone) |
-| **Fonts** | Geist Sans & Geist Mono |
+| **Backend**  | Convex (real-time database + serverless functions)               |
+| **Auth**     | Convex Auth (Google OAuth, Email/Password)                       |
+| **AI**       | OpenAI GPT-4o-mini with function calling                         |
+| **Testing**  | Vitest, React Testing Library, Playwright                        |
+| **Icons**    | Phosphor Icons (duotone)                                         |
+| **Fonts**    | Geist Sans & Geist Mono                                          |
 
 <br />
 
@@ -206,7 +211,7 @@ open-event/
 ├── 📂 convex/                    # Backend
 │   ├── schema.ts                # Database schema
 │   ├── events.ts                # Event management
-│   ├── vendors.ts               # Vendor operations  
+│   ├── vendors.ts               # Vendor operations
 │   ├── sponsors.ts              # Sponsor operations
 │   ├── eventTasks.ts            # Task management
 │   ├── budgetItems.ts           # Budget tracking
@@ -280,12 +285,12 @@ The AI assistant uses **OpenAI function calling** for a truly agentic experience
 
 ### Available Tools (13)
 
-| Category | Tools |
-|----------|-------|
-| **Events** | `createEvent` · `updateEvent` · `getEventDetails` · `getUpcomingEvents` |
-| **Vendors** | `searchVendors` · `addVendorToEvent` · `getRecommendedVendors` · `getEventVendors` |
+| Category     | Tools                                                                                  |
+| ------------ | -------------------------------------------------------------------------------------- |
+| **Events**   | `createEvent` · `updateEvent` · `getEventDetails` · `getUpcomingEvents`                |
+| **Vendors**  | `searchVendors` · `addVendorToEvent` · `getRecommendedVendors` · `getEventVendors`     |
 | **Sponsors** | `searchSponsors` · `addSponsorToEvent` · `getRecommendedSponsors` · `getEventSponsors` |
-| **Profile** | `getUserProfile` |
+| **Profile**  | `getUserProfile`                                                                       |
 
 <br />
 
@@ -331,14 +336,14 @@ npm run test:e2e
 
 ## 📜 Scripts
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start frontend dev server |
-| `npm run dev:backend` | Start Convex backend |
-| `npm run dev:all` | Start both (recommended) |
-| `npm run build` | Production build |
-| `npm run lint` | Run ESLint |
-| `npm run test` | Run tests |
+| Command               | Description               |
+| --------------------- | ------------------------- |
+| `npm run dev`         | Start frontend dev server |
+| `npm run dev:backend` | Start Convex backend      |
+| `npm run dev:all`     | Start both (recommended)  |
+| `npm run build`       | Production build          |
+| `npm run lint`        | Run ESLint                |
+| `npm run test`        | Run tests                 |
 
 <br />
 

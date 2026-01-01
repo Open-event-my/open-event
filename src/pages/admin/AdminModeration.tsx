@@ -18,11 +18,7 @@ import {
   ArrowRight,
   Funnel,
 } from '@phosphor-icons/react'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 type ActionType =
   | 'user_suspended'
@@ -127,7 +123,11 @@ const targetConfig: Record<TargetType, { icon: typeof Users; color: string }> = 
 
 const actionCategories = [
   { value: 'all', label: 'All Actions', description: 'View all moderation activity' },
-  { value: 'user', label: 'User Actions', description: 'Suspensions, role changes, admin management' },
+  {
+    value: 'user',
+    label: 'User Actions',
+    description: 'Suspensions, role changes, admin management',
+  },
   { value: 'vendor', label: 'Vendor Actions', description: 'Vendor approvals and rejections' },
   { value: 'sponsor', label: 'Sponsor Actions', description: 'Sponsor approvals and rejections' },
   { value: 'event', label: 'Event Actions', description: 'Event flagging and removals' },
@@ -170,12 +170,12 @@ export function AdminModeration() {
   // Stats
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)
-  const todayActions = moderationLogs?.filter((l) => l.createdAt >= todayStart.getTime()).length || 0
+  const todayActions =
+    moderationLogs?.filter((l) => l.createdAt >= todayStart.getTime()).length || 0
   const suspensions = moderationLogs?.filter((l) => l.action === 'user_suspended').length || 0
   const approvals =
-    moderationLogs?.filter(
-      (l) => l.action === 'vendor_approved' || l.action === 'sponsor_approved'
-    ).length || 0
+    moderationLogs?.filter((l) => l.action === 'vendor_approved' || l.action === 'sponsor_approved')
+      .length || 0
 
   return (
     <div className="space-y-6">
@@ -300,7 +300,8 @@ export function AdminModeration() {
           <div className="flex gap-1">
             {(['all', 'user', 'vendor', 'sponsor', 'event'] as const).map((type) => {
               const Icon = type === 'all' ? Users : targetConfig[type as TargetType]?.icon
-              const color = type === 'all' ? 'text-foreground' : targetConfig[type as TargetType]?.color
+              const color =
+                type === 'all' ? 'text-foreground' : targetConfig[type as TargetType]?.color
               return (
                 <button
                   key={type}
@@ -312,7 +313,13 @@ export function AdminModeration() {
                       : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                   )}
                 >
-                  {Icon && <Icon size={14} weight="duotone" className={targetTypeFilter === type ? 'text-primary' : color} />}
+                  {Icon && (
+                    <Icon
+                      size={14}
+                      weight="duotone"
+                      className={targetTypeFilter === type ? 'text-primary' : color}
+                    />
+                  )}
                   {type === 'all' ? 'All' : type}
                 </button>
               )
@@ -333,9 +340,7 @@ export function AdminModeration() {
               className="mx-auto mb-4 text-muted-foreground/50"
             />
             <h3 className="font-semibold mb-1">No moderation logs found</h3>
-            <p className="text-muted-foreground text-sm">
-              Administrative actions will appear here
-            </p>
+            <p className="text-muted-foreground text-sm">Administrative actions will appear here</p>
           </div>
         ) : (
           <div className="divide-y divide-border">
@@ -349,8 +354,17 @@ export function AdminModeration() {
                 <div key={log._id} className="p-4 hover:bg-muted/30 transition-colors">
                   <div className="flex items-start gap-4">
                     {/* Action Icon */}
-                    <div className={cn('p-2.5 rounded-lg flex-shrink-0', action?.bgColor || 'bg-muted')}>
-                      <ActionIcon size={20} weight="duotone" className={action?.color || 'text-muted-foreground'} />
+                    <div
+                      className={cn(
+                        'p-2.5 rounded-lg flex-shrink-0',
+                        action?.bgColor || 'bg-muted'
+                      )}
+                    >
+                      <ActionIcon
+                        size={20}
+                        weight="duotone"
+                        className={action?.color || 'text-muted-foreground'}
+                      />
                     </div>
 
                     {/* Content */}

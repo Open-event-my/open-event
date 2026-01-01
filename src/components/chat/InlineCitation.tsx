@@ -54,9 +54,7 @@ export function InlineCitation({ citation, className }: InlineCitationProps) {
       </button>
 
       {/* Popover */}
-      {isOpen && (
-        <CitationPopover citation={citation} onClose={handleClose} />
-      )}
+      {isOpen && <CitationPopover citation={citation} onClose={handleClose} />}
     </span>
   )
 }
@@ -74,10 +72,7 @@ function CitationPopover({ citation, onClose }: CitationPopoverProps) {
   return (
     <>
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-40"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 z-40" onClick={onClose} />
 
       {/* Popover */}
       <div
@@ -115,9 +110,7 @@ function CitationPopover({ citation, onClose }: CitationPopoverProps) {
 
         {/* Excerpt */}
         {citation.excerpt && (
-          <p className="text-xs text-muted-foreground line-clamp-3 mb-3">
-            {citation.excerpt}
-          </p>
+          <p className="text-xs text-muted-foreground line-clamp-3 mb-3">{citation.excerpt}</p>
         )}
 
         {/* Link */}
@@ -126,10 +119,7 @@ function CitationPopover({ citation, onClose }: CitationPopoverProps) {
             href={citation.url}
             target="_blank"
             rel="noopener noreferrer"
-            className={cn(
-              'flex items-center gap-1.5 text-xs text-primary',
-              'hover:underline'
-            )}
+            className={cn('flex items-center gap-1.5 text-xs text-primary', 'hover:underline')}
           >
             <Link size={12} weight="duotone" />
             <span>View source</span>

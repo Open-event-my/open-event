@@ -68,13 +68,7 @@ export function TypeformLayout({
   }, [enableKeyboardNav, handleKeyDown])
 
   return (
-    <div
-      className={cn(
-        'min-h-dvh flex flex-col bg-background',
-        'typeform-layout',
-        className
-      )}
-    >
+    <div className={cn('min-h-dvh flex flex-col bg-background', 'typeform-layout', className)}>
       {/* Fixed progress bar at top */}
       <div className="fixed top-0 left-0 right-0 z-50">
         <TypeformProgress current={currentStep} total={totalSteps} />
@@ -83,10 +77,7 @@ export function TypeformLayout({
       {/* Header */}
       {showHeader && (
         <header className="sticky top-0 z-40 flex items-center justify-between px-4 sm:px-6 lg:px-8 py-4 pt-5 bg-background/80 backdrop-blur-sm">
-          <Link
-            to={brandLink}
-            className="hover:opacity-80 transition-opacity"
-          >
+          <Link to={brandLink} className="hover:opacity-80 transition-opacity">
             <Logo size="sm" showDomain={false} />
           </Link>
           <div className="flex items-center gap-3 sm:gap-4">
