@@ -939,7 +939,7 @@ function StatCard({
   value,
 }: {
   icon: React.ComponentType<{
-    size?: number
+    size?: string | number
     weight?: 'thin' | 'light' | 'regular' | 'bold' | 'fill' | 'duotone'
     className?: string
   }>
