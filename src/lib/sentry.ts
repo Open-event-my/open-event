@@ -27,8 +27,9 @@ export function captureMessage(message: string, level: 'info' | 'warning' | 'err
 /**
  * Set user context for error tracking
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function setUser(user: { id: string; email?: string; name?: string } | null) {
+export function setUser(
+  _user: { id: string; email?: string; name?: string } | null // eslint-disable-line @typescript-eslint/no-unused-vars
+) {
   // No-op when Sentry is disabled
 }
 
@@ -36,12 +37,9 @@ export function setUser(user: { id: string; email?: string; name?: string } | nu
  * Add breadcrumb for tracking user actions
  */
 export function addBreadcrumb(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  message: string,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  category: string,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  data?: Record<string, unknown>
+  _message: string, // eslint-disable-line @typescript-eslint/no-unused-vars
+  _category: string, // eslint-disable-line @typescript-eslint/no-unused-vars
+  _data?: Record<string, unknown> // eslint-disable-line @typescript-eslint/no-unused-vars
 ) {
   // No-op when Sentry is disabled
 }
