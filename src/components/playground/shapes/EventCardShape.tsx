@@ -59,6 +59,14 @@ export class EventCardShapeUtil extends ShapeUtil<EventCardShape> {
     }
   }
 
+  override onDoubleClick = (shape: EventCardShape) => {
+    window.dispatchEvent(
+      new CustomEvent('playground:edit-card', {
+        detail: { shapeId: shape.id, shapeType: 'event-card' },
+      })
+    )
+  }
+
   component(shape: EventCardShape) {
     const { title, eventType, startDate, venueName, expectedAttendees, budget, locationType } =
       shape.props

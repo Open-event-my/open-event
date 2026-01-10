@@ -16,7 +16,7 @@ export default defineConfig({
         "style-src 'self' 'unsafe-inline'",
         "img-src 'self' data: https: blob:",
         "font-src 'self' data:",
-        "connect-src 'self' https://*.convex.cloud https://api.openai.com https://api.stripe.com wss://*.convex.cloud",
+        "connect-src 'self' http://localhost:* http://127.0.0.1:* https://*.convex.cloud https://api.openai.com https://api.stripe.com wss://*.convex.cloud",
         "frame-ancestors 'none'",
         "base-uri 'self'",
         "form-action 'self'",

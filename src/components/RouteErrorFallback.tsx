@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
-import { WarningCircle, ArrowClockwise, House, EnvelopeSimple } from '@phosphor-icons/react'
+import { WarningCircle, ArrowClockwise, House, EnvelopeSimple, Bug } from '@phosphor-icons/react'
+import type { EnhancedFormattedError } from '@/lib/errorFormatter'
 
 interface RouteErrorFallbackProps {
   /**
@@ -8,9 +9,17 @@ interface RouteErrorFallbackProps {
    */
   error?: Error
   /**
+   * The formatted error (if available).
+   */
+  formattedError?: EnhancedFormattedError
+  /**
    * Called when user clicks retry.
    */
   onRetry?: () => void
+  /**
+   * Called when "Report Issue" is clicked.
+   */
+  onReportIssue?: (error: EnhancedFormattedError) => void
   /**
    * Custom title.
    */
@@ -41,11 +50,17 @@ interface RouteErrorFallbackProps {
  */
 export function RouteErrorFallback({
   error,
+  formattedError,
   onRetry,
+  onReportIssue,
   title = 'Something went wrong',
   message = 'We encountered an error loading this page. Please try again.',
 }: RouteErrorFallbackProps) {
   const navigate = useNavigate()
+
+  // Use formatted error message if available
+  const displayTitle = formattedError?.message ? title : title
+  const displayMessage = formattedError?.suggestions?.[0] || message
 
   const handleRetry = () => {
     if (onRetry) {
@@ -60,6 +75,12 @@ export function RouteErrorFallback({
     navigate(-1)
   }
 
+  const handleReportIssue = () => {
+    if (formattedError && onReportIssue) {
+      onReportIssue(formattedError)
+    }
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="max-w-md w-full text-center">
@@ -69,10 +90,25 @@ export function RouteErrorFallback({
         </div>
 
         {/* Title */}
-        <h1 className="text-2xl font-semibold text-foreground mb-2">{title}</h1>
+        <h1 className="text-2xl font-semibold text-foreground mb-2">{displayTitle}</h1>
 
         {/* Message */}
-        <p className="text-muted-foreground mb-8">{message}</p>
+        <p className="text-muted-foreground mb-8">{displayMessage}</p>
+
+        {/* Suggestions from formatted error */}
+        {formattedError?.suggestions && formattedError.suggestions.length > 1 && (
+          <div className="text-left mb-6 max-w-sm mx-auto">
+            <p className="text-sm text-muted-foreground mb-2">Here's what you can try:</p>
+            <ul className="text-sm text-muted-foreground space-y-1">
+              {formattedError.suggestions.slice(0, 3).map((suggestion, index) => (
+                <li key={index} className="flex items-start">
+                  <span className="mr-2">•</span>
+                  <span>{suggestion}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Error details in development */}
         {import.meta.env.DEV && error && (
@@ -106,6 +142,21 @@ export function RouteErrorFallback({
             </Link>
           </Button>
         </div>
+
+        {/* Report Issue button */}
+        {formattedError && onReportIssue && (
+          <div className="mt-4">
+            <Button variant="ghost" size="sm" onClick={handleReportIssue}>
+              <Bug size={16} className="mr-2" />
+              Report Issue
+            </Button>
+          </div>
+        )}
+
+        {/* Error ID for reference */}
+        {formattedError?.id && (
+          <p className="mt-4 text-xs text-muted-foreground">Error ID: {formattedError.id}</p>
+        )}
 
         {/* Dashboard link */}
         <div className="mt-6">

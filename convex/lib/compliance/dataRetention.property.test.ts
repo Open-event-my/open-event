@@ -94,43 +94,282 @@ const createMockContext = () => {
   return {
     db: {
       get: async (id: string): Promise<MockRecord | null> => {
-        for (const table of Object.values(mockData)) {
-          if (table.has(id)) {
-            return table.get(id) ?? null
-          }
+        // Check each table explicitly for type safety
+        if (mockData.auditLogs.has(id)) {
+          return mockData.auditLogs.get(id) ?? null
+        }
+        if (mockData.sessions.has(id)) {
+          return mockData.sessions.get(id) ?? null
+        }
+        if (mockData.notifications.has(id)) {
+          return mockData.notifications.get(id) ?? null
+        }
+        if (mockData.events.has(id)) {
+          return mockData.events.get(id) ?? null
+        }
+        if (mockData.verificationTokens.has(id)) {
+          return mockData.verificationTokens.get(id) ?? null
+        }
+        if (mockData.failedLoginAttempts.has(id)) {
+          return mockData.failedLoginAttempts.get(id) ?? null
+        }
+        if (mockData.adminNotifications.has(id)) {
+          return mockData.adminNotifications.get(id) ?? null
+        }
+        if (mockData.apiRequestLogs.has(id)) {
+          return mockData.apiRequestLogs.get(id) ?? null
+        }
+        if (mockData.webhookDeliveries.has(id)) {
+          return mockData.webhookDeliveries.get(id) ?? null
+        }
+        if (mockData.moderationLogs.has(id)) {
+          return mockData.moderationLogs.get(id) ?? null
         }
         return null
       },
-      delete: async (id: string) => {
-        for (const table of Object.values(mockData)) {
-          if (table.has(id)) {
-            table.delete(id)
-            return
-          }
+      delete: async (id: string): Promise<void> => {
+        // Check each table explicitly for type safety
+        if (mockData.auditLogs.has(id)) {
+          mockData.auditLogs.delete(id)
+          return
+        }
+        if (mockData.sessions.has(id)) {
+          mockData.sessions.delete(id)
+          return
+        }
+        if (mockData.notifications.has(id)) {
+          mockData.notifications.delete(id)
+          return
+        }
+        if (mockData.events.has(id)) {
+          mockData.events.delete(id)
+          return
+        }
+        if (mockData.verificationTokens.has(id)) {
+          mockData.verificationTokens.delete(id)
+          return
+        }
+        if (mockData.failedLoginAttempts.has(id)) {
+          mockData.failedLoginAttempts.delete(id)
+          return
+        }
+        if (mockData.adminNotifications.has(id)) {
+          mockData.adminNotifications.delete(id)
+          return
+        }
+        if (mockData.apiRequestLogs.has(id)) {
+          mockData.apiRequestLogs.delete(id)
+          return
+        }
+        if (mockData.webhookDeliveries.has(id)) {
+          mockData.webhookDeliveries.delete(id)
+          return
+        }
+        if (mockData.moderationLogs.has(id)) {
+          mockData.moderationLogs.delete(id)
+          return
         }
       },
-      patch: async (id: string, updates: Partial<MockRecord>) => {
-        for (const table of Object.values(mockData)) {
+      patch: async (id: string, updates: Partial<MockRecord>): Promise<void> => {
+        // Check each table explicitly for type safety
+        if (mockData.auditLogs.has(id)) {
+          const existing = mockData.auditLogs.get(id)
+          if (existing) {
+            const updated = { ...existing, ...updates }
+            if (isAuditLogRecord(updated)) {
+              mockData.auditLogs.set(id, updated)
+            }
+          }
+          return
+        }
+
+        if (mockData.sessions.has(id)) {
+          const existing = mockData.sessions.get(id)
+          if (existing) {
+            const updated = { ...existing, ...updates }
+            if (isSessionRecord(updated)) {
+              mockData.sessions.set(id, updated)
+            }
+          }
+          return
+        }
+
+        if (mockData.notifications.has(id)) {
+          const existing = mockData.notifications.get(id)
+          if (existing) {
+            const updated = { ...existing, ...updates }
+            if (isNotificationRecord(updated)) {
+              mockData.notifications.set(id, updated)
+            }
+          }
+          return
+        }
+
+        if (mockData.events.has(id)) {
+          const existing = mockData.events.get(id)
+          if (existing) {
+            const updated = { ...existing, ...updates }
+            if (isEventRecord(updated)) {
+              mockData.events.set(id, updated)
+            }
+          }
+          return
+        }
+
+        // Handle generic MockRecord tables
+        const genericTables: Array<
+          keyof Pick<
+            MockDataStore,
+            | 'verificationTokens'
+            | 'failedLoginAttempts'
+            | 'adminNotifications'
+            | 'apiRequestLogs'
+            | 'webhookDeliveries'
+            | 'moderationLogs'
+          >
+        > = [
+          'verificationTokens',
+          'failedLoginAttempts',
+          'adminNotifications',
+          'apiRequestLogs',
+          'webhookDeliveries',
+          'moderationLogs',
+        ]
+
+        for (const tableName of genericTables) {
+          const table = mockData[tableName]
           if (table.has(id)) {
             const existing = table.get(id)
             if (existing) {
-              ;(table as Map<string, MockRecord>).set(id, { ...existing, ...updates })
+              const updated = { ...existing, ...updates }
+              table.set(id, updated)
             }
             return
           }
         }
       },
-      insert: async (table: string, doc: Omit<MockRecord, '_id'>) => {
-        const id = `${table}_${Date.now()}_${Math.random()}`
-        const tableMap = mockData[table as keyof MockDataStore]
-        if (tableMap) {
-          ;(tableMap as Map<string, MockRecord>).set(id, { _id: id, ...doc } as MockRecord)
+      insert: async (tableName: string, doc: Record<string, unknown>): Promise<string> => {
+        const id = `${tableName}_${Date.now()}_${Math.random()}`
+        const recordData = { _id: id, ...doc }
+
+        // Type-safe insertion with exhaustive table matching and type narrowing
+        switch (tableName) {
+          case 'auditLogs':
+            if (isAuditLogRecord(recordData)) {
+              mockData.auditLogs.set(id, recordData)
+            }
+            break
+          case 'sessions':
+            if (isSessionRecord(recordData)) {
+              mockData.sessions.set(id, recordData)
+            }
+            break
+          case 'notifications':
+            if (isNotificationRecord(recordData)) {
+              mockData.notifications.set(id, recordData)
+            }
+            break
+          case 'events':
+            if (isEventRecord(recordData)) {
+              mockData.events.set(id, recordData)
+            }
+            break
+          case 'verificationTokens':
+          case 'failedLoginAttempts':
+          case 'adminNotifications':
+          case 'apiRequestLogs':
+          case 'webhookDeliveries':
+          case 'moderationLogs': {
+            // For generic tables, check if it matches any of the specific record types
+            // If not, accept it as a generic MockRecord
+            if (isAuditLogRecord(recordData)) {
+              mockData[tableName].set(id, recordData)
+            } else if (isSessionRecord(recordData)) {
+              mockData[tableName].set(id, recordData)
+            } else if (isNotificationRecord(recordData)) {
+              mockData[tableName].set(id, recordData)
+            } else if (isEventRecord(recordData)) {
+              mockData[tableName].set(id, recordData)
+            } else if (hasRequiredMockRecordFields(recordData)) {
+              mockData[tableName].set(id, recordData)
+            }
+            break
+          }
+          default:
+            throw new Error(`Unknown table: ${tableName}`)
         }
+
         return id
       },
     },
     mockData,
   }
+}
+
+// Type guard functions
+function isAuditLogRecord(
+  record: Record<string, unknown>
+): record is AuditLogRecord & Record<string, unknown> {
+  return (
+    '_id' in record &&
+    'userEmail' in record &&
+    'action' in record &&
+    'resource' in record &&
+    'status' in record &&
+    'createdAt' in record
+  )
+}
+
+function isSessionRecord(
+  record: Record<string, unknown>
+): record is SessionRecord & Record<string, unknown> {
+  return (
+    '_id' in record &&
+    'userId' in record &&
+    'accessToken' in record &&
+    'accessTokenExpiresAt' in record &&
+    'createdAt' in record
+  )
+}
+
+function isNotificationRecord(
+  record: Record<string, unknown>
+): record is NotificationRecord & Record<string, unknown> {
+  return (
+    '_id' in record &&
+    'userId' in record &&
+    'type' in record &&
+    'title' in record &&
+    'message' in record &&
+    'read' in record &&
+    'createdAt' in record
+  )
+}
+
+function isEventRecord(
+  record: Record<string, unknown>
+): record is EventRecord & Record<string, unknown> {
+  return (
+    '_id' in record &&
+    'organizerId' in record &&
+    'title' in record &&
+    'description' in record &&
+    'status' in record &&
+    'createdAt' in record
+  )
+}
+
+function hasRequiredMockRecordFields(
+  record: Record<string, unknown>
+): record is MockRecord & Record<string, unknown> {
+  // A record is a MockRecord if it has an _id and createdAt
+  // This is a fallback for generic record types
+  return (
+    '_id' in record &&
+    typeof record._id === 'string' &&
+    'createdAt' in record &&
+    typeof record.createdAt === 'number'
+  )
 }
 
 // Arbitraries for generating test data
@@ -487,7 +726,7 @@ describe('Data Retention Service - Property Tests', () => {
 
             // Verify old completed events are anonymized
             for (const eventId of oldCompletedIds) {
-              const event = await ctx.db.get(eventId)
+              const event = (await ctx.db.get(eventId)) as EventRecord | null
               expect(event).not.toBeNull()
               expect(event?.title).toBe(`Event ${eventId}`)
               expect(event?.description).toBe('[Anonymized - Retention Policy]')
@@ -497,7 +736,7 @@ describe('Data Retention Service - Property Tests', () => {
 
             // Verify recent completed events are unchanged
             for (const eventId of recentCompletedIds) {
-              const event = await ctx.db.get(eventId)
+              const event = (await ctx.db.get(eventId)) as EventRecord | null
               expect(event).not.toBeNull()
               expect(event?.title).toContain('Recent Event')
               expect(event?.description).toBe('Recent event description')
@@ -506,7 +745,7 @@ describe('Data Retention Service - Property Tests', () => {
 
             // Verify active events are unchanged
             for (const eventId of activeIds) {
-              const event = await ctx.db.get(eventId)
+              const event = (await ctx.db.get(eventId)) as EventRecord | null
               expect(event).not.toBeNull()
               expect(event?.title).toContain('Active Event')
               expect(event?.description).toBe('Active event description')
@@ -537,36 +776,39 @@ describe('Data Retention Service - Property Tests', () => {
             const ctx = createMockContext()
 
             // Create old records
-            const table = ctx.mockData[dataType as keyof typeof ctx.mockData]
             const cutoffDate = Date.now() - retentionDays * 24 * 60 * 60 * 1000
 
             for (let i = 0; i < recordCount; i++) {
               const recordId = `${dataType}_${i}`
-              table.set(recordId, {
-                _id: recordId,
-                createdAt: cutoffDate - 1000,
-                // Add required fields based on type
-                ...(dataType === 'sessions' && {
+              if (dataType === 'sessions') {
+                ctx.mockData.sessions.set(recordId, {
+                  _id: recordId,
+                  createdAt: cutoffDate - 1000,
                   userId: `user_${i}`,
                   accessToken: `token_${i}`,
                   accessTokenExpiresAt: cutoffDate - 500,
-                }),
-                ...(dataType === 'notifications' && {
+                })
+              } else if (dataType === 'notifications') {
+                ctx.mockData.notifications.set(recordId, {
+                  _id: recordId,
+                  createdAt: cutoffDate - 1000,
                   userId: `user_${i}`,
                   type: 'test',
                   title: 'Test',
                   message: 'Test',
                   read: true,
-                }),
-              })
+                })
+              }
             }
 
             const initialAuditLogCount = ctx.mockData.auditLogs.size
 
             // Simulate cleanup
-            const recordsToDelete = Array.from(table.values()).filter(
-              (record) => (record as { createdAt: number }).createdAt < cutoffDate
-            )
+            const records =
+              dataType === 'sessions'
+                ? Array.from(ctx.mockData.sessions.values())
+                : Array.from(ctx.mockData.notifications.values())
+            const recordsToDelete = records.filter((record) => record.createdAt < cutoffDate)
 
             let deletedCount = 0
             for (const record of recordsToDelete) {

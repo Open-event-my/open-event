@@ -49,6 +49,14 @@ export class NoteCardShapeUtil extends ShapeUtil<NoteCardShape> {
     }
   }
 
+  override onDoubleClick = (shape: NoteCardShape) => {
+    window.dispatchEvent(
+      new CustomEvent('playground:edit-card', {
+        detail: { shapeId: shape.id, shapeType: 'note-card' },
+      })
+    )
+  }
+
   component(shape: NoteCardShape) {
     const { title, content, color } = shape.props
 

@@ -71,6 +71,11 @@ The backend is organized by domain:
 
 - **`lib/agent/`** - AI agent system (tools, handlers, types)
 - **`lib/ai/`** - AI provider abstraction (OpenAI, Anthropic, Groq adapters)
+- **`lib/compliance/`** - GDPR and data retention utilities
+- **`lib/monitoring/`** - Logging, metrics, and alerts
+- **`lib/security/`** - Security utilities (rate limiting, encryption)
+- **`lib/resilience/`** - Resilience and recovery patterns
+- **`lib/performance/`** - Performance optimization utilities
 - **`lib/emailValidation.ts`** - Email validation utilities
 - **`lib/errorLogging.ts`** - Error logging utilities
 - **`lib/notificationEmails.ts`** - Email notification templates
@@ -85,7 +90,7 @@ The backend is organized by domain:
 
 #### `/src/components` - Reusable UI Components
 
-- **`ui/`** - ShadCN UI primitives (Button, Dialog, Input, error-state, form-field, loading-error-wrapper, offline-banner, page-loader, scroll-area, etc.)
+- **`ui/`** - ShadCN UI primitives (Button, Dialog, Input, error-state, form-field, loading-error-wrapper, offline-banner, page-loader, scroll-area, aria-live-region, error-banner, error-toast, form-error-summary, enhanced-offline-banner, etc.)
 - **`app/`** - App shell components (Sidebar, TopBar, AppShell)
 - **`auth/`** - Authentication components (SignIn, SignUp, ProtectedRoute, SignInForm, SignUpForm)
 - **`landing/`** - Landing page sections (Hero, Features, FAQ, etc.)
@@ -106,6 +111,8 @@ The backend is organized by domain:
 - **`playground/`** - Tldraw-based event canvas (Beta feature)
 - **`pwa/`** - PWA installation and update prompts
 - **`typeform/`** - Multi-step form components
+- **`compliance/`** - GDPR components (CookieConsentBanner, TermsAcceptanceDialog, DataExportSection)
+- **`demo/`** - Demo mode components (DemoControls, DemoModal, scenes/)
 
 #### `/src/pages` - Page Components (Route Handlers)
 
@@ -119,6 +126,7 @@ The backend is organized by domain:
 - **`legal/`** - Legal pages (Privacy, Terms, Cookies)
 - **`docs/`** - Documentation pages
 - **`opensource/`** - Open source contributors page
+- **`errors/`** - Error pages (NotFoundPage, ServerErrorPage)
 
 #### `/src/hooks` - Custom React Hooks
 
@@ -136,6 +144,15 @@ The backend is organized by domain:
 - **`useOptimisticMutation.ts`** - Optimistic mutation handling
 - **`useRetryMutation.ts`** - Mutation retry logic
 - **`useToggleArray.ts`** - Array toggle utility
+- **`useAriaLive.ts`** - ARIA live region management
+- **`useConnectivityMonitor.ts`** - Network connectivity monitoring
+- **`useCountdown.ts`** - Countdown timer functionality
+- **`useErrorState.ts`** - Error state management
+- **`useFieldValidation.ts`** - Field-level form validation
+- **`useFormErrorSummary.ts`** - Form error summary handling
+- **`useFormFocusManagement.ts`** - Keyboard navigation for forms
+- **`useSessionTimeout.ts`** - Session timeout handling
+- **`useTermsAcceptance.ts`** - Terms acceptance tracking
 
 **Note:** Unit tests for hooks are co-located (e.g., `use-audience-toggle.test.ts`).
 
@@ -152,12 +169,23 @@ The backend is organized by domain:
 - **`playground/`** - Playground-specific utilities (extractor, proximity)
 - **`calendar/`** - Calendar utilities (ICS generation, calendar URLs)
 - **`export/`** - Export utilities (CSV, PDF generation)
+- **`compliance/`** - Cookie consent utilities
+- **`config/`** - Environment validation and health checks
+- **`performance/`** - Lazy loading utilities
+- **`security/`** - Security utilities
+- **`connectivityMonitor.ts`** - Network status monitoring
+- **`errorFormatter.ts`** - Error message formatting with HTML escaping
+- **`errorLogger.ts`** - Error logging utilities
+- **`errorReporter.ts`** - Error reporting to external services
+- **`recoveryActions.ts`** - Error recovery action suggestions
 
 **Note:** Unit tests for utilities are co-located (e.g., `utils.test.ts`, `validation.test.ts`).
 
 #### `/src/contexts` - React Context Providers
 
 - **`AuthContext.tsx`** - Authentication context provider
+- **`CSRFContext.tsx`** - CSRF protection context
+- **`ErrorStateContext.tsx`** - Error state management context
 
 #### `/src/types` - TypeScript Type Definitions
 
@@ -173,6 +201,27 @@ The backend is organized by domain:
 - **`ANALYTICS_FRONTEND_GUIDE.md`** - Analytics implementation guide
 - **`DESIGN_SYSTEM.md`** - Design system documentation
 - **`PWA_GUIDE.md`** - Progressive Web App guide
+- **`FORME.md`** - Project structure guide
+- **`MEME.md`** - Project structure documentation instructions
+- **`operations/`** - Runbooks (DEPLOYMENT.md, DISASTER_RECOVERY.md, INCIDENT_RESPONSE.md, etc.)
+- **`convex/compliance/`** - Compliance guides
+- **`convex/monitoring/`** - Monitoring integration guides
+- **`convex/security/`** - Security implementation docs
+- **`specs/`** - Feature specifications (production-readiness, real-time-collaboration, etc.)
+
+### `/.cursor` - Cursor IDE Configuration
+
+- **`rules/`** - Cursor IDE rules and instructions
+  - **`byterover-rules.mdc`** - Byterover MCP server rules
+- **`skills/`** - Project skills documentation
+  - **`README.md`** - Skills directory overview
+  - **`frontend-development.md`** - React, TypeScript, Vite, TailwindCSS skills
+  - **`backend-convex.md`** - Convex backend development skills
+  - **`testing.md`** - Vitest and Playwright testing skills
+  - **`ui-ux.md`** - ShadCN UI, Radix UI, dark mode skills
+  - **`ai-integration.md`** - OpenAI function calling and agent systems
+  - **`architecture.md`** - Architecture patterns and best practices
+  - **`build-deployment.md`** - Build optimization and deployment skills
 
 ### `/e2e` - End-to-End Tests
 
@@ -183,6 +232,16 @@ The backend is organized by domain:
 - **`landing-page.spec.ts`** - Landing page E2E tests
 - **`analytics-export.spec.ts`** - Analytics export E2E tests
 - **`notifications.spec.ts`** - Notifications E2E tests
+- **`event-applications.spec.ts`** - Event applications management E2E tests
+- **`sponsor-management.spec.ts`** - Sponsor management E2E tests
+- **`vendor-management.spec.ts`** - Vendor management E2E tests
+- **`organizer-dashboard.spec.ts`** - Organizer dashboard E2E tests
+- **`event-details.spec.ts`** - Event details page E2E tests
+- **`check-in-system.spec.ts`** - Check-in system E2E tests
+- **`attendee-management.spec.ts`** - Attendee management E2E tests
+- **`ticketing-system.spec.ts`** - Ticketing system E2E tests
+- **`promo-codes.spec.ts`** - Promo codes E2E tests
+- **`orders-payments.spec.ts`** - Orders and payments E2E tests
 
 **Note:** Unit tests are co-located with their components/utilities (e.g., `SignUpForm.test.tsx` next to `SignUpForm.tsx`). Security module tests are in `src/lib/` (accountLockout.test.ts, globalRateLimit.test.ts, auditLog.test.ts). Test setup is in `src/test/setup.ts`.
 
@@ -190,6 +249,11 @@ The backend is organized by domain:
 
 - **`generateKeys.mjs`** - API key generation utility
 - **`test-api.ps1`** - API testing script
+- **`check-auth.mjs`** - Authentication verification
+- **`generate-jwks.mjs`** - JWKS key generation
+- **`verifyAuthConfig.mjs`** - Auth configuration verification
+- **`verifyCompliance.ts`** - Compliance verification
+- **`verifyMonitoring.ts`** - Monitoring verification
 
 ### `/public` - Static Assets
 
@@ -214,6 +278,8 @@ The backend is organized by domain:
 4. **Type Safety**: Full TypeScript coverage with Convex-generated types from `_generated/api`.
 5. **Public API**: RESTful API with API key authentication, rate limiting, and webhook support.
 6. **Security Layer**: Account lockout, global rate limiting, audit logging, and optional 2FA for enterprise users.
+7. **Error Handling System**: Comprehensive error formatting, logging, and recovery with ARIA accessibility support.
+8. **Compliance & GDPR**: Cookie consent, terms acceptance, data export/deletion capabilities.
 
 ## Entry Points
 
