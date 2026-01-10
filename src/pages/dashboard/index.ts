@@ -10,5 +10,5 @@ export { VendorsPage } from './VendorsPage'
 export { SponsorsPage } from './SponsorsPage'
 export { AnalyticsPage } from './AnalyticsPage'
 export { SettingsPage } from './SettingsPage'
-export { PlaygroundPage } from './PlaygroundPage'
+// PlaygroundPage DISABLED - tldraw has React 18 compatibility issues
 export { IntegrationPage } from './IntegrationPage'

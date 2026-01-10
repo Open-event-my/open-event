@@ -46,14 +46,15 @@ export interface RechartsModule {
   ResponsiveContainer: typeof import('recharts').ResponsiveContainer
 }
 
-export interface TldrawModule {
-  Tldraw: typeof import('tldraw').Tldraw
-  createTLStore: typeof import('tldraw').createTLStore
-  defaultShapeUtils: typeof import('tldraw').defaultShapeUtils
-  ShapeUtil: typeof import('tldraw').ShapeUtil
-  HTMLContainer: typeof import('tldraw').HTMLContainer
-  Rectangle2d: typeof import('tldraw').Rectangle2d
-}
+// TldrawModule DISABLED - tldraw has React 18 compatibility issues
+// export interface TldrawModule {
+//   Tldraw: typeof import('tldraw').Tldraw
+//   createTLStore: typeof import('tldraw').createTLStore
+//   defaultShapeUtils: typeof import('tldraw').defaultShapeUtils
+//   ShapeUtil: typeof import('tldraw').ShapeUtil
+//   HTMLContainer: typeof import('tldraw').HTMLContainer
+//   Rectangle2d: typeof import('tldraw').Rectangle2d
+// }
 
 // ============================================================================
 // Module Cache
@@ -65,7 +66,7 @@ const loadStats = new Map<string, LazyLoadStats>()
 // Promise references for deduplication (prevents multiple concurrent loads)
 let pdfPromise: Promise<PDFModule> | null = null
 let rechartsPromise: Promise<RechartsModule> | null = null
-let tldrawPromise: Promise<TldrawModule> | null = null
+// tldrawPromise DISABLED - tldraw has React 18 compatibility issues
 
 /**
  * Get loading statistics for all lazy-loaded modules
@@ -89,7 +90,6 @@ export function clearModuleCache(): void {
   loadStats.clear()
   pdfPromise = null
   rechartsPromise = null
-  tldrawPromise = null
 }
 
 // ============================================================================
@@ -214,61 +214,10 @@ export async function loadRechartsModule(): Promise<LazyLoadResult<RechartsModul
 }
 
 // ============================================================================
-// tldraw Library
+// tldraw Library - DISABLED due to React 18 compatibility issues
 // ============================================================================
 
-/**
- * Lazily load tldraw library
- * Returns cached module if already loaded
- */
-export async function loadTldrawModule(): Promise<LazyLoadResult<TldrawModule>> {
-  const moduleName = 'tldraw'
-
-  // Return cached module
-  if (moduleCache.has(moduleName)) {
-    const stats = loadStats.get(moduleName)!
-    return {
-      module: moduleCache.get(moduleName) as TldrawModule,
-      loadTime: stats.loadTime ?? 0,
-    }
-  }
-
-  // Reuse existing promise if loading is in progress
-  if (!tldrawPromise) {
-    const startTime = performance.now()
-
-    tldrawPromise = import('tldraw').then((tldraw) => {
-      const loadTime = performance.now() - startTime
-
-      const module: TldrawModule = {
-        Tldraw: tldraw.Tldraw,
-        createTLStore: tldraw.createTLStore,
-        defaultShapeUtils: tldraw.defaultShapeUtils,
-        ShapeUtil: tldraw.ShapeUtil,
-        HTMLContainer: tldraw.HTMLContainer,
-        Rectangle2d: tldraw.Rectangle2d,
-      }
-
-      moduleCache.set(moduleName, module)
-      loadStats.set(moduleName, {
-        moduleName,
-        loaded: true,
-        loadTime,
-        loadedAt: Date.now(),
-      })
-
-      return module
-    })
-  }
-
-  const module = await tldrawPromise
-  const stats = loadStats.get(moduleName)!
-
-  return {
-    module,
-    loadTime: stats.loadTime ?? 0,
-  }
-}
+// loadTldrawModule removed - tldraw has React 18 compatibility issues
 
 // ============================================================================
 // Preload Functions (for anticipated usage)
@@ -298,14 +247,4 @@ export function preloadRechartsModule(): void {
   }
 }
 
-/**
- * Preload tldraw module in the background
- * Call this when user navigates toward playground
- */
-export function preloadTldrawModule(): void {
-  if (!isModuleLoaded('tldraw')) {
-    loadTldrawModule().catch(() => {
-      // Silently fail preload - will retry on actual use
-    })
-  }
-}
+// preloadTldrawModule removed - tldraw has React 18 compatibility issues

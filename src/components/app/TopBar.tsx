@@ -14,7 +14,8 @@ interface TopBarProps {
 }
 
 const mainNavItems = [
-  { label: 'Playground', path: '/dashboard/playground', badge: 'Beta' },
+  // Playground DISABLED - tldraw has React 18 compatibility issues
+  // { label: 'Playground', path: '/dashboard/playground', badge: 'Beta' },
   { label: 'Integration', path: '/dashboard/integration', badge: 'Soon', muted: true },
 ]
 

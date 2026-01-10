@@ -86,7 +86,6 @@
     "sonner": "^2.0.7",
     "stripe": "^20.1.0",
     "tailwind-merge": "^3.4.0",
-    "tldraw": "^4.2.1",
     "zod": "^4.2.1"
   },
   "devDependencies": {

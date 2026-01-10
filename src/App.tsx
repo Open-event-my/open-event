@@ -97,10 +97,11 @@ const IntegrationPage = lazy(() =>
   import('@/pages/dashboard/IntegrationPage').then((m) => ({ default: m.IntegrationPage }))
 )
 
-// Playground uses tldraw (~900KB) - always lazy load
-const PlaygroundPage = lazy(() =>
-  import('@/pages/dashboard/PlaygroundPage').then((m) => ({ default: m.PlaygroundPage }))
-)
+// Playground DISABLED - tldraw has React 18 compatibility issues
+// TODO: Re-enable when tldraw is fixed
+// const PlaygroundPage = lazy(() =>
+//   import('@/pages/dashboard/PlaygroundPage').then((m) => ({ default: m.PlaygroundPage }))
+// )
 
 // ============================================================================
 // LAZY-LOADED: ADMIN PAGES (~600KB savings)
@@ -289,6 +290,7 @@ function App() {
                     </Suspense>
                   }
                 />
+                {/* Playground DISABLED - tldraw has React 18 compatibility issues
                 <Route
                   path="playground"
                   element={
@@ -297,6 +299,7 @@ function App() {
                     </Suspense>
                   }
                 />
+                */}
                 <Route
                   path="integration"
                   element={
