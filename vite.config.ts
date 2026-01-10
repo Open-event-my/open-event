@@ -63,10 +63,9 @@ export default defineConfig({
         manualChunks: (id) => {
           // Create vendor chunks for large dependencies
           if (id.includes('node_modules')) {
-            // TLDraw - largest dependency (PlaygroundPage)
-            if (id.includes('tldraw') || id.includes('@tldraw/')) {
-              return 'vendor-tldraw'
-            }
+            // TLDraw - let Vite handle dynamically to avoid React loading issues
+            // tldraw is lazy-loaded via PlaygroundPage so it will be in its own chunk anyway
+
             // Charts library (AnalyticsPage)
             if (id.includes('recharts') || id.includes('d3-')) {
               return 'vendor-charts'
