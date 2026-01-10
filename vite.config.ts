@@ -71,8 +71,13 @@ export default defineConfig({
             if (id.includes('recharts') || id.includes('d3-')) {
               return 'vendor-charts'
             }
-            // Core React
-            if (id.includes('react-dom') || id.includes('react-router')) {
+            // Core React - IMPORTANT: react must be bundled with react-dom
+            if (
+              id.includes('node_modules/react/') ||
+              id.includes('node_modules/react-dom/') ||
+              id.includes('node_modules/react-router') ||
+              id.includes('node_modules/scheduler/')
+            ) {
               return 'vendor-react'
             }
             // Radix UI components
