@@ -258,19 +258,6 @@ export class BackupService {
     // For now, we'll just return the data (encryption would be added later)
     return Buffer.from(data).toString('base64')
   }
-
-  /**
-   * Decrypt backup data
-   *
-   * @param encryptedData - Encrypted data as base64 string
-   * @returns Decrypted data
-   */
-
-  private async _decryptData(encryptedData: string): Promise<string> {
-    // Note: This is a placeholder. Real implementation would use
-    // a proper encryption service with key management.
-    return Buffer.from(encryptedData, 'base64').toString('utf-8')
-  }
 }
 
 /**
