@@ -157,12 +157,14 @@ function formatForConsole(entry: ErrorLogEntry): void {
  * Send error to Sentry with sanitized data
  * DISABLED: React 19 compatibility issue
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function sendToSentry(
-  error: Error,
-  entry: ErrorLogEntry,
-  formattedError: EnhancedFormattedError
+  _error: Error,
+  _entry: ErrorLogEntry,
+  _formattedError: EnhancedFormattedError
 ): void {
+  void _error
+  void _entry
+  void _formattedError
   // Sentry is disabled for React 19 compatibility
   // TODO: Re-enable when @sentry/react supports React 19
 }
