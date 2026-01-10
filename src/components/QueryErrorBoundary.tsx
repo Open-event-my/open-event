@@ -7,11 +7,16 @@ import {
   LockKey,
   MagnifyingGlass,
 } from '@phosphor-icons/react'
-import { captureError } from '@/lib/sentry'
-import { getErrorMessage } from '@/types/errors'
+import { logQueryError } from '@/lib/errorLogger'
+import {
+  formatErrorWithContext,
+  type EnhancedFormattedError,
+  type ErrorCategory,
+} from '@/lib/errorFormatter'
 
 /**
  * Error types for better UX
+ * @deprecated Use ErrorCategory from errorFormatter instead
  */
 type ErrorType = 'network' | 'permission' | 'notFound' | 'generic'
 
@@ -22,6 +27,7 @@ interface Props {
    */
   fallback?: (props: {
     error: Error
+    formattedError: EnhancedFormattedError
     errorType: ErrorType
     retry: () => void
     reset: () => void
@@ -29,7 +35,7 @@ interface Props {
   /**
    * Called when an error is caught.
    */
-  onError?: (error: Error) => void
+  onError?: (error: Error, formattedError: EnhancedFormattedError) => void
   /**
    * Called when user clicks retry.
    */
@@ -42,12 +48,34 @@ interface Props {
    * Whether to show a compact error UI.
    */
   compact?: boolean
+  /**
+   * Query key for logging purposes
+   */
+  queryKey?: string | unknown[]
 }
 
 interface State {
   hasError: boolean
   error: Error | null
+  formattedError: EnhancedFormattedError | null
   errorType: ErrorType
+}
+
+/**
+ * Map ErrorCategory to legacy ErrorType
+ */
+function categoryToErrorType(category: ErrorCategory): ErrorType {
+  switch (category) {
+    case 'network':
+      return 'network'
+    case 'permission':
+    case 'auth':
+      return 'permission'
+    case 'notFound':
+      return 'notFound'
+    default:
+      return 'generic'
+  }
 }
 
 /**
@@ -156,44 +184,42 @@ function getErrorDisplay(errorType: ErrorType): {
 export class QueryErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props)
-    this.state = { hasError: false, error: null, errorType: 'generic' }
+    this.state = { hasError: false, error: null, formattedError: null, errorType: 'generic' }
   }
 
   static getDerivedStateFromError(error: Error): Partial<State> {
+    const formattedError = formatErrorWithContext(error, {
+      action: 'fetch data',
+      component: 'QueryErrorBoundary',
+    })
+
     return {
       hasError: true,
       error,
-      errorType: getErrorType(error),
+      formattedError,
+      errorType: categoryToErrorType(formattedError.category),
     }
   }
 
   componentDidCatch(error: Error): void {
-    // Log to Sentry
-    captureError(error, {
-      queryErrorBoundary: true,
-      errorType: this.state.errorType,
-    })
+    // Log with enhanced error logging
+    const formattedError = logQueryError(error, this.props.queryKey || 'unknown')
 
     // Call custom error handler
-    this.props.onError?.(error)
-
-    // Log in development
-    if (import.meta.env.DEV) {
-      console.error('QueryErrorBoundary caught an error:', error)
-    }
+    this.props.onError?.(error, formattedError)
   }
 
   handleRetry = (): void => {
     this.props.onRetry?.()
-    this.setState({ hasError: false, error: null, errorType: 'generic' })
+    this.setState({ hasError: false, error: null, formattedError: null, errorType: 'generic' })
   }
 
   handleReset = (): void => {
-    this.setState({ hasError: false, error: null, errorType: 'generic' })
+    this.setState({ hasError: false, error: null, formattedError: null, errorType: 'generic' })
   }
 
   render(): ReactNode {
-    if (!this.state.hasError || !this.state.error) {
+    if (!this.state.hasError || !this.state.error || !this.state.formattedError) {
       return this.props.children
     }
 
@@ -201,13 +227,15 @@ export class QueryErrorBoundary extends Component<Props, State> {
     if (this.props.fallback) {
       return this.props.fallback({
         error: this.state.error,
+        formattedError: this.state.formattedError,
         errorType: this.state.errorType,
         retry: this.handleRetry,
         reset: this.handleReset,
       })
     }
 
-    const display = getErrorDisplay(this.state.errorType)
+    const { errorType } = this.state
+    const display = getErrorDisplay(errorType)
     const Icon = display.icon
     const title = this.props.title || display.title
 
@@ -217,7 +245,7 @@ export class QueryErrorBoundary extends Component<Props, State> {
         <div className="flex items-center justify-center p-6 text-center">
           <div className="flex flex-col items-center gap-3">
             <Icon size={24} className="text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">{getErrorMessage(this.state.error)}</p>
+            <p className="text-sm text-muted-foreground">{this.state.formattedError.message}</p>
             <Button size="sm" variant="outline" onClick={this.handleRetry}>
               <ArrowClockwise size={14} className="mr-2" />
               {display.retryLabel}

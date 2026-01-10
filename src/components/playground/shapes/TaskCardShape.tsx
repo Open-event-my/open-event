@@ -52,6 +52,14 @@ export class TaskCardShapeUtil extends ShapeUtil<TaskCardShape> {
     }
   }
 
+  override onDoubleClick = (shape: TaskCardShape) => {
+    window.dispatchEvent(
+      new CustomEvent('playground:edit-card', {
+        detail: { shapeId: shape.id, shapeType: 'task-card' },
+      })
+    )
+  }
+
   component(shape: TaskCardShape) {
     const { title, checklist, dueDate, priority, status } = shape.props
 

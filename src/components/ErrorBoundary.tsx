@@ -1,8 +1,8 @@
 import { Component, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { WarningCircle, ArrowClockwise, House, Bug } from '@phosphor-icons/react'
-import { captureError } from '@/lib/sentry'
-import { formatErrorMessage } from '@/lib/errorFormatter'
+import { logErrorBoundaryError } from '@/lib/errorLogger'
+import { formatErrorWithContext, type EnhancedFormattedError } from '@/lib/errorFormatter'
 
 interface Props {
   children: ReactNode
@@ -11,12 +11,14 @@ interface Props {
   onError?: (error: Error, errorInfo: React.ErrorInfo) => void
   /** Show a minimal error UI (useful for smaller components) */
   minimal?: boolean
+  /** Called when "Report Issue" is clicked */
+  onReportIssue?: (error: EnhancedFormattedError) => void
 }
 
 interface State {
   hasError: boolean
   error: Error | null
-  errorId: string | null
+  formattedError: EnhancedFormattedError | null
 }
 
 /**
@@ -43,40 +45,45 @@ interface State {
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props)
-    this.state = { hasError: false, error: null, errorId: null }
+    this.state = { hasError: false, error: null, formattedError: null }
   }
 
   static getDerivedStateFromError(error: Error): Partial<State> {
+    // Format the error with context
+    const formattedError = formatErrorWithContext(error, {
+      action: 'render component',
+      component: 'ErrorBoundary',
+    })
+
     return {
       hasError: true,
       error,
-      errorId: `error-${Date.now()}`,
+      formattedError,
     }
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-    // Log to Sentry
-    captureError(error, {
-      componentStack: errorInfo.componentStack,
-      errorBoundary: true,
+    // Log to Sentry with enhanced logging
+    logErrorBoundaryError(error, {
+      componentStack: errorInfo.componentStack ?? undefined,
     })
 
     // Call custom error handler if provided
     this.props.onError?.(error, errorInfo)
-
-    // Log to console in development
-    if (import.meta.env.DEV) {
-      console.error('ErrorBoundary caught an error:', error)
-      console.error('Component stack:', errorInfo.componentStack)
-    }
   }
 
   handleReset = (): void => {
-    this.setState({ hasError: false, error: null, errorId: null })
+    this.setState({ hasError: false, error: null, formattedError: null })
   }
 
   handleGoHome = (): void => {
     window.location.href = '/'
+  }
+
+  handleReportIssue = (): void => {
+    if (this.state.formattedError && this.props.onReportIssue) {
+      this.props.onReportIssue(this.state.formattedError)
+    }
   }
 
   render(): ReactNode {
@@ -86,8 +93,8 @@ export class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback
       }
 
-      // Format the error for user-friendly display
-      const formatted = this.state.error ? formatErrorMessage(this.state.error) : null
+      // Use the formatted error
+      const formatted = this.state.formattedError
 
       // Minimal error UI for smaller components
       if (this.props.minimal) {
@@ -159,11 +166,17 @@ export class ErrorBoundary extends Component<Props, State> {
               <House size={16} weight="bold" className="mr-2" />
               Go Home
             </Button>
+            {this.props.onReportIssue && (
+              <Button onClick={this.handleReportIssue} variant="ghost">
+                <Bug size={16} weight="bold" className="mr-2" />
+                Report Issue
+              </Button>
+            )}
           </div>
 
           {/* Error ID for support reference */}
-          {this.state.errorId && (
-            <p className="mt-6 text-xs text-muted-foreground">Error ID: {this.state.errorId}</p>
+          {formatted?.id && (
+            <p className="mt-6 text-xs text-muted-foreground">Error ID: {formatted.id}</p>
           )}
         </div>
       )

@@ -4,7 +4,7 @@
  * Transforms technical errors into user-friendly messages with recovery suggestions.
  * Strips stack traces and technical details from user-facing error messages.
  *
- * Requirements: 11.1, 11.3
+ * Requirements: 11.1, 11.3, 1.1, 1.2, 7.1
  */
 
 /**
@@ -22,6 +22,44 @@ export type ErrorCategory =
   | 'unknown'
 
 /**
+ * Context information about what action the user was performing when the error occurred
+ * Requirements: 1.1, 1.2
+ */
+export interface ErrorContext {
+  /** What action the user was performing (e.g., "save your event", "update profile") */
+  action: string
+  /** Component where error occurred */
+  component?: string
+  /** Additional metadata */
+  metadata?: Record<string, unknown>
+}
+
+/**
+ * Recovery action type for error handling
+ * Requirements: 2.1, 2.3, 2.4, 2.5
+ */
+export type RecoveryActionType = 'retry' | 'navigate' | 'focus' | 'custom' | 'countdown'
+
+/**
+ * Recovery action that helps users resolve an error
+ * Requirements: 2.1
+ */
+export interface RecoveryAction {
+  /** Button label */
+  label: string
+  /** Action type for handling */
+  type: RecoveryActionType
+  /** Handler function or navigation path */
+  handler?: () => Promise<void> | void
+  /** Navigation path for 'navigate' type */
+  path?: string
+  /** Element selector for 'focus' type */
+  selector?: string
+  /** Countdown duration in seconds for 'countdown' type */
+  countdownSeconds?: number
+}
+
+/**
  * Formatted error message with recovery suggestions
  */
 export interface FormattedError {
@@ -35,6 +73,25 @@ export interface FormattedError {
   actionText?: string
   /** Optional action to perform */
   action?: () => void
+}
+
+/**
+ * Enhanced formatted error with context, unique ID, and recovery actions
+ * Requirements: 1.1, 1.2, 7.1
+ */
+export interface EnhancedFormattedError extends FormattedError {
+  /** Unique error ID for tracking */
+  id: string
+  /** Timestamp when error occurred */
+  timestamp: number
+  /** Action context if provided */
+  context?: ErrorContext
+  /** Whether error requires user acknowledgment */
+  requiresAcknowledgment: boolean
+  /** Whether error should persist across navigation */
+  persistent: boolean
+  /** Recovery actions available */
+  recoveryActions: RecoveryAction[]
 }
 
 /**
@@ -547,4 +604,350 @@ export function formatMultipleErrors(errors: unknown[]): FormattedError {
     category: primaryCategory,
     actionText: getActionText(primaryCategory),
   }
+}
+
+/**
+ * Generate a unique error ID for tracking
+ * Uses crypto.randomUUID when available, falls back to timestamp + random string
+ * Requirements: 7.1
+ *
+ * @returns A unique error ID string
+ */
+export function generateErrorId(): string {
+  // Use crypto.randomUUID if available (modern browsers and Node.js 19+)
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+
+  // Fallback: timestamp + random string
+  const timestamp = Date.now().toString(36)
+  const randomPart = Math.random().toString(36).substring(2, 11)
+  return `${timestamp}-${randomPart}`
+}
+
+/**
+ * Determine if an error requires user acknowledgment based on category
+ * Requirements: 7.5
+ */
+function requiresAcknowledgment(category: ErrorCategory): boolean {
+  // Errors that require explicit user action to dismiss
+  return category === 'auth' || category === 'permission' || category === 'payment'
+}
+
+/**
+ * Determine if an error should persist across navigation
+ * Requirements: 7.4
+ */
+function shouldPersist(category: ErrorCategory): boolean {
+  // Persistent errors are those that affect the user's session or require action
+  return category === 'auth' || category === 'permission'
+}
+
+/**
+ * Get default recovery actions based on error category
+ * Requirements: 2.1, 2.3, 2.4, 2.5
+ */
+function getDefaultRecoveryActions(category: ErrorCategory): RecoveryAction[] {
+  switch (category) {
+    case 'auth':
+      return [{ label: 'Sign In', type: 'navigate', path: '/auth/signin' }]
+    case 'network':
+      return [{ label: 'Retry', type: 'retry' }]
+    case 'validation':
+      return [{ label: 'Review', type: 'focus' }]
+    case 'permission':
+      return [
+        { label: 'Request Access', type: 'custom' },
+        { label: 'Contact Support', type: 'navigate', path: '/support' },
+      ]
+    case 'notFound':
+      return [{ label: 'Go Back', type: 'navigate', path: '/' }]
+    case 'rateLimit':
+      return [{ label: 'Wait', type: 'countdown', countdownSeconds: 60 }]
+    case 'payment':
+      return [
+        { label: 'Update Payment', type: 'navigate', path: '/settings/payment' },
+        { label: 'Try Again', type: 'retry' },
+      ]
+    case 'server':
+      return [{ label: 'Try Again', type: 'retry' }]
+    case 'unknown':
+    default:
+      return [{ label: 'Try Again', type: 'retry' }]
+  }
+}
+
+/**
+ * Format an error with context into an enhanced error with unique ID and recovery actions
+ * Requirements: 1.1, 1.2, 7.1
+ *
+ * @param error - The error to format (can be Error, string, or unknown)
+ * @param context - Optional context about what action the user was performing
+ * @returns Enhanced formatted error with context, unique ID, and recovery actions
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   await saveEvent(eventData)
+ * } catch (error) {
+ *   const formatted = formatErrorWithContext(error, {
+ *     action: 'save your event',
+ *     component: 'EventForm'
+ *   })
+ *   // formatted.message will be "Couldn't save your event: <error details>"
+ * }
+ * ```
+ */
+export function formatErrorWithContext(
+  error: unknown,
+  context?: ErrorContext
+): EnhancedFormattedError {
+  // Get the base formatted error
+  const baseError = formatErrorMessage(error)
+
+  // Build contextual message if context is provided
+  let message = baseError.message
+  if (context?.action) {
+    // Create a contextual message that includes the action
+    message = `Couldn't ${context.action}: ${baseError.message}`
+  }
+
+  // Generate unique ID and timestamp
+  const id = generateErrorId()
+  const timestamp = Date.now()
+
+  // Get recovery actions for this category
+  const recoveryActions = getDefaultRecoveryActions(baseError.category)
+
+  return {
+    ...baseError,
+    id,
+    timestamp,
+    message,
+    context,
+    requiresAcknowledgment: requiresAcknowledgment(baseError.category),
+    persistent: shouldPersist(baseError.category),
+    recoveryActions,
+  }
+}
+
+/**
+ * Combine multiple errors into a single enhanced error with shared context
+ * Requirements: 1.4
+ *
+ * This function:
+ * - Combines multiple error messages into a single contextual message
+ * - Preserves the shared action context
+ * - Aggregates suggestions from all errors (deduplicated)
+ * - Determines the primary category based on severity
+ *
+ * @param errors - Array of errors to combine
+ * @param context - Shared context about what action the user was performing
+ * @returns Enhanced formatted error combining all errors with shared context
+ *
+ * @example
+ * ```typescript
+ * const errors = [
+ *   new Error('Invalid email format'),
+ *   new Error('Password too short')
+ * ]
+ * const combined = combineErrors(errors, { action: 'create your account' })
+ * // combined.message will be "Couldn't create your account: Invalid email format; Password too short"
+ * ```
+ */
+export function combineErrors(errors: unknown[], context: ErrorContext): EnhancedFormattedError {
+  if (errors.length === 0) {
+    return formatErrorWithContext(new Error('An error occurred'), context)
+  }
+
+  if (errors.length === 1) {
+    return formatErrorWithContext(errors[0], context)
+  }
+
+  // Format each error individually
+  const formattedErrors = errors.map(formatErrorMessage)
+
+  // Collect all unique messages
+  const messages = formattedErrors.map((e) => e.message)
+
+  // Aggregate all suggestions and deduplicate
+  const allSuggestions = formattedErrors.flatMap((e) => e.suggestions || [])
+  const uniqueSuggestions = Array.from(new Set(allSuggestions))
+
+  // Determine primary category based on severity priority
+  const categoryPriority: ErrorCategory[] = [
+    'server',
+    'auth',
+    'permission',
+    'payment',
+    'network',
+    'rateLimit',
+    'validation',
+    'notFound',
+    'unknown',
+  ]
+
+  const categories = new Set(formattedErrors.map((e) => e.category))
+  const primaryCategory =
+    categoryPriority.find((cat) => categories.has(cat)) || formattedErrors[0].category
+
+  // Build combined message with context
+  const combinedMessage = context.action
+    ? `Couldn't ${context.action}: ${messages.join('; ')}`
+    : `Multiple errors occurred: ${messages.join('; ')}`
+
+  // Generate unique ID and timestamp
+  const id = generateErrorId()
+  const timestamp = Date.now()
+
+  // Get recovery actions for the primary category
+  const recoveryActions = getDefaultRecoveryActions(primaryCategory)
+
+  return {
+    id,
+    timestamp,
+    message: combinedMessage,
+    suggestions: uniqueSuggestions.slice(0, 5), // Limit to 5 suggestions
+    category: primaryCategory,
+    actionText: getActionText(primaryCategory),
+    context,
+    requiresAcknowledgment: requiresAcknowledgment(primaryCategory),
+    persistent: shouldPersist(primaryCategory),
+    recoveryActions,
+  }
+}
+
+/**
+ * PII patterns for detection and redaction
+ * Requirements: 8.5
+ */
+const PII_PATTERNS = {
+  // Email addresses: matches common email formats
+  email: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
+
+  // Phone numbers: matches various formats including international
+  // Examples: +1-555-123-4567, (555) 123-4567, 555.123.4567, 5551234567
+  phone: /(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)?\d{3}[-.\s]?\d{4}\b/g,
+
+  // Social Security Numbers: XXX-XX-XXXX format
+  ssn: /\b\d{3}[-\s]?\d{2}[-\s]?\d{4}\b/g,
+
+  // Credit card numbers: 13-19 digits with optional separators
+  creditCard: /\b(?:\d{4}[-\s]?){3,4}\d{1,4}\b/g,
+
+  // IP addresses (IPv4)
+  ipAddress: /\b(?:\d{1,3}\.){3}\d{1,3}\b/g,
+}
+
+/**
+ * Redaction placeholders for different PII types
+ */
+const PII_REDACTIONS: Record<keyof typeof PII_PATTERNS, string> = {
+  email: '[EMAIL_REDACTED]',
+  phone: '[PHONE_REDACTED]',
+  ssn: '[SSN_REDACTED]',
+  creditCard: '[CARD_REDACTED]',
+  ipAddress: '[IP_REDACTED]',
+}
+
+/**
+ * Sanitize PII (Personally Identifiable Information) from data
+ * Requirements: 8.5
+ *
+ * This function:
+ * - Detects and redacts email addresses
+ * - Detects and redacts phone numbers
+ * - Detects and redacts SSNs
+ * - Detects and redacts credit card numbers
+ * - Detects and redacts IP addresses
+ * - Handles strings, objects, arrays, and nested structures
+ *
+ * @param data - The data to sanitize (can be string, object, array, or any type)
+ * @returns Sanitized data with PII replaced by redaction placeholders
+ *
+ * @example
+ * ```typescript
+ * const sanitized = sanitizePII('User email: john@example.com, phone: 555-123-4567')
+ * // Returns: 'User email: [EMAIL_REDACTED], phone: [PHONE_REDACTED]'
+ *
+ * const sanitizedObj = sanitizePII({ email: 'john@example.com', name: 'John' })
+ * // Returns: { email: '[EMAIL_REDACTED]', name: 'John' }
+ * ```
+ */
+export function sanitizePII(data: unknown): unknown {
+  // Handle null and undefined
+  if (data === null || data === undefined) {
+    return data
+  }
+
+  // Handle strings
+  if (typeof data === 'string') {
+    return sanitizeString(data)
+  }
+
+  // Handle arrays
+  if (Array.isArray(data)) {
+    return data.map((item) => sanitizePII(item))
+  }
+
+  // Handle objects (but not special types like Date, RegExp, etc.)
+  if (typeof data === 'object') {
+    // Skip special object types
+    if (data instanceof Date || data instanceof RegExp || data instanceof Error) {
+      if (data instanceof Error) {
+        // For errors, sanitize the message and stack
+        const sanitizedError = new Error(sanitizeString(data.message))
+        if (data.stack) {
+          sanitizedError.stack = sanitizeString(data.stack)
+        }
+        return sanitizedError
+      }
+      return data
+    }
+
+    // Handle plain objects
+    const sanitizedObj: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(data)) {
+      sanitizedObj[key] = sanitizePII(value)
+    }
+    return sanitizedObj
+  }
+
+  // Return primitives (numbers, booleans) as-is
+  return data
+}
+
+/**
+ * Sanitize a string by replacing all PII patterns with redaction placeholders
+ */
+function sanitizeString(str: string): string {
+  let sanitized = str
+
+  // Apply each PII pattern
+  for (const [type, pattern] of Object.entries(PII_PATTERNS)) {
+    const redaction = PII_REDACTIONS[type as keyof typeof PII_PATTERNS]
+    // Create a new RegExp to avoid lastIndex issues with global flag
+    const freshPattern = new RegExp(pattern.source, pattern.flags)
+    sanitized = sanitized.replace(freshPattern, redaction)
+  }
+
+  return sanitized
+}
+
+/**
+ * Check if a string contains any PII
+ * Useful for validation before logging
+ *
+ * @param str - The string to check
+ * @returns true if the string contains PII, false otherwise
+ */
+export function containsPII(str: string): boolean {
+  for (const pattern of Object.values(PII_PATTERNS)) {
+    // Create a new RegExp without global flag for testing
+    const testPattern = new RegExp(pattern.source, pattern.flags.replace('g', ''))
+    if (testPattern.test(str)) {
+      return true
+    }
+  }
+  return false
 }

@@ -2,10 +2,17 @@ import { useCallback, useEffect, useState } from 'react'
 import { Tldraw, type Editor, type TLShapeId, type TLComponents } from 'tldraw'
 import 'tldraw/tldraw.css'
 import { customShapeUtils } from './shapes'
+import { CardEditModal } from './CardEditModal'
+import type { CardType } from '@/lib/playground/types'
 
 interface PlaygroundCanvasProps {
   onSelectionChange?: (shapeIds: TLShapeId[]) => void
   onEditorReady?: (editor: Editor) => void
+}
+
+interface EditCardEvent {
+  shapeId: TLShapeId
+  shapeType: CardType
 }
 
 // Hide all default tldraw UI components for a clean canvas
@@ -32,6 +39,9 @@ const components: TLComponents = {
 
 export function PlaygroundCanvas({ onSelectionChange, onEditorReady }: PlaygroundCanvasProps) {
   const [editor, setEditor] = useState<Editor | null>(null)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editingShapeId, setEditingShapeId] = useState<TLShapeId | null>(null)
+  const [editingShapeType, setEditingShapeType] = useState<CardType | null>(null)
 
   const handleMount = useCallback(
     (editorInstance: Editor) => {
@@ -40,6 +50,28 @@ export function PlaygroundCanvas({ onSelectionChange, onEditorReady }: Playgroun
     },
     [onEditorReady]
   )
+
+  // Listen for edit card events from shape double-clicks
+  useEffect(() => {
+    const handleEditCard = (event: CustomEvent<EditCardEvent>) => {
+      const { shapeId, shapeType } = event.detail
+      setEditingShapeId(shapeId)
+      setEditingShapeType(shapeType)
+      setIsEditModalOpen(true)
+    }
+
+    window.addEventListener('playground:edit-card', handleEditCard as EventListener)
+
+    return () => {
+      window.removeEventListener('playground:edit-card', handleEditCard as EventListener)
+    }
+  }, [])
+
+  const handleCloseEditModal = useCallback(() => {
+    setIsEditModalOpen(false)
+    setEditingShapeId(null)
+    setEditingShapeType(null)
+  }, [])
 
   // Listen for selection changes
   useEffect(() => {
@@ -68,6 +100,13 @@ export function PlaygroundCanvas({ onSelectionChange, onEditorReady }: Playgroun
         inferDarkMode
         components={components}
         hideUi={false}
+      />
+      <CardEditModal
+        isOpen={isEditModalOpen}
+        onClose={handleCloseEditModal}
+        editor={editor}
+        shapeId={editingShapeId}
+        shapeType={editingShapeType}
       />
       <style>{`
         /* Clean canvas background */

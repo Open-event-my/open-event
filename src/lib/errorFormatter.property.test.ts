@@ -4,11 +4,25 @@
  * Tests Properties 35 and 36:
  * - Property 35: User-Friendly Error Messages (Requirements 11.1)
  * - Property 36: Error Recovery Suggestions (Requirements 11.3)
+ *
+ * Tests Properties 1 and 16:
+ * - Property 1: Contextual Error Formatting (Requirements 1.1, 1.2)
+ * - Property 16: Unique Error ID Generation (Requirements 7.1)
  */
 
 import { describe, it, expect } from 'vitest'
 import fc from 'fast-check'
-import { formatErrorMessage, hasTechnicalDetails, formatMultipleErrors } from './errorFormatter'
+import {
+  formatErrorMessage,
+  hasTechnicalDetails,
+  formatMultipleErrors,
+  formatErrorWithContext,
+  generateErrorId,
+  combineErrors,
+  sanitizePII,
+  containsPII,
+  type ErrorContext,
+} from './errorFormatter'
 
 describe('Error Message Formatter - Property Tests', () => {
   /**
@@ -441,6 +455,637 @@ describe('Error Message Formatter - Property Tests', () => {
           (friendlyMessage) => {
             // Should not detect technical details in friendly messages
             expect(hasTechnicalDetails(friendlyMessage)).toBe(false)
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
+  })
+
+  /**
+   * Feature: error-messaging-improvements, Property 1: Contextual Error Formatting
+   * Validates: Requirements 1.1, 1.2
+   *
+   * For any error and action context, when formatErrorWithContext is called with both
+   * parameters, the resulting error message SHALL contain the action context description.
+   */
+  describe('Property 1: Contextual Error Formatting', () => {
+    // Generator for valid action context strings (non-empty, reasonable length)
+    const actionArbitrary = fc
+      .string({ minLength: 3, maxLength: 50 })
+      .filter((s) => s.trim().length > 0)
+
+    // Generator for ErrorContext objects
+    const errorContextArbitrary = fc.record({
+      action: actionArbitrary,
+      component: fc.option(fc.string({ minLength: 1, maxLength: 30 }), { nil: undefined }),
+      metadata: fc.option(fc.dictionary(fc.string(), fc.jsonValue()), { nil: undefined }),
+    }) as fc.Arbitrary<ErrorContext>
+
+    it('should include action context in error message when context is provided', () => {
+      fc.assert(
+        fc.property(
+          fc.oneof(
+            fc.string({ minLength: 1 }).map((msg) => new Error(msg)),
+            fc.record({
+              code: fc.constantFrom('NETWORK_ERROR', 'VALIDATION_ERROR', 'INTERNAL_ERROR'),
+              message: fc.string(),
+            })
+          ),
+          errorContextArbitrary,
+          (error, context) => {
+            const formatted = formatErrorWithContext(error, context)
+
+            // The message should contain the action from context
+            expect(formatted.message.toLowerCase()).toContain(context.action.toLowerCase())
+
+            // The message should start with "Couldn't"
+            expect(formatted.message.startsWith("Couldn't")).toBe(true)
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
+
+    it('should preserve context object in the formatted error', () => {
+      fc.assert(
+        fc.property(
+          fc.string().map((msg) => new Error(msg)),
+          errorContextArbitrary,
+          (error, context) => {
+            const formatted = formatErrorWithContext(error, context)
+
+            // Context should be preserved
+            expect(formatted.context).toBeDefined()
+            expect(formatted.context?.action).toBe(context.action)
+            if (context.component) {
+              expect(formatted.context?.component).toBe(context.component)
+            }
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
+
+    it('should work without context (backward compatibility)', () => {
+      // Filter out JavaScript reserved property names that could cause issues
+      const safeCodeArbitrary = fc
+        .string()
+        .filter(
+          (s) =>
+            ![
+              'valueOf',
+              'toString',
+              'constructor',
+              'prototype',
+              '__proto__',
+              'hasOwnProperty',
+            ].includes(s)
+        )
+
+      fc.assert(
+        fc.property(
+          fc.oneof(
+            fc.string(),
+            fc.string().map((msg) => new Error(msg)),
+            fc.record({ code: safeCodeArbitrary, message: fc.string() })
+          ),
+          (error) => {
+            const formatted = formatErrorWithContext(error)
+
+            // Should still return a valid enhanced error
+            expect(formatted.id).toBeTruthy()
+            expect(formatted.timestamp).toBeGreaterThan(0)
+            expect(formatted.message).toBeTruthy()
+            expect(formatted.category).toBeTruthy()
+
+            // Context should be undefined when not provided
+            expect(formatted.context).toBeUndefined()
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
+
+    it('should include timestamp and id in enhanced error', () => {
+      fc.assert(
+        fc.property(
+          fc.string().map((msg) => new Error(msg)),
+          fc.option(errorContextArbitrary, { nil: undefined }),
+          (error, context) => {
+            const beforeTimestamp = Date.now()
+            const formatted = formatErrorWithContext(error, context)
+            const afterTimestamp = Date.now()
+
+            // Should have a valid ID
+            expect(formatted.id).toBeTruthy()
+            expect(typeof formatted.id).toBe('string')
+            expect(formatted.id.length).toBeGreaterThan(0)
+
+            // Should have a valid timestamp within the test execution window
+            expect(formatted.timestamp).toBeGreaterThanOrEqual(beforeTimestamp)
+            expect(formatted.timestamp).toBeLessThanOrEqual(afterTimestamp)
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
+
+    it('should include recovery actions based on error category', () => {
+      fc.assert(
+        fc.property(
+          fc.record({
+            code: fc.constantFrom(
+              'UNAUTHORIZED',
+              'NETWORK_ERROR',
+              'VALIDATION_ERROR',
+              'RATE_LIMITED',
+              'PAYMENT_FAILED'
+            ),
+            message: fc.string(),
+          }),
+          fc.option(errorContextArbitrary, { nil: undefined }),
+          (error, context) => {
+            const formatted = formatErrorWithContext(error, context)
+
+            // Should have recovery actions
+            expect(formatted.recoveryActions).toBeDefined()
+            expect(Array.isArray(formatted.recoveryActions)).toBe(true)
+            expect(formatted.recoveryActions.length).toBeGreaterThan(0)
+
+            // Each recovery action should have required fields
+            formatted.recoveryActions.forEach((action) => {
+              expect(action.label).toBeTruthy()
+              expect(action.type).toBeTruthy()
+              expect(['retry', 'navigate', 'focus', 'custom', 'countdown']).toContain(action.type)
+            })
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
+  })
+
+  /**
+   * Feature: error-messaging-improvements, Property 16: Unique Error ID Generation
+   * Validates: Requirements 7.1
+   *
+   * For any two errors generated, their IDs SHALL be different.
+   */
+  describe('Property 16: Unique Error ID Generation', () => {
+    it('should generate unique IDs for each call', () => {
+      fc.assert(
+        fc.property(fc.integer({ min: 2, max: 100 }), (count) => {
+          const ids = new Set<string>()
+
+          for (let i = 0; i < count; i++) {
+            const id = generateErrorId()
+            ids.add(id)
+          }
+
+          // All IDs should be unique
+          expect(ids.size).toBe(count)
+        }),
+        { numRuns: 100 }
+      )
+    })
+
+    it('should generate non-empty string IDs', () => {
+      fc.assert(
+        fc.property(
+          fc.constant(null), // No input needed
+          () => {
+            const id = generateErrorId()
+
+            expect(typeof id).toBe('string')
+            expect(id.length).toBeGreaterThan(0)
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
+
+    it('should generate unique IDs for formatted errors', () => {
+      fc.assert(
+        fc.property(
+          fc.array(
+            fc.string().map((msg) => new Error(msg)),
+            { minLength: 2, maxLength: 20 }
+          ),
+          (errors) => {
+            const formattedErrors = errors.map((error) => formatErrorWithContext(error))
+            const ids = formattedErrors.map((e) => e.id)
+            const uniqueIds = new Set(ids)
+
+            // All IDs should be unique
+            expect(uniqueIds.size).toBe(errors.length)
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
+
+    it('should generate unique IDs even for identical errors', () => {
+      fc.assert(
+        fc.property(
+          fc.string().map((msg) => new Error(msg)),
+          fc.integer({ min: 2, max: 10 }),
+          (error, count) => {
+            const ids = new Set<string>()
+
+            for (let i = 0; i < count; i++) {
+              const formatted = formatErrorWithContext(error)
+              ids.add(formatted.id)
+            }
+
+            // All IDs should be unique even for the same error
+            expect(ids.size).toBe(count)
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
+  })
+
+  /**
+   * Feature: error-messaging-improvements, Property 2: Multiple Error Combination
+   * Validates: Requirements 1.4
+   *
+   * For any array of errors with the same action context, when combined, the result
+   * SHALL be a single error message that references all original errors and maintains
+   * the shared context.
+   */
+  describe('Property 2: Multiple Error Combination', () => {
+    // Generator for valid action context strings (non-empty, reasonable length)
+    const actionArbitrary = fc
+      .string({ minLength: 3, maxLength: 50 })
+      .filter((s) => s.trim().length > 0)
+
+    // Generator for ErrorContext objects
+    const errorContextArbitrary = fc.record({
+      action: actionArbitrary,
+      component: fc.option(fc.string({ minLength: 1, maxLength: 30 }), { nil: undefined }),
+      metadata: fc.option(fc.dictionary(fc.string(), fc.jsonValue()), { nil: undefined }),
+    }) as fc.Arbitrary<ErrorContext>
+
+    // Generator for error messages that won't be sanitized away
+    const errorMessageArbitrary = fc
+      .string({ minLength: 15, maxLength: 100 })
+      .filter((s) => s.trim().length >= 10)
+
+    it('should combine multiple errors into a single message with shared context', () => {
+      fc.assert(
+        fc.property(
+          fc.array(
+            errorMessageArbitrary.map((msg) => new Error(msg)),
+            { minLength: 2, maxLength: 5 }
+          ),
+          errorContextArbitrary,
+          (errors, context) => {
+            const combined = combineErrors(errors, context)
+
+            // Should have the shared context
+            expect(combined.context).toBeDefined()
+            expect(combined.context?.action).toBe(context.action)
+
+            // Message should contain the action context
+            expect(combined.message.toLowerCase()).toContain(context.action.toLowerCase())
+
+            // Message should start with "Couldn't"
+            expect(combined.message.startsWith("Couldn't")).toBe(true)
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
+
+    it('should aggregate suggestions from all errors', () => {
+      fc.assert(
+        fc.property(
+          fc.array(
+            fc.record({
+              code: fc.constantFrom('NETWORK_ERROR', 'VALIDATION_ERROR', 'UNAUTHORIZED'),
+              message: fc.string(),
+            }),
+            { minLength: 2, maxLength: 5 }
+          ),
+          errorContextArbitrary,
+          (errors, context) => {
+            const combined = combineErrors(errors, context)
+
+            // Should have suggestions
+            expect(combined.suggestions).toBeDefined()
+            expect(Array.isArray(combined.suggestions)).toBe(true)
+
+            // Suggestions should be limited to a reasonable number
+            expect(combined.suggestions!.length).toBeLessThanOrEqual(5)
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
+
+    it('should return enhanced error with all required fields', () => {
+      fc.assert(
+        fc.property(
+          fc.array(
+            errorMessageArbitrary.map((msg) => new Error(msg)),
+            { minLength: 1, maxLength: 5 }
+          ),
+          errorContextArbitrary,
+          (errors, context) => {
+            const combined = combineErrors(errors, context)
+
+            // Should have all enhanced error fields
+            expect(combined.id).toBeTruthy()
+            expect(combined.timestamp).toBeGreaterThan(0)
+            expect(combined.message).toBeTruthy()
+            expect(combined.category).toBeTruthy()
+            expect(combined.recoveryActions).toBeDefined()
+            expect(Array.isArray(combined.recoveryActions)).toBe(true)
+            expect(typeof combined.requiresAcknowledgment).toBe('boolean')
+            expect(typeof combined.persistent).toBe('boolean')
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
+
+    it('should handle single error gracefully', () => {
+      fc.assert(
+        fc.property(
+          errorMessageArbitrary.map((msg) => new Error(msg)),
+          errorContextArbitrary,
+          (error, context) => {
+            const combined = combineErrors([error], context)
+
+            // Should still work with single error
+            expect(combined.context?.action).toBe(context.action)
+            expect(combined.message.toLowerCase()).toContain(context.action.toLowerCase())
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
+
+    it('should handle empty error array gracefully', () => {
+      fc.assert(
+        fc.property(errorContextArbitrary, (context) => {
+          const combined = combineErrors([], context)
+
+          // Should return a valid error even with empty array
+          expect(combined.id).toBeTruthy()
+          expect(combined.message).toBeTruthy()
+          expect(combined.context?.action).toBe(context.action)
+        }),
+        { numRuns: 100 }
+      )
+    })
+
+    it('should deduplicate suggestions', () => {
+      fc.assert(
+        fc.property(
+          // Create multiple errors with the same code to get duplicate suggestions
+          fc.array(fc.constant({ code: 'NETWORK_ERROR', message: 'Network failed' }), {
+            minLength: 3,
+            maxLength: 5,
+          }),
+          errorContextArbitrary,
+          (errors, context) => {
+            const combined = combineErrors(errors, context)
+
+            // Suggestions should be unique (no duplicates)
+            if (combined.suggestions && combined.suggestions.length > 0) {
+              const uniqueSuggestions = new Set(combined.suggestions)
+              expect(uniqueSuggestions.size).toBe(combined.suggestions.length)
+            }
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
+  })
+
+  /**
+   * Feature: error-messaging-improvements, Property 20: PII Redaction
+   * Validates: Requirements 8.5
+   *
+   * For any logged error data, email addresses, phone numbers, and names
+   * SHALL be replaced with redaction placeholders.
+   */
+  describe('Property 20: PII Redaction', () => {
+    // Generator for email addresses
+    const emailArbitrary = fc
+      .tuple(
+        fc.string({ minLength: 1, maxLength: 10 }).filter((s) => /^[a-z]+$/.test(s)),
+        fc.constantFrom('gmail.com', 'example.com', 'test.org', 'company.net')
+      )
+      .map(([local, domain]) => `${local}@${domain}`)
+
+    // Generator for phone numbers in various formats
+    const phoneArbitrary = fc.oneof(
+      // Format: 555-123-4567
+      fc
+        .tuple(
+          fc.integer({ min: 100, max: 999 }),
+          fc.integer({ min: 100, max: 999 }),
+          fc.integer({ min: 1000, max: 9999 })
+        )
+        .map(([a, b, c]) => `${a}-${b}-${c}`),
+      // Format: (555) 123-4567
+      fc
+        .tuple(
+          fc.integer({ min: 100, max: 999 }),
+          fc.integer({ min: 100, max: 999 }),
+          fc.integer({ min: 1000, max: 9999 })
+        )
+        .map(([a, b, c]) => `(${a}) ${b}-${c}`),
+      // Format: 5551234567
+      fc.integer({ min: 1000000000, max: 9999999999 }).map((n) => n.toString())
+    )
+
+    // Generator for SSN-like numbers
+    const ssnArbitrary = fc
+      .tuple(
+        fc.integer({ min: 100, max: 999 }),
+        fc.integer({ min: 10, max: 99 }),
+        fc.integer({ min: 1000, max: 9999 })
+      )
+      .map(([a, b, c]) => `${a}-${b}-${c}`)
+
+    it('should redact email addresses from strings', () => {
+      fc.assert(
+        fc.property(
+          fc.tuple(fc.string(), emailArbitrary, fc.string()),
+          ([prefix, email, suffix]) => {
+            const input = `${prefix} ${email} ${suffix}`
+            const sanitized = sanitizePII(input) as string
+
+            // Should not contain the original email
+            expect(sanitized).not.toContain(email)
+
+            // Should contain the redaction placeholder
+            expect(sanitized).toContain('[EMAIL_REDACTED]')
+
+            // Should preserve non-PII content
+            expect(sanitized).toContain(prefix)
+            expect(sanitized).toContain(suffix)
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
+
+    it('should redact phone numbers from strings', () => {
+      fc.assert(
+        fc.property(
+          fc.tuple(
+            fc.string({ minLength: 0, maxLength: 20 }),
+            phoneArbitrary,
+            fc.string({ minLength: 0, maxLength: 20 })
+          ),
+          ([prefix, phone, suffix]) => {
+            const input = `Contact: ${prefix} ${phone} ${suffix}`
+            const sanitized = sanitizePII(input) as string
+
+            // Should contain the redaction placeholder
+            expect(sanitized).toContain('[PHONE_REDACTED]')
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
+
+    it('should redact SSN-like numbers from strings', () => {
+      fc.assert(
+        fc.property(
+          fc.tuple(
+            fc.string({ minLength: 0, maxLength: 20 }),
+            ssnArbitrary,
+            fc.string({ minLength: 0, maxLength: 20 })
+          ),
+          ([prefix, ssn, suffix]) => {
+            const input = `SSN: ${prefix} ${ssn} ${suffix}`
+            const sanitized = sanitizePII(input) as string
+
+            // Should contain the redaction placeholder
+            expect(sanitized).toContain('[SSN_REDACTED]')
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
+
+    it('should sanitize nested objects recursively', () => {
+      fc.assert(
+        fc.property(
+          emailArbitrary,
+          phoneArbitrary,
+          fc.string({ minLength: 1, maxLength: 20 }),
+          (email, phone, name) => {
+            const input = {
+              user: {
+                email,
+                phone,
+                name,
+              },
+              metadata: {
+                contact: `Email: ${email}`,
+              },
+            }
+
+            const sanitized = sanitizePII(input) as typeof input
+
+            // Should redact email in nested object
+            expect(sanitized.user.email).toBe('[EMAIL_REDACTED]')
+
+            // Should redact phone in nested object
+            expect(sanitized.user.phone).toContain('[PHONE_REDACTED]')
+
+            // Should redact email in nested string
+            expect(sanitized.metadata.contact).toContain('[EMAIL_REDACTED]')
+
+            // Should preserve non-PII data
+            expect(sanitized.user.name).toBe(name)
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
+
+    it('should sanitize arrays', () => {
+      fc.assert(
+        fc.property(fc.array(emailArbitrary, { minLength: 1, maxLength: 5 }), (emails) => {
+          const sanitized = sanitizePII(emails) as string[]
+
+          // All emails should be redacted
+          sanitized.forEach((item) => {
+            expect(item).toBe('[EMAIL_REDACTED]')
+          })
+
+          // Array length should be preserved
+          expect(sanitized.length).toBe(emails.length)
+        }),
+        { numRuns: 100 }
+      )
+    })
+
+    it('should handle null and undefined gracefully', () => {
+      fc.assert(
+        fc.property(fc.constantFrom(null, undefined), (value) => {
+          const sanitized = sanitizePII(value)
+          expect(sanitized).toBe(value)
+        }),
+        { numRuns: 100 }
+      )
+    })
+
+    it('should preserve non-PII data unchanged', () => {
+      fc.assert(
+        fc.property(
+          fc.record({
+            id: fc.integer(),
+            count: fc.integer(),
+            active: fc.boolean(),
+            message: fc.string({ minLength: 1, maxLength: 50 }).filter((s) => !containsPII(s)),
+          }),
+          (data) => {
+            const sanitized = sanitizePII(data) as typeof data
+
+            // All non-PII fields should be unchanged
+            expect(sanitized.id).toBe(data.id)
+            expect(sanitized.count).toBe(data.count)
+            expect(sanitized.active).toBe(data.active)
+            expect(sanitized.message).toBe(data.message)
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
+
+    it('should detect PII correctly with containsPII helper', () => {
+      fc.assert(
+        fc.property(fc.oneof(emailArbitrary, phoneArbitrary, ssnArbitrary), (pii) => {
+          // Should detect PII
+          expect(containsPII(pii)).toBe(true)
+        }),
+        { numRuns: 100 }
+      )
+    })
+
+    it('should not flag non-PII strings as containing PII', () => {
+      fc.assert(
+        fc.property(
+          fc.constantFrom(
+            'Hello world',
+            'Error occurred',
+            'User not found',
+            'Invalid input',
+            'Connection timeout'
+          ),
+          (message) => {
+            // Should not detect PII in regular messages
+            expect(containsPII(message)).toBe(false)
           }
         ),
         { numRuns: 100 }

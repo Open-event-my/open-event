@@ -41,7 +41,7 @@ export function SessionTimeoutWarning() {
   }
 
   return (
-    <AlertDialog open={showWarning} onOpenChange={setShowWarning}>
+    <AlertDialog open={showWarning} onOpenChange={(open) => !open && setDismissed(true)}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Session Expiring Soon</AlertDialogTitle>

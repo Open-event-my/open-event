@@ -53,6 +53,14 @@ export class BudgetCardShapeUtil extends ShapeUtil<BudgetCardShape> {
     }
   }
 
+  override onDoubleClick = (shape: BudgetCardShape) => {
+    window.dispatchEvent(
+      new CustomEvent('playground:edit-card', {
+        detail: { shapeId: shape.id, shapeType: 'budget-card' },
+      })
+    )
+  }
+
   component(shape: BudgetCardShape) {
     const { title, category, estimatedAmount, actualAmount, currency, status } = shape.props
 
