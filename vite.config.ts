@@ -3,7 +3,8 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
-import { sentryVitePlugin } from '@sentry/vite-plugin'
+// Sentry removed due to React 19 incompatibility
+// import { sentryVitePlugin } from '@sentry/vite-plugin'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -301,19 +302,9 @@ export default defineConfig({
         enabled: false, // Disable in dev to avoid caching issues
       },
     }),
-    // Sentry plugin for source maps and error tracking
-    // Only enable in production builds when SENTRY_AUTH_TOKEN is available
-    process.env.SENTRY_AUTH_TOKEN &&
-      sentryVitePlugin({
-        org: process.env.SENTRY_ORG,
-        project: process.env.SENTRY_PROJECT,
-        authToken: process.env.SENTRY_AUTH_TOKEN,
-        sourcemaps: {
-          assets: './dist/**',
-        },
-        telemetry: false,
-      }),
-  ].filter(Boolean) as import('vite').PluginOption[],
+    // Sentry plugin disabled due to React 19 incompatibility
+    // TODO: Re-enable when @sentry/react supports React 19
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
