@@ -2,13 +2,11 @@
  * Error Logger
  *
  * Enhanced error logging for development and production environments.
- * Integrates with Sentry for production error tracking and provides
- * detailed console logging for development.
+ * Sentry integration is TEMPORARILY DISABLED due to React 19 incompatibility.
  *
  * Requirements: 8.1, 8.2, 8.3, 8.4
  */
 
-import * as Sentry from '@sentry/react'
 import {
   formatErrorWithContext,
   sanitizePII,
@@ -21,6 +19,11 @@ import {
  * Log levels for error logging
  */
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'fatal'
+
+/**
+ * Sentry severity level type (for API compatibility)
+ */
+type SeverityLevel = 'debug' | 'info' | 'warning' | 'error' | 'fatal'
 
 /**
  * Error log entry with full context
@@ -57,9 +60,9 @@ export interface ErrorLogEntry {
 const isDev = import.meta.env.DEV
 
 /**
- * Check if Sentry is configured
+ * Sentry is disabled for React 19 compatibility
  */
-const hasSentry = !!import.meta.env.VITE_SENTRY_DSN
+const hasSentry = false
 
 /**
  * Console styling for development logs
@@ -152,60 +155,22 @@ function formatForConsole(entry: ErrorLogEntry): void {
 
 /**
  * Send error to Sentry with sanitized data
- * Requirements: 8.2, 8.4
+ * DISABLED: React 19 compatibility issue
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function sendToSentry(
   error: Error,
   entry: ErrorLogEntry,
   formattedError: EnhancedFormattedError
 ): void {
-  if (!hasSentry) return
-
-  // Sanitize all data before sending to Sentry
-  const sanitizedContext = entry.context ? sanitizePII(entry.context) : undefined
-  const sanitizedMetadata = entry.metadata ? sanitizePII(entry.metadata) : undefined
-
-  Sentry.withScope((scope) => {
-    // Set error ID for correlation with user reports
-    scope.setTag('error_id', entry.errorId)
-    scope.setTag('error_category', entry.category)
-    scope.setLevel(mapLogLevelToSentry(entry.level))
-
-    // Add context
-    if (sanitizedContext) {
-      scope.setContext('error_context', sanitizedContext as Record<string, unknown>)
-    }
-
-    // Add formatted error info
-    scope.setContext('formatted_error', {
-      message: formattedError.message,
-      category: formattedError.category,
-      suggestions: formattedError.suggestions,
-      requiresAcknowledgment: formattedError.requiresAcknowledgment,
-      persistent: formattedError.persistent,
-    })
-
-    // Add sanitized metadata
-    if (sanitizedMetadata) {
-      scope.setExtras(sanitizedMetadata as Record<string, unknown>)
-    }
-
-    // Add component stack if available
-    if (entry.componentStack) {
-      scope.setContext('react', {
-        componentStack: entry.componentStack,
-      })
-    }
-
-    // Capture the error
-    Sentry.captureException(error)
-  })
+  // Sentry is disabled for React 19 compatibility
+  // TODO: Re-enable when @sentry/react supports React 19
 }
 
 /**
  * Map our log levels to Sentry severity levels
  */
-function mapLogLevelToSentry(level: LogLevel): Sentry.SeverityLevel {
+function mapLogLevelToSentry(level: LogLevel): SeverityLevel {
   switch (level) {
     case 'debug':
       return 'debug'
@@ -247,24 +212,6 @@ function getLogLevelForCategory(category: ErrorCategory): LogLevel {
 /**
  * Log an error with full context
  * Requirements: 8.1, 8.2, 8.3, 8.4
- *
- * @param error - The error to log
- * @param context - Optional context about what action was being performed
- * @param options - Additional logging options
- * @returns The formatted error for use in UI
- *
- * @example
- * ```typescript
- * try {
- *   await saveEvent(data)
- * } catch (error) {
- *   const formatted = logError(error, {
- *     action: 'save your event',
- *     component: 'EventForm'
- *   })
- *   showErrorToast(formatted)
- * }
- * ```
  */
 export function logError(
   error: unknown,
@@ -307,10 +254,13 @@ export function logError(
     formatForConsole(entry)
   }
 
-  // Send to Sentry in production (or if configured in dev)
+  // Send to Sentry in production (disabled for React 19)
   if (hasSentry && error instanceof Error) {
     sendToSentry(error, entry, formattedError)
   }
+
+  // Suppress unused variable warnings
+  void mapLogLevelToSentry
 
   return formattedError
 }
@@ -338,11 +288,9 @@ export function logWarning(
     formatForConsole(entry)
   }
 
+  // Sentry logging disabled for React 19 compatibility
   if (hasSentry) {
-    Sentry.captureMessage(message, {
-      level: 'warning',
-      extra: sanitizePII(metadata || {}) as Record<string, unknown>,
-    })
+    console.warn('[Sentry disabled]', message, sanitizePII(metadata || {}))
   }
 }
 
@@ -369,13 +317,6 @@ export function logDebug(message: string, metadata?: Record<string, unknown>): v
 /**
  * Create a scoped logger for a specific component
  * Requirements: 8.3
- *
- * @example
- * ```typescript
- * const logger = createScopedLogger('EventForm')
- * logger.error(error, { action: 'save event' })
- * logger.info('Form submitted successfully')
- * ```
  */
 export function createScopedLogger(component: string) {
   return {
@@ -404,8 +345,6 @@ export function createScopedLogger(component: string) {
 /**
  * Error boundary error handler
  * Requirements: 8.1, 8.3
- *
- * Use this in React error boundaries to log errors with component stack
  */
 export function logErrorBoundaryError(
   error: Error,
@@ -424,8 +363,6 @@ export function logErrorBoundaryError(
 /**
  * Query error handler
  * Requirements: 8.1
- *
- * Use this for React Query or similar data fetching errors
  */
 export function logQueryError(
   error: unknown,
@@ -445,8 +382,6 @@ export function logQueryError(
 /**
  * Mutation error handler
  * Requirements: 8.1
- *
- * Use this for React Query mutations or similar data mutation errors
  */
 export function logMutationError(
   error: unknown,
