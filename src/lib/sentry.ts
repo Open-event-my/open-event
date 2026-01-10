@@ -16,44 +16,48 @@ export function initSentry() {
     return
   }
 
-  Sentry.init({
-    dsn: SENTRY_DSN,
-    environment: import.meta.env.MODE, // 'development' | 'production'
+  try {
+    Sentry.init({
+      dsn: SENTRY_DSN,
+      environment: import.meta.env.MODE, // 'development' | 'production'
 
-    // Performance monitoring
-    tracesSampleRate: import.meta.env.PROD ? 0.1 : 1.0, // 10% in prod, 100% in dev
+      // Performance monitoring - disabled for React 19 compatibility
+      tracesSampleRate: 0,
 
-    // Session replay (optional, can be enabled later)
-    replaysSessionSampleRate: 0,
-    replaysOnErrorSampleRate: import.meta.env.PROD ? 0.1 : 0,
+      // Session replay - disabled for React 19 compatibility
+      replaysSessionSampleRate: 0,
+      replaysOnErrorSampleRate: 0,
 
-    // Filter out known non-errors
-    beforeSend(event, hint) {
-      const error = hint.originalException
+      // Filter out known non-errors
+      beforeSend(event, hint) {
+        const error = hint.originalException
 
-      // Ignore network errors that are expected
-      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        return null
-      }
+        // Ignore network errors that are expected
+        if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+          return null
+        }
 
-      // Ignore aborted requests
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        return null
-      }
+        // Ignore aborted requests
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return null
+        }
 
-      // Ignore ResizeObserver loop errors (browser bug, harmless)
-      if (error instanceof Error && error.message.includes('ResizeObserver')) {
-        return null
-      }
+        // Ignore ResizeObserver loop errors (browser bug, harmless)
+        if (error instanceof Error && error.message.includes('ResizeObserver')) {
+          return null
+        }
 
-      return event
-    },
+        return event
+      },
 
-    // Integrations
-    integrations: [Sentry.browserTracingIntegration(), Sentry.replayIntegration()],
-  })
+      // Minimal integrations - avoid React 19 incompatible features
+      integrations: [],
+    })
 
-  console.log('[Sentry] Initialized error tracking')
+    console.log('[Sentry] Initialized error tracking (basic mode)')
+  } catch (error) {
+    console.warn('[Sentry] Failed to initialize:', error)
+  }
 }
 
 /**
