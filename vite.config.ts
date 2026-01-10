@@ -66,10 +66,9 @@ export default defineConfig({
             // TLDraw - let Vite handle dynamically to avoid React loading issues
             // tldraw is lazy-loaded via PlaygroundPage so it will be in its own chunk anyway
 
-            // Charts library (AnalyticsPage)
-            if (id.includes('recharts') || id.includes('d3-')) {
-              return 'vendor-charts'
-            }
+            // NOTE: recharts is NOT manually chunked - letting Vite handle it ensures
+            // proper React dependency resolution and prevents forwardRef errors
+
             // Core React - IMPORTANT: react must be bundled with react-dom
             if (
               id.includes('node_modules/react/') ||
