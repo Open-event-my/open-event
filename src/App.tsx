@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { ThemeProvider } from 'next-themes'
 import { Toaster } from '@/components/ui/sonner'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -323,6 +323,10 @@ function App() {
                       <EventCreatePage />
                     </Suspense>
                   }
+                />
+                <Route
+                  path="events/create"
+                  element={<Navigate to="/dashboard/events/new" replace />}
                 />
                 <Route
                   path="events/:eventId"

@@ -208,7 +208,7 @@ export function DashboardOverview() {
             {/* Create New Card */}
             <div className="md:col-span-2">
               <Link
-                to="/dashboard/events/create"
+                to="/dashboard/events/new"
                 className="flex items-center gap-4 rounded-xl border-2 border-dashed border-border hover:border-foreground/30 bg-muted/30 hover:bg-muted/50 p-5 transition-all duration-150"
               >
                 <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
