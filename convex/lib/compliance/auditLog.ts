@@ -174,15 +174,10 @@ export const logInternal = internalMutation({
   },
   handler: async (ctx, args) => {
     // Convert userId string to Id<'users'> if it's a valid ID
-    let userIdTyped: Id<'users'> | undefined
-    try {
-      userIdTyped = args.userId as Id<'users'>
-    } catch {
-      userIdTyped = undefined
-    }
+    const userIdTyped = ctx.db.normalizeId('users', args.userId)
 
     await ctx.db.insert('auditLogs', {
-      userId: userIdTyped,
+      userId: userIdTyped ?? undefined,
       userEmail: undefined,
       action: args.action,
       resource: args.resource,
@@ -218,12 +213,7 @@ export const logAdminActionInternal = internalMutation({
   },
   handler: async (ctx, args) => {
     // Convert userId string to Id<'users'> if it's a valid ID
-    let userIdTyped: Id<'users'> | undefined
-    try {
-      userIdTyped = args.userId as Id<'users'>
-    } catch {
-      userIdTyped = undefined
-    }
+    const userIdTyped = ctx.db.normalizeId('users', args.userId)
 
     // Get user email if possible
     let userEmail: string | undefined
@@ -233,7 +223,7 @@ export const logAdminActionInternal = internalMutation({
     }
 
     await ctx.db.insert('auditLogs', {
-      userId: userIdTyped,
+      userId: userIdTyped ?? undefined,
       userEmail,
       action: args.action,
       resource: args.resource,
@@ -278,8 +268,19 @@ export const logDataOperation = mutation({
       return // Don't log if no user identity
     }
 
+    let userId = identity.subject
+    if (identity.email) {
+      const user = await ctx.db
+        .query('users')
+        .withIndex('email', (q) => q.eq('email', identity.email!))
+        .first()
+      if (user) {
+        userId = user._id
+      }
+    }
+
     await ctx.runMutation(internal.lib.compliance.auditLog.logInternal, {
-      userId: identity.subject,
+      userId: userId,
       action: args.action,
       resource: args.resource,
       resourceId: args.resourceId,

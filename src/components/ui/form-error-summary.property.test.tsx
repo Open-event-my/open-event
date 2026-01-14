@@ -345,7 +345,7 @@ describe('Form Error Summary - Property Tests', () => {
       )
     })
 
-    it('should render clickable buttons for each error', () => {
+    it('should render clickable buttons for each error', { timeout: 30000 }, () => {
       fc.assert(
         fc.property(fieldErrorsArb, (errors) => {
           const { unmount } = render(<FormErrorSummary errors={errors} />)

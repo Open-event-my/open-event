@@ -12,15 +12,15 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
-import { ConvexTestingHelper } from 'convex-test'
+import { convexTest } from 'convex-test'
 import { api } from '../../_generated/api'
 import schema from '../../schema'
 
 describe('Compliance E2E Tests - Task 22 Verification', () => {
-  let t: ConvexTestingHelper<typeof schema>
+  let t: ReturnType<typeof convexTest>
 
   beforeEach(async () => {
-    t = new ConvexTestingHelper(schema)
+    t = convexTest(schema)
     await t.run(async (ctx) => {
       // Create a test user
       await ctx.db.insert('users', {
@@ -53,6 +53,8 @@ describe('Compliance E2E Tests - Task 22 Verification', () => {
           status: 'draft',
           eventType: 'conference',
           locationType: 'in-person',
+          startDate: Date.now(),
+          endDate: Date.now() + 86400000,
           createdAt: Date.now(),
           updatedAt: Date.now(),
         })
@@ -139,19 +141,21 @@ describe('Compliance E2E Tests - Task 22 Verification', () => {
           status: 'draft',
           eventType: 'conference',
           locationType: 'in-person',
+          startDate: Date.now(),
+          endDate: Date.now() + 86400000,
           createdAt: Date.now(),
           updatedAt: Date.now(),
         })
 
         await ctx.db.insert('budgetItems', {
           eventId,
+          name: 'Test Item',
           category: 'venue',
           description: 'Test budget item',
-          estimatedCost: 1000,
-          actualCost: 0,
-          status: 'pending',
+          estimatedAmount: 1000,
+          actualAmount: 1000,
+          status: 'planned',
           createdAt: Date.now(),
-          updatedAt: Date.now(),
         })
 
         // Execute deletion
@@ -217,36 +221,45 @@ describe('Compliance E2E Tests - Task 22 Verification', () => {
 
   describe('Audit Logging', () => {
     it('should create audit logs for data operations', async () => {
-      await t.run(async (ctx) => {
+      const tAuth = t.withIdentity({ email: 'test@example.com', subject: 'test-user-id' })
+      let eventId: string | undefined
+      let userId: string | undefined
+
+      await tAuth.run(async (ctx) => {
         const user = await ctx.db
           .query('users')
           .withIndex('email', (q) => q.eq('email', 'test@example.com'))
           .first()
 
         if (!user) throw new Error('Test user not found')
+        userId = user._id
 
         // Create an event (which should be audited)
-        const eventId = await ctx.db.insert('events', {
+        eventId = await ctx.db.insert('events', {
           organizerId: user._id,
           title: 'Test Event',
           status: 'draft',
           eventType: 'conference',
           locationType: 'in-person',
+          startDate: Date.now(),
+          endDate: Date.now() + 86400000,
           createdAt: Date.now(),
           updatedAt: Date.now(),
         })
+      })
 
-        // Log the operation
-        await ctx.runMutation(api.lib.compliance.auditLog.logDataOperation, {
-          action: 'create',
-          resource: 'event',
-          resourceId: eventId,
-        })
+      // Log the operation (using mutation directly to ensure auth context)
+      await tAuth.mutation(api.lib.compliance.auditLog.logDataOperation, {
+        action: 'create',
+        resource: 'event',
+        resourceId: eventId,
+      })
 
+      await tAuth.run(async (ctx) => {
         // Verify audit log was created
         const auditLogs = await ctx.db
           .query('auditLogs')
-          .withIndex('by_user', (q) => q.eq('userId', user._id))
+          .withIndex('by_user', (q) => q.eq('userId', userId))
           .collect()
 
         const createLog = auditLogs.find(
@@ -261,9 +274,12 @@ describe('Compliance E2E Tests - Task 22 Verification', () => {
     })
 
     it('should create enhanced audit logs for admin actions', async () => {
-      await t.run(async (ctx) => {
+      const tAdmin = t.withIdentity({ email: 'admin@example.com', subject: 'admin-user-id' })
+      let adminUserId: string | undefined
+
+      await tAdmin.run(async (ctx) => {
         // Create an admin user
-        const adminUser = await ctx.db.insert('users', {
+        adminUserId = await ctx.db.insert('users', {
           email: 'admin@example.com',
           name: 'Admin User',
           role: 'admin',
@@ -272,20 +288,22 @@ describe('Compliance E2E Tests - Task 22 Verification', () => {
           createdAt: Date.now(),
           updatedAt: Date.now(),
         })
+      })
 
-        // Log an admin action
-        await ctx.runMutation(api.lib.compliance.auditLog.logAdminActionPublic, {
-          action: 'user_suspended',
-          resource: 'user',
-          resourceId: 'test-user-id',
-          severity: 'high',
-          impactedUsers: ['test-user-id'],
-        })
+      // Log an admin action
+      await tAdmin.mutation(api.lib.compliance.auditLog.logAdminActionPublic, {
+        action: 'user_suspended',
+        resource: 'user',
+        resourceId: 'test-user-id',
+        severity: 'high',
+        impactedUsers: ['test-user-id'],
+      })
 
+      await tAdmin.run(async (ctx) => {
         // Verify audit log was created with admin metadata
         const auditLogs = await ctx.db
           .query('auditLogs')
-          .withIndex('by_user', (q) => q.eq('userId', adminUser))
+          .withIndex('by_user', (q) => q.eq('userId', adminUserId))
           .collect()
 
         const adminLog = auditLogs.find((log) => log.action === 'user_suspended')
@@ -302,26 +320,32 @@ describe('Compliance E2E Tests - Task 22 Verification', () => {
 
   describe('Terms Acceptance Tracking', () => {
     it('should track terms acceptance with all required fields', async () => {
-      await t.run(async (ctx) => {
+      const tAuth = t.withIdentity({ email: 'test@example.com', subject: 'test-user-id' })
+      let userId: string | undefined
+
+      await tAuth.run(async (ctx) => {
         const user = await ctx.db
           .query('users')
           .withIndex('email', (q) => q.eq('email', 'test@example.com'))
           .first()
 
         if (!user) throw new Error('Test user not found')
+        userId = user._id
+      })
 
-        // Accept terms
-        const acceptanceId = await ctx.runMutation(api.lib.compliance.termsAcceptance.acceptTerms, {
-          version: '1.0',
-          ipAddress: '192.168.1.1',
-          userAgent: 'Mozilla/5.0',
-        })
+      // Accept terms
+      const acceptanceId = await tAuth.mutation(api.lib.compliance.termsAcceptance.acceptTerms, {
+        version: '1.0',
+        ipAddress: '192.168.1.1',
+        userAgent: 'Mozilla/5.0',
+      })
 
+      await tAuth.run(async (ctx) => {
         // Verify acceptance record
         const acceptance = await ctx.db.get(acceptanceId)
 
         expect(acceptance).toBeDefined()
-        expect(acceptance?.userId).toBe(user._id)
+        expect(acceptance?.userId).toBe(userId)
         expect(acceptance?.version).toBe('1.0')
         expect(acceptance?.acceptedAt).toBeGreaterThan(0)
         expect(acceptance?.ipAddress).toBe('192.168.1.1')
@@ -332,32 +356,37 @@ describe('Compliance E2E Tests - Task 22 Verification', () => {
     })
 
     it('should prevent duplicate acceptances for same version', async () => {
-      await t.run(async (ctx) => {
+      const tAuth = t.withIdentity({ email: 'test@example.com', subject: 'test-user-id' })
+      let userId: string | undefined
+
+      await tAuth.run(async (ctx) => {
         const user = await ctx.db
           .query('users')
           .withIndex('email', (q) => q.eq('email', 'test@example.com'))
           .first()
 
         if (!user) throw new Error('Test user not found')
+        userId = user._id
+      })
 
-        // Accept terms twice
-        const firstAcceptance = await ctx.runMutation(
-          api.lib.compliance.termsAcceptance.acceptTerms,
-          { version: '1.0' }
-        )
+      // Accept terms twice
+      const firstAcceptance = await tAuth.mutation(api.lib.compliance.termsAcceptance.acceptTerms, {
+        version: '1.0',
+      })
 
-        const secondAcceptance = await ctx.runMutation(
-          api.lib.compliance.termsAcceptance.acceptTerms,
-          { version: '1.0' }
-        )
+      const secondAcceptance = await tAuth.mutation(
+        api.lib.compliance.termsAcceptance.acceptTerms,
+        { version: '1.0' }
+      )
 
-        // Should return the same acceptance ID
-        expect(firstAcceptance).toBe(secondAcceptance)
+      // Should return the same acceptance ID
+      expect(firstAcceptance).toBe(secondAcceptance)
 
+      await tAuth.run(async (ctx) => {
         // Verify only one record exists
         const acceptances = await ctx.db
           .query('termsAcceptance')
-          .withIndex('by_user', (q) => q.eq('userId', user._id))
+          .withIndex('by_user', (q) => q.eq('userId', userId))
           .collect()
 
         expect(acceptances.length).toBe(1)
@@ -367,27 +396,33 @@ describe('Compliance E2E Tests - Task 22 Verification', () => {
     })
 
     it('should allow separate acceptances for different versions', async () => {
-      await t.run(async (ctx) => {
+      const tAuth = t.withIdentity({ email: 'test@example.com', subject: 'test-user-id' })
+      let userId: string | undefined
+
+      await tAuth.run(async (ctx) => {
         const user = await ctx.db
           .query('users')
           .withIndex('email', (q) => q.eq('email', 'test@example.com'))
           .first()
 
         if (!user) throw new Error('Test user not found')
+        userId = user._id
+      })
 
-        // Accept different versions
-        await ctx.runMutation(api.lib.compliance.termsAcceptance.acceptTerms, {
-          version: '1.0',
-        })
+      // Accept different versions
+      await tAuth.mutation(api.lib.compliance.termsAcceptance.acceptTerms, {
+        version: '1.0',
+      })
 
-        await ctx.runMutation(api.lib.compliance.termsAcceptance.acceptTerms, {
-          version: '2.0',
-        })
+      await tAuth.mutation(api.lib.compliance.termsAcceptance.acceptTerms, {
+        version: '2.0',
+      })
 
+      await tAuth.run(async (ctx) => {
         // Verify both records exist
         const acceptances = await ctx.db
           .query('termsAcceptance')
-          .withIndex('by_user', (q) => q.eq('userId', user._id))
+          .withIndex('by_user', (q) => q.eq('userId', userId))
           .collect()
 
         expect(acceptances.length).toBe(2)
@@ -440,7 +475,7 @@ describe('Compliance E2E Tests - Task 22 Verification', () => {
 
   describe('Analytics Anonymization', () => {
     it('should anonymize PII in analytics data', async () => {
-      const { anonymizePII, containsPII } = await import('../analyticsAnonymization')
+      const { anonymizePII, containsPII } = await import('./analyticsAnonymization')
 
       const piiData = {
         email: 'user@example.com',
@@ -477,46 +512,57 @@ describe('Compliance E2E Tests - Task 22 Verification', () => {
 
   describe('Integration: Complete Compliance Workflow', () => {
     it('should handle complete user lifecycle with compliance', async () => {
-      await t.run(async (ctx) => {
+      const tAuth = t.withIdentity({ email: 'test@example.com', subject: 'test-user-id' })
+      let userId: string | undefined
+
+      await tAuth.run(async (ctx) => {
         const user = await ctx.db
           .query('users')
           .withIndex('email', (q) => q.eq('email', 'test@example.com'))
           .first()
 
         if (!user) throw new Error('Test user not found')
+        userId = user._id
+      })
 
-        // 1. User accepts terms
-        await ctx.runMutation(api.lib.compliance.termsAcceptance.acceptTerms, {
-          version: '1.0',
-          ipAddress: '192.168.1.1',
-        })
+      // 1. User accepts terms
+      await tAuth.mutation(api.lib.compliance.termsAcceptance.acceptTerms, {
+        version: '1.0',
+        ipAddress: '192.168.1.1',
+      })
 
-        // 2. User creates data
+      // 2. User creates data (must be done via run block as we are inserting directly)
+      // Note: In real app this would be a mutation call, but test uses direct insert for setup
+      // If we use direct insert, auth doesn't matter for the insert itself.
+      await tAuth.run(async (ctx) => {
         await ctx.db.insert('events', {
-          organizerId: user._id,
+          organizerId: userId,
           title: 'Test Event',
           status: 'draft',
           eventType: 'conference',
           locationType: 'in-person',
+          startDate: Date.now(),
+          endDate: Date.now() + 86400000,
           createdAt: Date.now(),
           updatedAt: Date.now(),
         })
+      })
 
-        // 3. User requests data export
-        const exportData = await ctx.runQuery(api.lib.compliance.dataExport.getUserDataForExport, {
-          userId: user._id,
-        })
+      // 3. User requests data export
+      const exportData = await tAuth.query(api.lib.compliance.dataExport.getUserDataForExport, {
+        userId: userId,
+      })
 
-        expect(exportData.events.length).toBeGreaterThan(0)
+      expect(exportData.events.length).toBeGreaterThan(0)
 
-        // 4. User requests account deletion
-        const deletionResult = await ctx.runMutation(
-          api.lib.compliance.dataDeletion.executeDeletion,
-          { userId: user._id }
-        )
+      // 4. User requests account deletion
+      const deletionResult = await tAuth.mutation(api.lib.compliance.dataDeletion.executeDeletion, {
+        userId: userId,
+      })
 
-        expect(deletionResult.success).toBe(true)
+      expect(deletionResult.success).toBe(true)
 
+      await tAuth.run(async (ctx) => {
         // 5. Verify all data is deleted
         const deletedUser = await ctx.db
           .query('users')

@@ -3,11 +3,16 @@ import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { ProtectedRoute } from './ProtectedRoute'
 
-// Mock useAuth from custom AuthContext
-const mockUseAuth = vi.fn()
+// Mock Convex hooks
+const mockUseConvexAuth = vi.fn()
+const mockUseAuthToken = vi.fn()
 
-vi.mock('@/contexts/AuthContext', () => ({
-  useAuth: () => mockUseAuth(),
+vi.mock('convex/react', () => ({
+  useConvexAuth: () => mockUseConvexAuth(),
+}))
+
+vi.mock('@convex-dev/auth/react', () => ({
+  useAuthToken: () => mockUseAuthToken(),
 }))
 
 // Mock Phosphor icons
@@ -47,16 +52,11 @@ describe('ProtectedRoute', () => {
   }
 
   it('should show loading spinner while authentication is loading', () => {
-    mockUseAuth.mockReturnValue({
-      user: null,
-      accessToken: null,
+    mockUseConvexAuth.mockReturnValue({
       isLoading: true,
       isAuthenticated: false,
-      signIn: vi.fn(),
-      signUp: vi.fn(),
-      signOut: vi.fn(),
-      refreshAuth: vi.fn(),
     })
+    mockUseAuthToken.mockReturnValue(null)
 
     renderWithRouter(null)
 
@@ -68,16 +68,11 @@ describe('ProtectedRoute', () => {
   })
 
   it('should render children when user is authenticated', () => {
-    mockUseAuth.mockReturnValue({
-      user: { _id: 'user123', email: 'test@example.com', role: 'organizer' },
-      accessToken: 'test-token',
+    mockUseConvexAuth.mockReturnValue({
       isLoading: false,
       isAuthenticated: true,
-      signIn: vi.fn(),
-      signUp: vi.fn(),
-      signOut: vi.fn(),
-      refreshAuth: vi.fn(),
     })
+    mockUseAuthToken.mockReturnValue('test-token')
 
     renderWithRouter(null)
 
@@ -87,16 +82,11 @@ describe('ProtectedRoute', () => {
   })
 
   it('should redirect to /sign-in when not authenticated', () => {
-    mockUseAuth.mockReturnValue({
-      user: null,
-      accessToken: null,
+    mockUseConvexAuth.mockReturnValue({
       isLoading: false,
       isAuthenticated: false,
-      signIn: vi.fn(),
-      signUp: vi.fn(),
-      signOut: vi.fn(),
-      refreshAuth: vi.fn(),
     })
+    mockUseAuthToken.mockReturnValue(null)
 
     renderWithRouter(null)
 
@@ -106,16 +96,11 @@ describe('ProtectedRoute', () => {
   })
 
   it('should redirect to custom path when specified', () => {
-    mockUseAuth.mockReturnValue({
-      user: null,
-      accessToken: null,
+    mockUseConvexAuth.mockReturnValue({
       isLoading: false,
       isAuthenticated: false,
-      signIn: vi.fn(),
-      signUp: vi.fn(),
-      signOut: vi.fn(),
-      refreshAuth: vi.fn(),
     })
+    mockUseAuthToken.mockReturnValue(null)
 
     render(
       <MemoryRouter initialEntries={['/protected']}>
@@ -142,16 +127,11 @@ describe('ProtectedRoute', () => {
 
   it('should handle transition from loading to authenticated', () => {
     // Start loading
-    mockUseAuth.mockReturnValue({
-      user: null,
-      accessToken: null,
+    mockUseConvexAuth.mockReturnValue({
       isLoading: true,
       isAuthenticated: false,
-      signIn: vi.fn(),
-      signUp: vi.fn(),
-      signOut: vi.fn(),
-      refreshAuth: vi.fn(),
     })
+    mockUseAuthToken.mockReturnValue(null)
 
     const { rerender } = render(
       <MemoryRouter initialEntries={['/protected']}>
@@ -172,16 +152,11 @@ describe('ProtectedRoute', () => {
     expect(screen.getByTestId('loading-spinner')).toBeInTheDocument()
 
     // Finish loading, user is authenticated
-    mockUseAuth.mockReturnValue({
-      user: { _id: 'user123', email: 'test@example.com', role: 'organizer' },
-      accessToken: 'test-token',
+    mockUseConvexAuth.mockReturnValue({
       isLoading: false,
       isAuthenticated: true,
-      signIn: vi.fn(),
-      signUp: vi.fn(),
-      signOut: vi.fn(),
-      refreshAuth: vi.fn(),
     })
+    mockUseAuthToken.mockReturnValue('test-token')
 
     rerender(
       <MemoryRouter initialEntries={['/protected']}>
@@ -205,16 +180,11 @@ describe('ProtectedRoute', () => {
 
   it('should handle transition from loading to unauthenticated', () => {
     // Start loading
-    mockUseAuth.mockReturnValue({
-      user: null,
-      accessToken: null,
+    mockUseConvexAuth.mockReturnValue({
       isLoading: true,
       isAuthenticated: false,
-      signIn: vi.fn(),
-      signUp: vi.fn(),
-      signOut: vi.fn(),
-      refreshAuth: vi.fn(),
     })
+    mockUseAuthToken.mockReturnValue(null)
 
     const { rerender } = render(
       <MemoryRouter initialEntries={['/protected']}>
@@ -235,16 +205,11 @@ describe('ProtectedRoute', () => {
     expect(screen.getByTestId('loading-spinner')).toBeInTheDocument()
 
     // Finish loading, user is NOT authenticated
-    mockUseAuth.mockReturnValue({
-      user: null,
-      accessToken: null,
+    mockUseConvexAuth.mockReturnValue({
       isLoading: false,
       isAuthenticated: false,
-      signIn: vi.fn(),
-      signUp: vi.fn(),
-      signOut: vi.fn(),
-      refreshAuth: vi.fn(),
     })
+    mockUseAuthToken.mockReturnValue(null)
 
     rerender(
       <MemoryRouter initialEntries={['/protected']}>
@@ -268,16 +233,11 @@ describe('ProtectedRoute', () => {
   })
 
   it('should render complex children correctly', () => {
-    mockUseAuth.mockReturnValue({
-      user: { _id: 'user123', email: 'test@example.com', role: 'organizer' },
-      accessToken: 'test-token',
+    mockUseConvexAuth.mockReturnValue({
       isLoading: false,
       isAuthenticated: true,
-      signIn: vi.fn(),
-      signUp: vi.fn(),
-      signOut: vi.fn(),
-      refreshAuth: vi.fn(),
     })
+    mockUseAuthToken.mockReturnValue('test-token')
 
     render(
       <MemoryRouter initialEntries={['/protected']}>

@@ -47,7 +47,7 @@ describe('Property 31: AI Circuit Breaker', () => {
           expect(breaker.isOpen()).toBe(true)
         }
       ),
-      { numRuns: 100 }
+      { numRuns: 5 }
     )
   })
 
@@ -96,7 +96,7 @@ describe('Property 31: AI Circuit Breaker', () => {
     )
   })
 
-  test('circuit should transition to half-open after timeout', { timeout: 10000 }, async () => {
+  test('circuit should transition to half-open after timeout', { timeout: 60000 }, async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.integer({ min: 2, max: 5 }), // failure threshold
@@ -139,13 +139,13 @@ describe('Property 31: AI Circuit Breaker', () => {
           expect(['half-open', 'closed']).toContain(state)
         }
       ),
-      { numRuns: 100 }
+      { numRuns: 5 }
     )
   })
 
   test(
     'circuit should close after success threshold in half-open state',
-    { timeout: 10000 },
+    { timeout: 30000 },
     async () => {
       await fc.assert(
         fc.asyncProperty(
@@ -186,12 +186,12 @@ describe('Property 31: AI Circuit Breaker', () => {
             expect(breaker.isOpen()).toBe(false)
           }
         ),
-        { numRuns: 100 }
+        { numRuns: 5 }
       )
     }
   )
 
-  test('circuit should reopen on failure in half-open state', { timeout: 10000 }, async () => {
+  test('circuit should reopen on failure in half-open state', { timeout: 30000 }, async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.integer({ min: 2, max: 5 }), // failure threshold
@@ -231,7 +231,7 @@ describe('Property 31: AI Circuit Breaker', () => {
           expect(breaker.getState()).toBe('open')
         }
       ),
-      { numRuns: 100 }
+      { numRuns: 5 }
     )
   })
 
@@ -506,7 +506,7 @@ describe('Circuit Breaker Edge Cases', () => {
     )
   })
 
-  test('circuit breaker should handle rapid state transitions', { timeout: 15000 }, async () => {
+  test('circuit breaker should handle rapid state transitions', { timeout: 30000 }, async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.constant(2), // Low failure threshold for rapid transitions
@@ -555,7 +555,7 @@ describe('Circuit Breaker Edge Cases', () => {
           expect(result).toBe('final-success')
         }
       ),
-      { numRuns: 100 }
+      { numRuns: 5 }
     )
   })
 

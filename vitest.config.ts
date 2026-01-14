@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react()],
   test: {
     globals: true,
+    // Default environment for React tests (Convex tests use edge-runtime via comment directive)
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     include: [
@@ -22,6 +23,12 @@ export default defineConfig({
       reporter: ['text', 'json', 'html', 'lcov'],
       include: ['src/**/*.{ts,tsx}', 'convex/**/*.ts'],
       exclude: ['src/**/*.d.ts', 'src/test/**', 'convex/_generated/**'],
+    },
+    // Inline convex-test dependency for proper processing
+    server: {
+      deps: {
+        inline: ['convex-test'],
+      },
     },
   },
   resolve: {

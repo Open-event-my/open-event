@@ -455,9 +455,18 @@ describe('Payment Audit Logging Property Tests', () => {
               .string({ minLength: 1, maxLength: 20 })
               .filter(
                 (s) =>
-                  !['cardnumber', 'cvv', 'cvc', 'password', 'secret', 'apikey', 'token'].some(
-                    (sensitive) => s.toLowerCase().includes(sensitive)
-                  )
+                  ![
+                    'cardnumber',
+                    'cvv',
+                    'cvc',
+                    'password',
+                    'secret',
+                    'apikey',
+                    'token',
+                    '__proto__',
+                    'constructor',
+                    'prototype',
+                  ].some((sensitive) => s.toLowerCase().includes(sensitive))
               ),
             fc.string({ minLength: 1, maxLength: 50 })
           ),

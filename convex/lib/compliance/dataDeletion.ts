@@ -1,13 +1,12 @@
 /**
- * Data Deletion Service - Types and Utilities
+ * Data Deletion Service
  *
  * Implements GDPR Article 17 (Right to Erasure / Right to be Forgotten) by providing
  * comprehensive user data deletion functionality.
- *
- * NOTE: The actual Convex mutation implementations should be in
- * the root convex/ directory (e.g., convex/compliance.ts).
- * This file contains only types and utility functions.
  */
+
+import { v } from 'convex/values'
+import { mutation } from '../../_generated/server'
 
 /**
  * Deletion request status
@@ -89,3 +88,60 @@ export function getAnonymizedUserData(userId: string): Record<string, unknown> {
     updatedAt: Date.now(),
   }
 }
+
+export const requestDeletion = mutation({
+  args: {
+    userId: v.id('users'),
+    reason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.insert('auditLogs', {
+      userId: args.userId,
+      action: 'data_deletion_requested',
+      resource: 'user',
+      resourceId: args.userId,
+      status: 'success',
+      metadata: { reason: args.reason },
+      createdAt: Date.now(),
+    })
+  },
+})
+
+export const executeDeletion = mutation({
+  args: { userId: v.id('users') },
+  handler: async (ctx, args) => {
+    const result = createEmptyDeletionResult()
+
+    // Delete user
+    const user = await ctx.db.get(args.userId)
+    if (user) {
+      await ctx.db.delete(args.userId)
+      result.deletedRecords['users'] = 1
+    }
+
+    // Delete events
+    const events = await ctx.db
+      .query('events')
+      .withIndex('by_organizer', (q) => q.eq('organizerId', args.userId))
+      .collect()
+
+    for (const event of events) {
+      await ctx.db.delete(event._id)
+    }
+    result.deletedRecords['events'] = events.length
+
+    // Audit log for completion
+    await ctx.db.insert('auditLogs', {
+      userId: args.userId,
+      action: 'data_deletion_completed',
+      resource: 'user',
+      resourceId: args.userId,
+      status: 'success',
+      createdAt: Date.now(),
+    })
+
+    result.success = true
+    result.completedAt = Date.now()
+    return result
+  },
+})

@@ -20,7 +20,12 @@ export function useAudienceToggle() {
   const setAudience = useCallback((value: Audience) => {
     localStorage.setItem(STORAGE_KEY, value)
     // Dispatch storage event to sync across hook instances
-    window.dispatchEvent(new StorageEvent('storage'))
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: STORAGE_KEY,
+        newValue: value,
+      })
+    )
   }, [])
 
   return {

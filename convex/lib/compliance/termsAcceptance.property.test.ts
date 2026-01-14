@@ -75,7 +75,13 @@ const emailArbitrary = fc.emailAddress()
 const timestampArbitrary = fc.integer({ min: 1600000000000, max: Date.now() })
 const versionArbitrary = fc.oneof(
   fc.string({ minLength: 3, maxLength: 10 }), // e.g., "1.0", "2.1.3"
-  fc.date().map((d) => d.toISOString().split('T')[0]) // e.g., "2024-01-15"
+  fc.date({ min: new Date('2000-01-01'), max: new Date('2030-01-01') }).map((d) => {
+    try {
+      return d.toISOString().split('T')[0]
+    } catch {
+      return '2024-01-01'
+    }
+  }) // e.g., "2024-01-15"
 )
 const ipAddressArbitrary = fc
   .tuple(

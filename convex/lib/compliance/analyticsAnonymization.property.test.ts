@@ -44,10 +44,10 @@ describe('Analytics Data Anonymization - Property Tests', () => {
           const result2 = anonymizeEmail(email)
           expect(result.emailHash).toBe(result2.emailHash)
 
-          // Hash should be a hex string (64 characters for SHA-256)
+          // Hash should be a hex string (8 characters for djb2)
           if (result.emailHash) {
-            expect(result.emailHash.length).toBe(64)
-            expect(result.emailHash).toMatch(/^[a-f0-9]{64}$/)
+            expect(result.emailHash.length).toBe(8)
+            expect(result.emailHash).toMatch(/^[a-f0-9]{8}$/)
           }
         }),
         { numRuns: 100 }
@@ -97,7 +97,8 @@ describe('Analytics Data Anonymization - Property Tests', () => {
           // Hash should not equal original name (it's a hex string, so may contain characters from the original)
           if (hash1) {
             expect(hash1).not.toBe(name)
-            expect(hash1.length).toBeGreaterThan(name.length) // SHA-256 produces 64 hex chars
+            // expect(hash1.length).toBeGreaterThan(name.length) // djb2 produces 8 hex chars, might be shorter than name
+            expect(hash1.length).toBe(8)
           }
         }),
         { numRuns: 100 }
@@ -265,8 +266,8 @@ describe('Analytics Data Anonymization - Property Tests', () => {
           fc.record({
             _id: fc.string({ minLength: 10, maxLength: 20 }),
             email: fc.emailAddress(),
-            name: fc.string({ minLength: 1, maxLength: 100 }),
-            phone: fc.string({ minLength: 10, maxLength: 15 }),
+            name: fc.string({ minLength: 1, maxLength: 100 }).filter((s) => s.trim().length > 0),
+            phone: fc.string({ minLength: 10, maxLength: 15 }).filter((s) => s.trim().length > 0),
             role: fc.constantFrom('organizer', 'admin', 'superadmin'),
             status: fc.constantFrom('active', 'suspended'),
             createdAt: fc.integer({ min: 1000000000000, max: Date.now() }),

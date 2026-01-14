@@ -176,6 +176,11 @@ export function sanitizeMetadata(
   const sanitized: Record<string, unknown> = {}
 
   for (const [key, value] of Object.entries(metadata)) {
+    // Skip prototype pollution attempts
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+      continue
+    }
+
     // Skip sensitive fields
     if (SENSITIVE_FIELDS.some((field) => key.toLowerCase().includes(field.toLowerCase()))) {
       continue

@@ -8,6 +8,12 @@ vi.mock('@/lib/sentry', () => ({
   captureError: (...args: unknown[]) => mockCaptureError(...args),
 }))
 
+// Mock ErrorLogger
+const mockLogErrorBoundaryError = vi.fn()
+vi.mock('@/lib/errorLogger', () => ({
+  logErrorBoundaryError: (...args: unknown[]) => mockLogErrorBoundaryError(...args),
+}))
+
 // Mock Phosphor icons
 vi.mock('@phosphor-icons/react', () => ({
   WarningCircle: ({ className }: { className?: string }) => (
@@ -73,7 +79,7 @@ describe('ErrorBoundary', () => {
       )
 
       // The error boundary now displays the formatted error message
-      expect(screen.getByText('Test error')).toBeInTheDocument()
+      expect(screen.getAllByText(/Test error/).length).toBeGreaterThan(0)
       expect(screen.getByTestId('warning-icon')).toBeInTheDocument()
     })
 
@@ -88,18 +94,17 @@ describe('ErrorBoundary', () => {
       expect(screen.queryByText('Something went wrong')).not.toBeInTheDocument()
     })
 
-    it('should capture error to Sentry', () => {
+    it('should log error via errorLogger', () => {
       render(
         <ErrorBoundary>
           <ThrowError />
         </ErrorBoundary>
       )
 
-      expect(mockCaptureError).toHaveBeenCalledWith(
+      expect(mockLogErrorBoundaryError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
           componentStack: expect.any(String),
-          errorBoundary: true,
         })
       )
     })
@@ -114,7 +119,7 @@ describe('ErrorBoundary', () => {
       )
 
       // The error boundary displays the formatted error message
-      expect(screen.getByText('Test error')).toBeInTheDocument()
+      expect(screen.getAllByText(/Test error/).length).toBeGreaterThan(0)
       expect(screen.getByText(/Here's what you can try/i)).toBeInTheDocument()
     })
 
@@ -162,7 +167,7 @@ describe('ErrorBoundary', () => {
       )
 
       // The error boundary displays the formatted error message
-      expect(screen.getByText('Test error')).toBeInTheDocument()
+      expect(screen.getAllByText(/Test error/).length).toBeGreaterThan(0)
 
       // Find the Try Again button (not the suggestion text)
       const tryAgainButton = screen.getByRole('button', { name: /Try Again/i })
@@ -170,7 +175,7 @@ describe('ErrorBoundary', () => {
 
       // After reset, the component should try to render children again
       // Since ThrowError still throws, it will show error again
-      expect(screen.getByText('Test error')).toBeInTheDocument()
+      expect(screen.getAllByText(/Test error/).length).toBeGreaterThan(0)
     })
 
     it('should navigate to home when Go Home is clicked', () => {
@@ -217,7 +222,7 @@ describe('ErrorBoundary', () => {
       )
 
       // In minimal mode, it shows the formatted error message
-      expect(screen.getByText('Test error')).toBeInTheDocument()
+      expect(screen.getAllByText(/Test error/).length).toBeGreaterThan(0)
       expect(screen.getByTestId('bug-icon')).toBeInTheDocument()
       expect(screen.getByText('Retry')).toBeInTheDocument()
       // Should not show full error UI
@@ -236,7 +241,7 @@ describe('ErrorBoundary', () => {
       fireEvent.click(retryButton)
 
       // After reset, the component should try to render children again
-      expect(screen.getByText('Test error')).toBeInTheDocument()
+      expect(screen.getAllByText(/Test error/).length).toBeGreaterThan(0)
     })
   })
 
@@ -275,7 +280,7 @@ describe('ErrorBoundary', () => {
       render(<WrappedComponent />)
 
       // The error boundary displays the formatted error message
-      expect(screen.getByText('Test error')).toBeInTheDocument()
+      expect(screen.getAllByText(/Test error/).length).toBeGreaterThan(0)
     })
 
     it('should pass error boundary props to HOC', () => {
