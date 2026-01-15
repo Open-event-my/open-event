@@ -124,7 +124,7 @@ describe('StructuredLogger - Property Tests', () => {
           // Verify parent context is present (unless overridden by child)
           Object.keys(parentContext).forEach((key) => {
             // If child context has the same key, it should override parent
-            if (key in childContext) {
+            if (Object.prototype.hasOwnProperty.call(childContext, key)) {
               expect(entry.context).toHaveProperty(key, childContext[key])
             } else {
               expect(entry.context).toHaveProperty(key, parentContext[key])

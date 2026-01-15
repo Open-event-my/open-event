@@ -86,18 +86,20 @@ export const create = mutation({
 // Update user - superadmin only, or users can update own name/image
 export const update = mutation({
   args: {
+    accessToken: v.optional(v.string()),
     id: v.id('users'),
     name: v.optional(v.string()),
     role: v.optional(v.union(v.literal('superadmin'), v.literal('organizer'))),
     image: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const currentUser = await getCurrentUser(ctx)
+    const currentUser = await getCurrentUser(ctx, args.accessToken)
     if (!currentUser) {
       throw new Error('Authentication required')
     }
 
-    const { id, ...updates } = args
+    const { id, accessToken: _, ...updates } = args
+    void _
 
     // Only superadmin can update role or update other users
     if (currentUser.role !== 'superadmin') {

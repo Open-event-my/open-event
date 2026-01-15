@@ -79,6 +79,13 @@ export function Hero() {
               Contributors
             </Link>
             <Link
+              to="/apply/sponsor"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-4 py-3 text-base font-medium text-foreground hover:bg-muted rounded-xl transition-colors touch-target"
+            >
+              Become a Sponsor
+            </Link>
+            <Link
               to="/sign-in"
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-3 px-4 py-3 text-base font-medium text-foreground hover:bg-muted rounded-xl transition-colors touch-target"
@@ -131,6 +138,12 @@ export function Hero() {
               className="hidden sm:flex items-center px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-muted/50"
             >
               Contributors
+            </Link>
+            <Link
+              to="/apply/sponsor"
+              className="hidden sm:flex items-center px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-muted/50"
+            >
+              Become a Sponsor
             </Link>
             <ThemeToggle />
             <Link

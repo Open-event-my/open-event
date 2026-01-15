@@ -83,20 +83,23 @@ const experienceLevels = [
 ]
 
 export function SettingsPage() {
-  const { user, accessToken, signOut: customSignOut } = useAuth()
+  const { user, accessToken, refreshAuth, signOut: customSignOut } = useAuth()
   const { signOut: convexSignOut } = useAuthActions()
   const navigate = useNavigate()
-  const profile = useQuery(
-    api.organizerProfiles.getMyProfile,
-    accessToken ? { accessToken } : 'skip'
-  )
+  const convexUser = useQuery(api.queries.auth.getCurrentUser, {})
+  const currentUser = convexUser ?? user
+  const profile = useQuery(api.organizerProfiles.getMyProfile, {
+    accessToken: accessToken ?? undefined,
+  })
   const saveProfile = useMutation(api.organizerProfiles.saveProfile)
+  const updateUser = useMutation(api.users.update)
   const { isInstalled, isInstallable, isOnline, promptInstall, getPlatform } = usePWA()
 
   const [isSaving, setIsSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [activeTab, setActiveTab] = useState('profile')
   const [showTwoFactorSetup, setShowTwoFactorSetup] = useState(false)
+  const [displayName, setDisplayName] = useState('')
 
   // Profile form state
   const [formData, setFormData] = useState({
@@ -182,6 +185,10 @@ export function SettingsPage() {
     }
   }, [profile])
 
+  useEffect(() => {
+    setDisplayName(currentUser?.name || '')
+  }, [currentUser?.name])
+
   const handleChange = (field: string, value: string | string[]) => {
     setHasChanges(true)
     setFormData((prev) => ({
@@ -201,17 +208,34 @@ export function SettingsPage() {
   }
 
   const handleSave = async () => {
-    if (!accessToken) return
     setIsSaving(true)
     try {
-      await saveProfile({
-        accessToken,
-        organizationName: formData.organizationName || undefined,
-        organizationType: formData.organizationType || undefined,
-        eventTypes: formData.eventTypes.length > 0 ? formData.eventTypes : undefined,
-        eventScale: formData.eventScale || undefined,
-        experienceLevel: formData.experienceLevel || undefined,
-      })
+      const trimmedName = displayName.trim()
+      const currentName = (currentUser?.name || '').trim()
+      const shouldUpdateName =
+        !!currentUser?._id && trimmedName.length > 0 && trimmedName !== currentName
+
+      await Promise.all([
+        saveProfile({
+          accessToken: accessToken ?? undefined,
+          organizationName: formData.organizationName || undefined,
+          organizationType: formData.organizationType || undefined,
+          eventTypes: formData.eventTypes.length > 0 ? formData.eventTypes : undefined,
+          eventScale: formData.eventScale || undefined,
+          experienceLevel: formData.experienceLevel || undefined,
+        }),
+        shouldUpdateName
+          ? updateUser({
+              accessToken: accessToken ?? undefined,
+              id: currentUser._id,
+              name: trimmedName,
+            })
+          : Promise.resolve(),
+      ])
+
+      if (user) {
+        refreshAuth().catch(() => {})
+      }
       toast.success('Settings saved successfully')
       setHasChanges(false)
     } catch {
@@ -263,10 +287,10 @@ export function SettingsPage() {
       <div className="p-6 rounded-xl border border-border bg-card">
         <div className="flex items-center gap-4">
           <div className="relative">
-            {user?.image ? (
+            {currentUser?.image ? (
               <img
-                src={user.image}
-                alt={user.name || 'Profile'}
+                src={currentUser.image}
+                alt={displayName || currentUser?.name || 'Profile'}
                 className="w-20 h-20 rounded-full object-cover border-2 border-border"
               />
             ) : (
@@ -276,10 +300,10 @@ export function SettingsPage() {
             )}
           </div>
           <div className="flex-1">
-            <h2 className="text-lg font-semibold">{user?.name || 'User'}</h2>
+            <h2 className="text-lg font-semibold">{displayName || currentUser?.name || 'User'}</h2>
             <p className="text-sm text-muted-foreground flex items-center gap-1.5">
               <Envelope size={14} />
-              {user?.email}
+              {currentUser?.email || 'Not set'}
             </p>
             {formData.organizationName && (
               <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-0.5">
@@ -400,7 +424,28 @@ export function SettingsPage() {
                   </div>
                   <div>
                     <p className="font-medium text-sm">Email Address</p>
-                    <p className="text-xs text-muted-foreground">{user?.email || 'Not set'}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {currentUser?.email || 'Not set'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-lg border border-border">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+                    <User size={20} weight="duotone" className="text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <p className="font-medium text-sm">Display Name</p>
+                    <Input
+                      value={displayName}
+                      onChange={(e) => {
+                        setDisplayName(e.target.value)
+                        setHasChanges(true)
+                      }}
+                      placeholder="Enter your name"
+                    />
                   </div>
                 </div>
               </div>
