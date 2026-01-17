@@ -486,10 +486,11 @@ export function formatErrorMessage(error: unknown): FormattedError {
   const code = extractErrorCode(error)
 
   // If we have a known error code, use the predefined message
-  if (code && ERROR_MESSAGES[code]) {
+  if (code && Object.prototype.hasOwnProperty.call(ERROR_MESSAGES, code)) {
+    const mapped = ERROR_MESSAGES[code]
     return {
-      ...ERROR_MESSAGES[code],
-      actionText: getActionText(ERROR_MESSAGES[code].category),
+      ...mapped,
+      actionText: getActionText(mapped.category),
     }
   }
 

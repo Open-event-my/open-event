@@ -45,6 +45,9 @@ The backend is organized by domain:
 - **`moderation.ts`** - Admin moderation actions
 - **`analytics.ts`** - Analytics queries
 - **`admin.ts`** - Admin-only operations
+- **`aiTools.ts`** - AI tool definitions and handlers
+- **`customAuth.ts`** - Custom authentication implementation
+- **`metrics.ts`** - Metrics collection and reporting
 - **`organizations.ts`** - Multi-tenant organization/team management
 - **`accountLockout.ts`** - Brute force protection (account lockout after failed attempts)
 - **`globalRateLimit.ts`** - IP-based rate limiting with sliding windows
@@ -66,6 +69,15 @@ The backend is organized by domain:
 - **`playground.ts`** - Playground feature core
 - **`playgroundCreate.ts`** - Playground creation
 - **`crons.ts`** - Scheduled cron jobs
+- **`paymentLedger.ts`** - Universal payment ledger (tracks all money IN/OUT)
+- **`settlements.ts`** - Event settlement calculations and payouts
+- **`sponsorLeads.ts`** - Sponsor lead capture system
+- **`sponsorReports.ts`** - Sponsor ROI reports and analytics
+- **`http.ts`** - HTTP endpoints (AI streaming, public API routes)
+- **`auth.config.ts`** - Auth configuration
+- **`paymentIdempotency.ts`** - Payment idempotency tracking
+- **`testJWKS.ts`** - Test JWKS utilities
+- **`testKeyFormat.ts`** - Test key format utilities
 
 **Subdirectories:**
 
@@ -90,7 +102,7 @@ The backend is organized by domain:
 
 #### `/src/components` - Reusable UI Components
 
-- **`ui/`** - ShadCN UI primitives (Button, Dialog, Input, error-state, form-field, loading-error-wrapper, offline-banner, page-loader, scroll-area, aria-live-region, error-banner, error-toast, form-error-summary, enhanced-offline-banner, etc.)
+- **`ui/`** - ShadCN UI primitives (Button, Dialog, Input, Table, error-state, form-field, loading-error-wrapper, offline-banner, page-loader, scroll-area, aria-live-region, error-banner, error-toast, form-error-summary, enhanced-offline-banner, etc.)
 - **`app/`** - App shell components (Sidebar, TopBar, AppShell)
 - **`auth/`** - Authentication components (SignIn, SignUp, ProtectedRoute, SignInForm, SignUpForm)
 - **`landing/`** - Landing page sections (Hero, Features, FAQ, etc.)
@@ -101,9 +113,14 @@ The backend is organized by domain:
 - **`dashboard/`** - Dashboard-specific components (ExportModal, RealTimeDashboard)
 - **`security/`** - Security components (TwoFactorSetup, TwoFactorStatus, TwoFactorVerifyModal)
 - **`organizations/`** - Organization management (CreateOrganizationModal, TeamMembersList, InviteMemberModal)
+- **`sponsors/`** - Sponsor feature components
+  - `AudienceMatchBadge.tsx` - Audience match indicator badge
+  - `LeadCaptureModal.tsx` - Lead capture modal for sponsors
+  - `ROIReportView.tsx` - ROI report visualization component
+  - `index.ts` - Barrel export file
 - **`attendees/`** - Attendee management (AddAttendeeModal, ImportCSVModal)
 - **`calendar/`** - Calendar integration (AddToCalendar)
-- **`events/`** - Event forms (ManualEventForm)
+- **`events/`** - Event forms (ManualEventForm, AddSponsorDialog)
 - **`notifications/`** - Notification UI (NotificationBell, NotificationItem, NotificationList)
 - **`tickets/`** - Ticket purchase components (TicketPurchase)
 - **`chat/`** - Chat UI components (messages, streaming text)
@@ -116,7 +133,7 @@ The backend is organized by domain:
 
 #### `/src/pages` - Page Components (Route Handlers)
 
-- **`dashboard/`** - Main app pages (Events, Vendors, Sponsors, Analytics, Settings, EventAttendeesPage, EventTicketsPage, EventPromoCodesPage, EventSalesPage, EventCheckInPage)
+- **`dashboard/`** - Main app pages (Events, Vendors, Sponsors, Analytics, Settings, EventAttendeesPage, EventTicketsPage, EventPromoCodesPage, EventSalesPage, EventCheckInPage, EventSponsorsReportPage)
 - **`admin/`** - Admin panel pages (Users, Vendors, Sponsors, Moderation, AuditLogs, RateLimits, AdminOrganizations, AdminManagement, AdminEventModeration)
 - **`auth/`** - Authentication pages (SignIn, SignUp, ForgotPassword, ResetPassword, VerifyEmail)
 - **`tickets/`** - Ticket purchase pages (PaymentSuccess, PaymentCancel)
@@ -234,6 +251,7 @@ The backend is organized by domain:
 - **`notifications.spec.ts`** - Notifications E2E tests
 - **`event-applications.spec.ts`** - Event applications management E2E tests
 - **`sponsor-management.spec.ts`** - Sponsor management E2E tests
+- **`advanced-sponsor-features.spec.ts`** - Advanced sponsor features E2E tests (lead capture, audience match, ROI)
 - **`vendor-management.spec.ts`** - Vendor management E2E tests
 - **`organizer-dashboard.spec.ts`** - Organizer dashboard E2E tests
 - **`event-details.spec.ts`** - Event details page E2E tests
@@ -242,6 +260,13 @@ The backend is organized by domain:
 - **`ticketing-system.spec.ts`** - Ticketing system E2E tests
 - **`promo-codes.spec.ts`** - Promo codes E2E tests
 - **`orders-payments.spec.ts`** - Orders and payments E2E tests
+- **`analytics.spec.ts`** - Analytics dashboard E2E tests
+- **`dashboard-overview.spec.ts`** - Dashboard overview E2E tests
+- **`event-budget.spec.ts`** - Event budget management E2E tests
+- **`event-sales.spec.ts`** - Event sales tracking E2E tests
+- **`event-tasks.spec.ts`** - Event task management E2E tests
+- **`integrations.spec.ts`** - Integrations E2E tests
+- **`settings.spec.ts`** - Settings page E2E tests
 
 **Note:** Unit tests are co-located with their components/utilities (e.g., `SignUpForm.test.tsx` next to `SignUpForm.tsx`). Security module tests are in `src/lib/` (accountLockout.test.ts, globalRateLimit.test.ts, auditLog.test.ts). Test setup is in `src/test/setup.ts`.
 
@@ -375,7 +400,8 @@ The backend is organized by domain:
 │  │          eventVendors, eventSponsors, eventApplications, inquiries,   │  │
 │  │          apiKeys, webhooks, webhookDeliveries, aiUsage, organizations,│  │
 │  │          organizationMembers, organizationInvitations, auditLogs,     │  │
-│  │          rateLimitRecords, accountLockouts, etc.                      │  │
+│  │          rateLimitRecords, accountLockouts, paymentLedger,            │  │
+│  │          eventSettlements, commissionConfig, sponsorLeads, etc.       │  │
 │  └───────────────────────────────────────────────────────────────────────┘  │
 │                                    │                                         │
 │  ┌─────────────────────────────────▼─────────────────────────────────────┐  │

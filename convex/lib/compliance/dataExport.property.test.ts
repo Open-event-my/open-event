@@ -156,7 +156,10 @@ describe('Data Export Service - Property Tests', () => {
       await fc.assert(
         fc.asyncProperty(
           userArbitrary,
-          fc.array(fc.string({ minLength: 10, maxLength: 20 }), { minLength: 0, maxLength: 10 }),
+          fc.uniqueArray(fc.string({ minLength: 10, maxLength: 20 }), {
+            minLength: 0,
+            maxLength: 10,
+          }),
           async (user, eventIds) => {
             const ctx = createMockContext()
 
@@ -202,7 +205,10 @@ describe('Data Export Service - Property Tests', () => {
       await fc.assert(
         fc.asyncProperty(
           userArbitrary,
-          fc.array(fc.string({ minLength: 10, maxLength: 20 }), { minLength: 0, maxLength: 5 }),
+          fc.uniqueArray(fc.string({ minLength: 10, maxLength: 20 }), {
+            minLength: 0,
+            maxLength: 5,
+          }),
           async (user, orgIds) => {
             const ctx = createMockContext()
 

@@ -181,13 +181,25 @@ export function VendorsPage() {
             className="mx-auto text-muted-foreground/30 mb-6"
           />
           <h3 className="text-lg font-semibold mb-2">
-            {search ? 'No vendors found' : 'Vendor marketplace coming soon'}
+            {search ? 'No vendors found' : 'Be the first vendor in our marketplace!'}
           </h3>
-          <p className="text-muted-foreground max-w-sm mx-auto">
+          <p className="text-muted-foreground max-w-sm mx-auto mb-6">
             {search
               ? `No vendors matching "${search}". Try a different search term.`
-              : "We're building a curated marketplace of trusted vendors. Check back soon!"}
+              : 'Join our growing network of trusted vendors and get discovered by event organizers looking for your services.'}
           </p>
+          {!search && (
+            <a
+              href="/apply/vendor"
+              className={cn(
+                'inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium',
+                'bg-primary text-primary-foreground hover:bg-primary/90 transition-colors'
+              )}
+            >
+              <Plus size={18} weight="bold" />
+              Apply as a Vendor
+            </a>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

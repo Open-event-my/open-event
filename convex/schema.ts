@@ -520,12 +520,39 @@ export default defineSchema({
     proposedBudget: v.optional(v.number()),
     finalBudget: v.optional(v.number()),
     notes: v.optional(v.string()),
+
+    // Payout tracking (Middleman Model - Platform pays vendors)
+    paymentStatus: v.optional(
+      v.union(
+        v.literal('not_due'), // Event not completed yet
+        v.literal('pending'), // Due but not paid
+        v.literal('approved'), // Approved for payout
+        v.literal('processing'), // Payout in progress
+        v.literal('paid'), // Vendor received payment
+        v.literal('failed'), // Payout failed
+        v.literal('disputed') // Payment disputed
+      )
+    ),
+    payoutAmount: v.optional(v.number()), // Final amount to pay (may differ from finalBudget)
+    payoutApprovedAt: v.optional(v.number()),
+    payoutApprovedBy: v.optional(v.id('users')),
+    payoutAt: v.optional(v.number()), // When payment was made
+    payoutMethod: v.optional(v.string()), // 'bank_transfer', 'check', 'cash', 'stripe'
+    payoutReference: v.optional(v.string()), // Transaction/check number
+    stripeTransferId: v.optional(v.string()),
+    ledgerEntryId: v.optional(v.id('paymentLedger')),
+
+    // Invoice from vendor
+    vendorInvoiceNumber: v.optional(v.string()),
+    vendorInvoiceReceivedAt: v.optional(v.number()),
+
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
   })
     .index('by_event', ['eventId'])
     .index('by_vendor', ['vendorId'])
-    .index('by_status', ['status']),
+    .index('by_status', ['status'])
+    .index('by_payment_status', ['paymentStatus']),
 
   // Event-Sponsor relationships with tier and amount
   eventSponsors: defineTable({
@@ -536,12 +563,36 @@ export default defineSchema({
     amount: v.optional(v.number()),
     benefits: v.optional(v.array(v.string())),
     notes: v.optional(v.string()),
+
+    // Payment tracking (Middleman Model)
+    paymentStatus: v.optional(
+      v.union(
+        v.literal('not_required'), // No payment needed (e.g., in-kind)
+        v.literal('pending'), // Awaiting invoice/payment
+        v.literal('invoice_sent'), // Invoice sent to sponsor
+        v.literal('paid'), // Payment received
+        v.literal('held'), // Payment held until event
+        v.literal('released'), // Released after event
+        v.literal('refunded'), // Payment refunded
+        v.literal('failed') // Payment failed
+      )
+    ),
+    invoiceSentAt: v.optional(v.number()),
+    invoiceNumber: v.optional(v.string()),
+    paidAt: v.optional(v.number()),
+    paidAmount: v.optional(v.number()), // Actual amount paid (may differ from `amount`)
+    paymentMethod: v.optional(v.string()), // 'stripe', 'bank_transfer', 'check', 'cash'
+    stripePaymentIntentId: v.optional(v.string()),
+    stripeCheckoutSessionId: v.optional(v.string()),
+    ledgerEntryId: v.optional(v.id('paymentLedger')),
+
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
   })
     .index('by_event', ['eventId'])
     .index('by_sponsor', ['sponsorId'])
-    .index('by_status', ['status']),
+    .index('by_status', ['status'])
+    .index('by_payment_status', ['paymentStatus']),
 
   // Event Applications - Vendors/Sponsors applying to events
   eventApplications: defineTable({
@@ -1485,4 +1536,261 @@ export default defineSchema({
     .index('by_backup', ['backupId'])
     .index('by_date', ['verifiedAt'])
     .index('by_success', ['success']),
+
+  // ============================================================================
+  // SPONSOR ANALYTICS & ROI
+  // ============================================================================
+
+  // Sponsor Leads - Track leads captured by sponsors at events
+  sponsorLeads: defineTable({
+    eventId: v.id('events'),
+    sponsorId: v.id('sponsors'),
+    eventSponsorId: v.id('eventSponsors'), // Link to specific sponsorship
+
+    // Lead info (captured from attendee or manual entry)
+    attendeeId: v.optional(v.id('attendees')), // If linked to existing attendee
+    name: v.string(),
+    email: v.string(),
+    phone: v.optional(v.string()),
+    company: v.optional(v.string()),
+    jobTitle: v.optional(v.string()),
+
+    // Capture context
+    captureMethod: v.union(
+      v.literal('booth_scan'),
+      v.literal('form'),
+      v.literal('manual'),
+      v.literal('badge_scan')
+    ),
+    captureLocation: v.optional(v.string()), // 'booth', 'session', 'networking'
+    notes: v.optional(v.string()),
+
+    // Lead qualification
+    interestLevel: v.optional(v.union(v.literal('hot'), v.literal('warm'), v.literal('cold'))),
+    followUpStatus: v.optional(
+      v.union(
+        v.literal('pending'),
+        v.literal('contacted'),
+        v.literal('converted'),
+        v.literal('lost')
+      )
+    ),
+
+    capturedAt: v.number(),
+    capturedBy: v.optional(v.id('users')),
+    updatedAt: v.optional(v.number()),
+  })
+    .index('by_event', ['eventId'])
+    .index('by_sponsor', ['sponsorId'])
+    .index('by_event_sponsor', ['eventSponsorId'])
+    .index('by_email', ['email']),
+
+  // Sponsor Reports - Auto-generated ROI reports for sponsors
+  sponsorReports: defineTable({
+    eventId: v.id('events'),
+    sponsorId: v.id('sponsors'),
+    eventSponsorId: v.id('eventSponsors'),
+
+    // Report metadata
+    reportType: v.union(v.literal('post_event'), v.literal('interim'), v.literal('custom')),
+    generatedAt: v.number(),
+    generatedBy: v.optional(v.id('users')), // null = auto-generated
+
+    // Metrics snapshot
+    metrics: v.object({
+      // Investment
+      sponsorshipAmount: v.number(),
+      tier: v.string(),
+
+      // Reach
+      totalAttendees: v.number(),
+      checkedInAttendees: v.number(),
+
+      // Engagement
+      leadsGenerated: v.number(),
+      boothVisits: v.optional(v.number()),
+
+      // Calculated ROI
+      costPerLead: v.optional(v.number()),
+      costPerAttendee: v.number(),
+      estimatedImpressions: v.number(),
+    }),
+
+    // Report content
+    summary: v.optional(v.string()), // AI-generated summary
+    highlights: v.optional(v.array(v.string())),
+
+    // Export tracking
+    downloadedAt: v.optional(v.number()),
+    sentToSponsorAt: v.optional(v.number()),
+  })
+    .index('by_event', ['eventId'])
+    .index('by_sponsor', ['sponsorId'])
+    .index('by_event_sponsor', ['eventSponsorId']),
+
+  // ============================================================================
+  // Payment System - Middleman Model
+  // ============================================================================
+
+  // Payment Ledger - Universal tracking for ALL money movement
+  paymentLedger: defineTable({
+    // Context
+    eventId: v.id('events'),
+    organizationId: v.optional(v.id('organizations')),
+
+    // Transaction details
+    type: v.union(
+      v.literal('sponsor_payment'), // Money IN from sponsor
+      v.literal('ticket_revenue'), // Money IN from tickets
+      v.literal('vendor_payout'), // Money OUT to vendor
+      v.literal('organizer_payout'), // Money OUT to organizer
+      v.literal('commission'), // Platform commission
+      v.literal('refund') // Money returned
+    ),
+
+    // Amounts (all in cents)
+    grossAmount: v.number(), // Total amount
+    platformFee: v.number(), // Platform commission
+    netAmount: v.number(), // After platform fee
+    currency: v.string(), // 'usd', 'myr', etc.
+
+    // Status
+    status: v.union(
+      v.literal('pending'), // Awaiting payment
+      v.literal('held'), // Payment received, held until event
+      v.literal('released'), // Released after event completion
+      v.literal('settled'), // Paid out to recipient
+      v.literal('refunded'), // Money returned
+      v.literal('failed') // Payment failed
+    ),
+
+    // References - Source (where money comes from)
+    sourceType: v.optional(v.string()), // 'sponsor', 'attendee', 'organizer'
+    sourceId: v.optional(v.string()), // sponsorId, attendeeId, etc.
+
+    // References - Destination (where money goes)
+    destinationType: v.optional(v.string()), // 'vendor', 'organizer', 'platform'
+    destinationId: v.optional(v.string()),
+
+    // Related records
+    eventSponsorId: v.optional(v.id('eventSponsors')),
+    eventVendorId: v.optional(v.id('eventVendors')),
+    orderId: v.optional(v.id('orders')),
+
+    // Stripe integration
+    stripePaymentIntentId: v.optional(v.string()),
+    stripeTransferId: v.optional(v.string()),
+    stripeRefundId: v.optional(v.string()),
+
+    // Timestamps
+    createdAt: v.number(),
+    heldAt: v.optional(v.number()),
+    releasedAt: v.optional(v.number()),
+    settledAt: v.optional(v.number()),
+
+    // Metadata
+    description: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    metadata: v.optional(v.any()),
+  })
+    .index('by_event', ['eventId'])
+    .index('by_status', ['status'])
+    .index('by_type', ['type'])
+    .index('by_event_sponsor', ['eventSponsorId'])
+    .index('by_event_vendor', ['eventVendorId'])
+    .index('by_order', ['orderId']),
+
+  // Event Settlements - Track settlement status for each event
+  eventSettlements: defineTable({
+    eventId: v.id('events'),
+    organizationId: v.optional(v.id('organizations')),
+
+    // Settlement status
+    status: v.union(
+      v.literal('pending'), // Event not completed yet
+      v.literal('calculating'), // Calculating settlement amounts
+      v.literal('ready'), // Ready to process payouts
+      v.literal('processing'), // Payouts in progress
+      v.literal('completed'), // All payouts completed
+      v.literal('disputed'), // Issue raised, on hold
+      v.literal('cancelled') // Event cancelled, refunds issued
+    ),
+
+    // Money IN totals
+    totalSponsorRevenue: v.number(), // Sum of sponsor payments
+    totalTicketRevenue: v.number(), // Sum of ticket sales
+    totalOtherRevenue: v.optional(v.number()), // Other income
+    totalRevenue: v.number(), // Grand total IN
+
+    // Money OUT totals
+    totalVendorPayouts: v.number(), // Sum of vendor payments
+    totalOrganizerPayout: v.number(), // What organizer receives
+    platformCommission: v.number(), // Your cut
+
+    // Commission details
+    commissionRate: v.number(), // Rate used (e.g., 0.10 for 10%)
+    commissionConfigId: v.optional(v.id('commissionConfig')),
+
+    // Counts
+    sponsorPaymentsCount: v.optional(v.number()),
+    vendorPayoutsCount: v.optional(v.number()),
+    sponsorPaymentsPending: v.optional(v.number()),
+    vendorPayoutsPending: v.optional(v.number()),
+
+    // Timestamps
+    createdAt: v.number(),
+    calculatedAt: v.optional(v.number()),
+    processingStartedAt: v.optional(v.number()),
+    completedAt: v.optional(v.number()),
+
+    // Audit
+    calculatedBy: v.optional(v.id('users')),
+    approvedBy: v.optional(v.id('users')),
+    approvedAt: v.optional(v.number()),
+
+    // Notes
+    notes: v.optional(v.string()),
+  })
+    .index('by_event', ['eventId'])
+    .index('by_status', ['status'])
+    .index('by_organization', ['organizationId']),
+
+  // Commission Configuration - Flexible commission rates
+  commissionConfig: defineTable({
+    name: v.string(), // Display name for this config
+    description: v.optional(v.string()),
+
+    // Type of commission config
+    type: v.union(
+      v.literal('global'), // Default rate for all
+      v.literal('organization'), // Custom rate for specific org
+      v.literal('event_type'), // Rate based on event type
+      v.literal('tier') // Rate based on sponsorship tier
+    ),
+
+    // Commission rate
+    rate: v.number(), // Decimal (0.10 = 10%)
+    minAmount: v.optional(v.number()), // Minimum commission in cents
+    maxAmount: v.optional(v.number()), // Maximum commission in cents
+
+    // What this config applies to
+    appliesTo: v.optional(v.string()), // orgId, event type, or tier name
+    appliesToId: v.optional(v.id('organizations')),
+
+    // Validity period
+    activeFrom: v.number(),
+    activeTo: v.optional(v.number()), // null = no end date
+
+    // Status
+    isActive: v.boolean(),
+
+    // Audit
+    createdAt: v.number(),
+    createdBy: v.optional(v.id('users')),
+    updatedAt: v.optional(v.number()),
+    updatedBy: v.optional(v.id('users')),
+  })
+    .index('by_type', ['type'])
+    .index('by_active', ['isActive'])
+    .index('by_organization', ['appliesToId']),
 })

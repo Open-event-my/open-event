@@ -81,6 +81,11 @@ const EventSalesPage = lazy(() =>
 const EventPromoCodesPage = lazy(() =>
   import('@/pages/dashboard/EventPromoCodesPage').then((m) => ({ default: m.EventPromoCodesPage }))
 )
+const EventSponsorsReportPage = lazy(() =>
+  import('@/pages/dashboard/EventSponsorsReportPage').then((m) => ({
+    default: m.EventSponsorsReportPage,
+  }))
+)
 const VendorsPage = lazy(() =>
   import('@/pages/dashboard/VendorsPage').then((m) => ({ default: m.VendorsPage }))
 )
@@ -411,6 +416,14 @@ function App() {
                   element={
                     <Suspense fallback={<PageLoader message="Loading promo codes..." />}>
                       <EventPromoCodesPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="events/:eventId/sponsors/:sponsorshipId/report"
+                  element={
+                    <Suspense fallback={<PageLoader message="Loading sponsor report..." />}>
+                      <EventSponsorsReportPage />
                     </Suspense>
                   }
                 />

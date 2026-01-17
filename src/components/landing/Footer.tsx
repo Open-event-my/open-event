@@ -17,10 +17,9 @@ const productLinks = [
 ]
 
 const companyLinks = [
-  { label: 'About', href: '#', inactive: true },
-  { label: 'Blog', href: '#', inactive: true },
-  { label: 'Careers', href: '#', inactive: true },
-  { label: 'Contact', href: '#', inactive: true },
+  { label: 'Browse Events', href: '/events' },
+  { label: 'Become a Vendor', href: '/apply/vendor' },
+  { label: 'Become a Sponsor', href: '/apply/sponsor' },
 ]
 
 const legalLinks = [
@@ -153,21 +152,18 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Company Links */}
+          {/* Get Started Links */}
           <div>
-            <h4 className="font-semibold text-xs sm:text-sm mb-3 sm:mb-4">Company</h4>
+            <h4 className="font-semibold text-xs sm:text-sm mb-3 sm:mb-4">Get Started</h4>
             <ul className="space-y-2 sm:space-y-3">
-              {companyLinks.map(({ label, inactive }) => (
+              {companyLinks.map(({ label, href }) => (
                 <li key={label}>
-                  <span
-                    className={`text-xs sm:text-sm py-0.5 ${
-                      inactive
-                        ? 'text-muted-foreground/40 cursor-not-allowed'
-                        : 'text-muted-foreground hover:text-foreground transition-colors cursor-pointer'
-                    }`}
+                  <Link
+                    to={href}
+                    className="text-xs sm:text-sm text-muted-foreground hover:text-foreground transition-colors py-0.5"
                   >
                     {label}
-                  </span>
+                  </Link>
                 </li>
               ))}
             </ul>

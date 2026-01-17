@@ -25,6 +25,7 @@ import {
   ListChecks,
   Ticket,
   ChartLine,
+  ChartBar,
   Tag,
 } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
@@ -39,6 +40,7 @@ import { toast } from 'sonner'
 import { useState } from 'react'
 import { AddToCalendar } from '@/components/calendar'
 import type { CalendarEvent } from '@/lib/calendar'
+import { AddSponsorDialog } from '@/components/events/AddSponsorDialog'
 
 export function EventDetailPage() {
   const { eventId } = useParams<{ eventId: string }>()
@@ -408,7 +410,7 @@ export function EventDetailPage() {
                 ))}
               </div>
             ) : (
-              <EmptySponsorState />
+              <EmptySponsorState eventId={eventId as Id<'events'>} />
             )}
           </div>
         </div>
@@ -500,7 +502,7 @@ export function EventDetailPage() {
                 )}
               </div>
             ) : (
-              <EmptySponsorState compact />
+              <EmptySponsorState compact eventId={eventId as Id<'events'>} />
             )}
           </div>
         </div>
@@ -765,33 +767,48 @@ function SponsorCardCompact({
     } | null
   }
 }) {
+  const { eventId } = useParams<{ eventId: string }>()
   const { sponsor, tier } = eventSponsor
   if (!sponsor) return null
 
   const tierStyle = tier ? sponsorTierColors[tier] || sponsorTierColors.bronze : null
 
   return (
-    <div className="flex items-center justify-between gap-2 py-2">
+    <div className="flex items-center justify-between gap-2 py-2 group">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
-          <p className="text-sm font-medium truncate">{sponsor.name}</p>
+          <Link
+            to={`/dashboard/events/${eventId}/sponsors/${eventSponsor._id}/report`}
+            className="text-sm font-medium truncate hover:underline"
+          >
+            {sponsor.name}
+          </Link>
           {sponsor.verified && (
             <CheckCircle size={12} weight="fill" className="text-primary flex-shrink-0" />
           )}
         </div>
         <p className="text-xs text-muted-foreground capitalize">{sponsor.industry}</p>
       </div>
-      {tier && tierStyle && (
-        <span
-          className={cn(
-            'px-1.5 py-0.5 rounded text-[10px] font-medium capitalize',
-            tierStyle.bg,
-            tierStyle.text
-          )}
+      <div className="flex items-center gap-2">
+        {tier && tierStyle && (
+          <span
+            className={cn(
+              'px-1.5 py-0.5 rounded text-[10px] font-medium capitalize',
+              tierStyle.bg,
+              tierStyle.text
+            )}
+          >
+            {tier}
+          </span>
+        )}
+        <Link
+          to={`/dashboard/events/${eventId}/sponsors/${eventSponsor._id}/report`}
+          className="text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"
+          title="View Report"
         >
-          {tier}
-        </span>
-      )}
+          <ChartBar size={14} />
+        </Link>
+      </div>
     </div>
   )
 }
@@ -832,14 +849,22 @@ function EmptyVendorState({ compact }: { compact?: boolean }) {
 }
 
 // Empty Sponsor State
-function EmptySponsorState({ compact }: { compact?: boolean }) {
+function EmptySponsorState({ compact, eventId }: { compact?: boolean; eventId: Id<'events'> }) {
   if (compact) {
     return (
       <div className="text-center py-4">
         <p className="text-sm text-muted-foreground mb-3">No sponsors yet</p>
-        <Link to="/dashboard/events/new" className="text-xs text-primary hover:underline">
-          Use AI to find sponsors
-        </Link>
+        <AddSponsorDialog
+          eventId={eventId}
+          trigger={
+            <button
+              className="text-xs text-primary hover:underline"
+              data-testid="add-sponsor-trigger-compact"
+            >
+              Add Sponsor
+            </button>
+          }
+        />
       </div>
     )
   }
@@ -850,18 +875,9 @@ function EmptySponsorState({ compact }: { compact?: boolean }) {
         <Handshake size={24} weight="duotone" className="text-muted-foreground" />
       </div>
       <p className="text-sm text-muted-foreground mb-4">
-        No sponsors added yet. Use the AI assistant to discover sponsors.
+        No sponsors added yet. Add sponsors to manage leads and ROI.
       </p>
-      <Link
-        to="/dashboard/events/new"
-        className={cn(
-          'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs',
-          'bg-primary/10 text-primary hover:bg-primary/20 transition-colors'
-        )}
-      >
-        <Plus size={14} weight="bold" />
-        Find Sponsors with AI
-      </Link>
+      <AddSponsorDialog eventId={eventId} />
     </div>
   )
 }

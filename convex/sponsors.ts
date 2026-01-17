@@ -591,3 +591,330 @@ export const adminUpdate = mutation({
     return { success: true }
   },
 })
+
+// ============================================================================
+// Audience Match Scoring
+// ============================================================================
+
+/**
+ * Industry mapping for event types to sponsor industries
+ */
+const INDUSTRY_EVENT_MATCH: Record<string, string[]> = {
+  technology: ['conference', 'workshop', 'hackathon', 'tech_meetup', 'summit'],
+  finance: ['conference', 'summit', 'workshop', 'networking', 'gala'],
+  healthcare: ['conference', 'workshop', 'expo', 'summit'],
+  education: ['workshop', 'conference', 'seminar', 'training'],
+  retail: ['expo', 'trade_show', 'festival', 'market'],
+  entertainment: ['concert', 'festival', 'show', 'performance', 'gala'],
+  food_beverage: ['festival', 'market', 'tasting', 'expo', 'networking'],
+  automotive: ['expo', 'show', 'race', 'rally'],
+  real_estate: ['expo', 'networking', 'summit', 'conference'],
+  consulting: ['conference', 'workshop', 'seminar', 'summit'],
+  media: ['conference', 'festival', 'summit', 'show', 'awards'],
+  manufacturing: ['expo', 'trade_show', 'conference'],
+}
+
+/**
+ * Calculate audience match score between a sponsor and an event
+ * Score is 0-100 based on multiple factors
+ */
+export const calculateAudienceMatch = query({
+  args: {
+    sponsorId: v.id('sponsors'),
+    eventId: v.id('events'),
+  },
+  handler: async (ctx, args) => {
+    const sponsor = await ctx.db.get(args.sponsorId)
+    if (!sponsor) throw new Error('Sponsor not found')
+
+    const event = await ctx.db.get(args.eventId)
+    if (!event) throw new Error('Event not found')
+
+    let score = 0
+    const breakdown: Record<string, number> = {}
+    const factors: string[] = []
+
+    // ========================================================================
+    // Factor 1: Industry Match (25 points)
+    // ========================================================================
+    const industryEventTypes = INDUSTRY_EVENT_MATCH[sponsor.industry] || []
+    const eventType = event.eventType?.toLowerCase() || ''
+
+    if (sponsor.targetEventTypes?.some((t) => t.toLowerCase() === eventType)) {
+      // Direct match from sponsor's target event types
+      score += 25
+      breakdown.industryMatch = 25
+      factors.push('Direct event type match')
+    } else if (industryEventTypes.some((t) => eventType.includes(t))) {
+      // Indirect match based on industry-event mapping
+      score += 18
+      breakdown.industryMatch = 18
+      factors.push('Industry aligns with event type')
+    } else if (industryEventTypes.length > 0) {
+      // Partial match - industry has some event affinity
+      score += 8
+      breakdown.industryMatch = 8
+      factors.push('Some industry-event overlap')
+    } else {
+      breakdown.industryMatch = 0
+    }
+
+    // ========================================================================
+    // Factor 2: Budget-Audience Alignment (20 points)
+    // ========================================================================
+    const expectedAttendees = event.expectedAttendees || 100
+    const avgBudget =
+      sponsor.budgetMin && sponsor.budgetMax
+        ? (sponsor.budgetMin + sponsor.budgetMax) / 2
+        : sponsor.budgetMin || sponsor.budgetMax || 0
+
+    if (avgBudget > 0 && expectedAttendees > 0) {
+      // Calculate cost per mille (CPM) - cost per 1000 attendees
+      const cpm = (avgBudget / expectedAttendees) * 1000
+
+      // Ideal CPM range: $50-$300 (reasonable sponsorship value)
+      if (cpm >= 50 && cpm <= 300) {
+        score += 20
+        breakdown.budgetAlignment = 20
+        factors.push('Budget well-aligned with audience size')
+      } else if (cpm >= 25 && cpm <= 500) {
+        score += 15
+        breakdown.budgetAlignment = 15
+        factors.push('Budget reasonably aligned')
+      } else if (cpm > 500) {
+        // High budget for small audience - might be premium event
+        score += 10
+        breakdown.budgetAlignment = 10
+        factors.push('Premium sponsorship opportunity')
+      } else {
+        score += 5
+        breakdown.budgetAlignment = 5
+        factors.push('Budget-audience ratio could be optimized')
+      }
+    } else {
+      breakdown.budgetAlignment = 0
+    }
+
+    // ========================================================================
+    // Factor 3: Target Audience Match (25 points)
+    // ========================================================================
+    const sponsorTarget = sponsor.targetAudience?.toLowerCase() || ''
+    const eventDescription = (event.description || '').toLowerCase()
+    const eventTitle = (event.title || '').toLowerCase()
+
+    // Keywords that indicate audience alignment
+    const audienceKeywords = [
+      'professionals',
+      'executives',
+      'developers',
+      'entrepreneurs',
+      'students',
+      'families',
+      'young',
+      'corporate',
+      'b2b',
+      'b2c',
+      'enterprise',
+      'startup',
+      'tech',
+      'business',
+      'creative',
+    ]
+
+    let audienceMatchCount = 0
+    for (const keyword of audienceKeywords) {
+      if (sponsorTarget.includes(keyword)) {
+        if (eventDescription.includes(keyword) || eventTitle.includes(keyword)) {
+          audienceMatchCount++
+        }
+      }
+    }
+
+    if (audienceMatchCount >= 3) {
+      score += 25
+      breakdown.audienceMatch = 25
+      factors.push('Strong target audience alignment')
+    } else if (audienceMatchCount >= 2) {
+      score += 18
+      breakdown.audienceMatch = 18
+      factors.push('Good target audience overlap')
+    } else if (audienceMatchCount >= 1) {
+      score += 10
+      breakdown.audienceMatch = 10
+      factors.push('Some target audience match')
+    } else {
+      // Default score if no specific targeting info
+      score += 5
+      breakdown.audienceMatch = 5
+    }
+
+    // ========================================================================
+    // Factor 4: Tier Availability (15 points)
+    // ========================================================================
+    // Check if event has sponsorship tiers that match sponsor's preferences
+    const sponsorTiers = sponsor.sponsorshipTiers || []
+
+    // For now, give base points - future: check eventSponsors for taken tiers
+    if (sponsorTiers.length > 0) {
+      score += 12
+      breakdown.tierAvailability = 12
+      factors.push(`Interested in ${sponsorTiers.join(', ')} tiers`)
+    } else {
+      score += 8
+      breakdown.tierAvailability = 8
+      factors.push('Flexible on sponsorship tier')
+    }
+
+    // ========================================================================
+    // Factor 5: Location Match (15 points)
+    // ========================================================================
+    const eventLocation = (event.venueAddress || '').toLowerCase()
+    const sponsorHQ = (sponsor.headquarters || '').toLowerCase()
+
+    if (sponsorHQ && eventLocation) {
+      // Check for city/region match
+      const locationParts = eventLocation.split(/[,\s]+/)
+      const hqParts = sponsorHQ.split(/[,\s]+/)
+
+      const hasMatch = locationParts.some(
+        (loc: string) =>
+          loc.length > 3 && hqParts.some((hq) => hq.includes(loc) || loc.includes(hq))
+      )
+
+      if (hasMatch) {
+        score += 15
+        breakdown.locationMatch = 15
+        factors.push('Local presence in event location')
+      } else {
+        score += 5
+        breakdown.locationMatch = 5
+        factors.push('Different region - opportunity for expansion')
+      }
+    } else {
+      // No location data - neutral score
+      score += 8
+      breakdown.locationMatch = 8
+    }
+
+    // ========================================================================
+    // Generate recommendation
+    // ========================================================================
+    let recommendation: string
+    let matchLevel: 'excellent' | 'good' | 'fair' | 'low'
+
+    if (score >= 85) {
+      recommendation = 'Excellent match! This sponsor aligns perfectly with your event.'
+      matchLevel = 'excellent'
+    } else if (score >= 70) {
+      recommendation = 'Good match. This sponsor would likely benefit from your event audience.'
+      matchLevel = 'good'
+    } else if (score >= 50) {
+      recommendation = 'Fair match. Consider reaching out with a tailored pitch.'
+      matchLevel = 'fair'
+    } else {
+      recommendation = 'Lower match score. May still be worth exploring for brand exposure.'
+      matchLevel = 'low'
+    }
+
+    return {
+      score,
+      matchLevel,
+      breakdown,
+      factors,
+      recommendation,
+      sponsorName: sponsor.name,
+      eventTitle: event.title,
+    }
+  },
+})
+
+/**
+ * Get audience match scores for multiple sponsors against an event
+ * Useful for ranking sponsors by fit
+ */
+export const getAudienceMatchBatch = query({
+  args: {
+    eventId: v.id('events'),
+    sponsorIds: v.optional(v.array(v.id('sponsors'))),
+    minScore: v.optional(v.number()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const event = await ctx.db.get(args.eventId)
+    if (!event) throw new Error('Event not found')
+
+    // Get sponsors to evaluate
+    let sponsors
+    if (args.sponsorIds && args.sponsorIds.length > 0) {
+      const sponsorPromises = args.sponsorIds.map((id) => ctx.db.get(id))
+      sponsors = (await Promise.all(sponsorPromises)).filter(
+        (s) => s !== null && s.status === 'approved'
+      )
+    } else {
+      sponsors = await ctx.db
+        .query('sponsors')
+        .withIndex('by_status', (q) => q.eq('status', 'approved'))
+        .collect()
+    }
+
+    // Calculate scores for each sponsor
+    const results = []
+    for (const sponsor of sponsors) {
+      if (!sponsor) continue
+
+      // Simplified scoring for batch processing
+      let score = 0
+
+      // Industry match
+      const industryEventTypes = INDUSTRY_EVENT_MATCH[sponsor.industry] || []
+      const eventType = event.eventType?.toLowerCase() || ''
+      if (sponsor.targetEventTypes?.some((t) => t.toLowerCase() === eventType)) {
+        score += 25
+      } else if (industryEventTypes.some((t) => eventType.includes(t))) {
+        score += 18
+      }
+
+      // Budget alignment
+      const expectedAttendees = event.expectedAttendees || 100
+      const avgBudget =
+        sponsor.budgetMin && sponsor.budgetMax
+          ? (sponsor.budgetMin + sponsor.budgetMax) / 2
+          : sponsor.budgetMin || sponsor.budgetMax || 0
+
+      if (avgBudget > 0 && expectedAttendees > 0) {
+        const cpm = (avgBudget / expectedAttendees) * 1000
+        if (cpm >= 50 && cpm <= 300) score += 20
+        else if (cpm >= 25 && cpm <= 500) score += 15
+        else score += 8
+      }
+
+      // Base points for other factors
+      score += 25 // audience + tier + location average
+
+      // Apply minimum score filter
+      if (args.minScore && score < args.minScore) continue
+
+      results.push({
+        sponsorId: sponsor._id,
+        sponsorName: sponsor.name,
+        industry: sponsor.industry,
+        score,
+        matchLevel:
+          score >= 85
+            ? 'excellent'
+            : score >= 70
+              ? 'good'
+              : score >= 50
+                ? 'fair'
+                : ('low' as const),
+      })
+    }
+
+    // Sort by score descending
+    results.sort((a, b) => b.score - a.score)
+
+    // Apply limit
+    const limit = args.limit || 20
+    return results.slice(0, limit)
+  },
+})

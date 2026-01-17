@@ -190,13 +190,25 @@ export function SponsorsPage() {
         <div className="rounded-xl border border-dashed border-border bg-card p-12 text-center">
           <Handshake size={64} weight="duotone" className="mx-auto text-muted-foreground/30 mb-6" />
           <h3 className="text-lg font-semibold mb-2">
-            {search ? 'No sponsors found' : 'Sponsor discovery coming soon'}
+            {search ? 'No sponsors found' : 'Connect with event organizers!'}
           </h3>
-          <p className="text-muted-foreground max-w-sm mx-auto">
+          <p className="text-muted-foreground max-w-sm mx-auto mb-6">
             {search
               ? `No sponsors matching "${search}". Try a different search term.`
-              : 'AI-powered sponsor matching will help you find the perfect partners for your events.'}
+              : 'Join our sponsor network to discover events that align with your brand and reach your target audience.'}
           </p>
+          {!search && (
+            <a
+              href="/apply/sponsor"
+              className={cn(
+                'inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium',
+                'bg-primary text-primary-foreground hover:bg-primary/90 transition-colors'
+              )}
+            >
+              <Plus size={18} weight="bold" />
+              Become a Sponsor
+            </a>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
