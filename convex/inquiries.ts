@@ -183,11 +183,22 @@ export const listAllForAdminHandler = async (ctx: any, args: any) => {
     inquiriesQuery = ctx.db.query('inquiries').order('desc')
   }
 
-  const results = await inquiriesQuery.paginate(args.paginationOpts)
+  // Get all results and handle pagination manually
+  const allResults = await inquiriesQuery.collect()
+
+  // Implement manual pagination
+  const pageNum = args.paginationOpts?.cursor ? parseInt(args.paginationOpts.cursor) : 0
+  const pageSize = args.paginationOpts?.numItems || 20
+  const startIndex = pageNum * pageSize
+  const endIndex = startIndex + pageSize
+
+  const paginatedResults = allResults.slice(startIndex, endIndex)
+  const hasMore = endIndex < allResults.length
+  const nextCursor = hasMore ? (pageNum + 1).toString() : null
 
   // Enrich results
   const page = await Promise.all(
-    results.page.map(async (inquiry: Doc<'inquiries'>) => {
+    paginatedResults.map(async (inquiry: Doc<'inquiries'>) => {
       // Filter in memory if needed (e.g. toType was passed but we used default query)
       // Note: this is imperfect for pagination size but ensures correctness
       if (
@@ -245,10 +256,13 @@ export const listAllForAdminHandler = async (ctx: any, args: any) => {
     })
   )
 
+  // Filter out null results and return
+  const filteredPage = page.filter(Boolean)
+
   return {
-    ...results,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    page: page.filter((x): x is any => x !== null),
+    page: filteredPage,
+    isDone: !hasMore,
+    continueCursor: nextCursor,
   }
 }
 
@@ -256,10 +270,6 @@ export const listAllForAdmin = query({
   args: {
     status: v.optional(v.string()),
     toType: v.optional(v.union(v.literal('vendor'), v.literal('sponsor'))),
-    paginationOpts: v.object({
-      numItems: v.number(),
-      cursor: v.union(v.string(), v.null()),
-    }),
   },
   handler: listAllForAdminHandler,
 })
