@@ -183,15 +183,6 @@ export const listAllForAdminHandler = async (ctx: any, args: any) => {
     inquiriesQuery = ctx.db.query('inquiries').order('desc')
   }
 
-  // If we have toType but no status (or status=all), we filter in memory because we don't have by_type index
-  // Wait, I should have added by_type or by_to (toType, toId) works if I scan?
-  // by_to is ['toType', 'toId']. We can use it for prefix scan on toType!
-  // But we also want to sort by creation time.
-  // So filtering in memory is safer for sorting, OR we accept unsorted/index-sorted results.
-  if (args.toType && (!args.status || args.status === 'all')) {
-    // This branch handles "toType only"
-  }
-
   const results = await inquiriesQuery.paginate(args.paginationOpts)
 
   // Enrich results
