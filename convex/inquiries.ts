@@ -3,7 +3,6 @@ import { mutation, query } from './_generated/server'
 import type { Doc, Id } from './_generated/dataModel'
 import { internal } from './_generated/api'
 import { getCurrentUser, assertRole, isAdminRole } from './lib/auth'
-import { paginationOptsValidator } from 'convex/server'
 
 /**
  * Safely parse a recipient ID string to the appropriate Id type.
@@ -266,7 +265,10 @@ export const listAllForAdmin = query({
   args: {
     status: v.optional(v.string()),
     toType: v.optional(v.union(v.literal('vendor'), v.literal('sponsor'))),
-    paginationOpts: paginationOptsValidator,
+    paginationOpts: v.object({
+      numItems: v.number(),
+      cursor: v.union(v.string(), v.null()),
+    }),
   },
   handler: listAllForAdminHandler,
 })
