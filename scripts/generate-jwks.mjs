@@ -45,7 +45,7 @@ try {
 
   // Create JWKS structure
   const jwks = {
-    keys: [jwk]
+    keys: [jwk],
   }
 
   // Format the output

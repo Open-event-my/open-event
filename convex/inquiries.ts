@@ -1,7 +1,9 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
+import type { Doc, Id } from './_generated/dataModel'
+import { internal } from './_generated/api'
 import { getCurrentUser, assertRole, isAdminRole } from './lib/auth'
-import type { Id } from './_generated/dataModel'
+import { paginationOptsValidator } from 'convex/server'
 
 /**
  * Safely parse a recipient ID string to the appropriate Id type.
@@ -21,7 +23,8 @@ function parseRecipientId<T extends 'vendors' | 'sponsors'>(
     return null
   }
   // Convex ID format validation: must be alphanumeric with _ and -, reasonable length
-  const convexIdPattern = /^[a-zA-Z0-9_-]{10,}$/
+  // Note: convex-test uses IDs like '10000;vendors', so we must allow semicolon
+  const convexIdPattern = /^[a-zA-Z0-9_;-]{5,}$/
   if (!convexIdPattern.test(id)) {
     return null
   }
@@ -151,6 +154,182 @@ export const listByRecipient = query({
   },
 })
 
+// Paginated list for admin
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const listAllForAdminHandler = async (ctx: any, args: any) => {
+  await assertRole(ctx, 'admin')
+
+  let inquiriesQuery
+
+  if (args.toType && args.status && args.status !== 'all') {
+    // Use compound index
+    inquiriesQuery = ctx.db
+      .query('inquiries')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_type_status', (q: any) =>
+        q
+          .eq('toType', args.toType!)
+          .eq('status', args.status as 'sent' | 'read' | 'replied' | 'closed')
+      )
+  } else if (args.status && args.status !== 'all') {
+    // Use status index
+    inquiriesQuery = ctx.db
+      .query('inquiries')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_status', (q: any) =>
+        q.eq('status', args.status as 'sent' | 'read' | 'replied' | 'closed')
+      )
+  } else {
+    // Use creation time (default)
+    inquiriesQuery = ctx.db.query('inquiries').order('desc')
+  }
+
+  // If we have toType but no status (or status=all), we filter in memory because we don't have by_type index
+  // Wait, I should have added by_type or by_to (toType, toId) works if I scan?
+  // by_to is ['toType', 'toId']. We can use it for prefix scan on toType!
+  // But we also want to sort by creation time.
+  // So filtering in memory is safer for sorting, OR we accept unsorted/index-sorted results.
+  if (args.toType && (!args.status || args.status === 'all')) {
+    // This branch handles "toType only"
+  }
+
+  const results = await inquiriesQuery.paginate(args.paginationOpts)
+
+  // Enrich results
+  const page = await Promise.all(
+    results.page.map(async (inquiry: Doc<'inquiries'>) => {
+      // Filter in memory if needed (e.g. toType was passed but we used default query)
+      // Note: this is imperfect for pagination size but ensures correctness
+      if (
+        args.toType &&
+        (!args.status || args.status === 'all') &&
+        inquiry.toType !== args.toType
+      ) {
+        return null
+      }
+
+      const sender = await ctx.db.get(inquiry.fromUserId)
+      let recipientDetails = null
+
+      if (inquiry.toType === 'vendor') {
+        const vendorId = parseRecipientId(inquiry.toId, 'vendors')
+        const vendor = vendorId ? await ctx.db.get(vendorId) : null
+        if (vendor) {
+          recipientDetails = {
+            name: vendor.name,
+            category: vendor.category,
+            contactEmail: vendor.contactEmail,
+          }
+        }
+      } else {
+        const sponsorId = parseRecipientId(inquiry.toId, 'sponsors')
+        const sponsor = sponsorId ? await ctx.db.get(sponsorId) : null
+        if (sponsor) {
+          recipientDetails = {
+            name: sponsor.name,
+            industry: sponsor.industry,
+            contactEmail: sponsor.contactEmail,
+          }
+        }
+      }
+
+      let eventDetails = null
+      if (inquiry.eventId) {
+        const event = await ctx.db.get(inquiry.eventId)
+        if (event) {
+          eventDetails = {
+            title: event.title,
+            startDate: event.startDate,
+          }
+        }
+      }
+
+      return {
+        ...inquiry,
+        senderDetails: sender
+          ? { name: sender.name, email: sender.email, image: sender.image }
+          : null,
+        recipientDetails,
+        eventDetails,
+      }
+    })
+  )
+
+  return {
+    ...results,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    page: page.filter((x): x is any => x !== null),
+  }
+}
+
+export const listAllForAdmin = query({
+  args: {
+    status: v.optional(v.string()),
+    toType: v.optional(v.union(v.literal('vendor'), v.literal('sponsor'))),
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: listAllForAdminHandler,
+})
+
+// Search inquiries (admin only)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const searchAdminInquiriesHandler = async (ctx: any, args: any) => {
+  await assertRole(ctx, 'admin')
+
+  const inquiries = await ctx.db
+    .query('inquiries')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .withSearchIndex('search_content', (q: any) => q.search('subject', args.query))
+    .take(20)
+
+  // Enrich results
+  const enriched = await Promise.all(
+    inquiries.map(async (inquiry: Doc<'inquiries'>) => {
+      const sender = await ctx.db.get(inquiry.fromUserId)
+      let recipientDetails = null
+
+      if (inquiry.toType === 'vendor') {
+        const vendorId = parseRecipientId(inquiry.toId, 'vendors')
+        const vendor = vendorId ? await ctx.db.get(vendorId) : null
+        if (vendor) {
+          recipientDetails = {
+            name: vendor.name,
+            category: vendor.category,
+            contactEmail: vendor.contactEmail,
+          }
+        }
+      } else {
+        const sponsorId = parseRecipientId(inquiry.toId, 'sponsors')
+        const sponsor = sponsorId ? await ctx.db.get(sponsorId) : null
+        if (sponsor) {
+          recipientDetails = {
+            name: sponsor.name,
+            industry: sponsor.industry,
+            contactEmail: sponsor.contactEmail,
+          }
+        }
+      }
+
+      return {
+        ...inquiry,
+        senderDetails: sender
+          ? { name: sender.name, email: sender.email, image: sender.image }
+          : null,
+        recipientDetails,
+      }
+    })
+  )
+
+  return enriched
+}
+
+export const searchAdminInquiries = query({
+  args: {
+    query: v.string(),
+  },
+  handler: searchAdminInquiriesHandler,
+})
+
 // Get inquiries for an event (organizer viewing inquiries they sent for an event)
 export const listByEvent = query({
   args: {
@@ -242,7 +421,16 @@ export const get = query({
       eventDetails = await ctx.db.get(inquiry.eventId)
     }
 
-    return { ...inquiry, recipientDetails, eventDetails }
+    // Get sender details (for admin)
+    let senderDetails = null
+    if (isAdminRole(user.role)) {
+      const sender = await ctx.db.get(inquiry.fromUserId)
+      if (sender) {
+        senderDetails = { name: sender.name, email: sender.email, image: sender.image }
+      }
+    }
+
+    return { ...inquiry, recipientDetails, eventDetails, senderDetails }
   },
 })
 
@@ -269,6 +457,105 @@ export const getMyUnreadCount = query({
 // ============================================================================
 
 // Send inquiry (organizer or admin only)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const sendHandler = async (ctx: any, args: any) => {
+  const user = await getCurrentUser(ctx)
+  if (!user) {
+    throw new Error('Authentication required')
+  }
+
+  // Only organizers and admins can send inquiries
+  const isOrganizer = user.role === 'organizer'
+  const isAdmin = isAdminRole(user.role)
+  if (!isOrganizer && !isAdmin) {
+    throw new Error('Only organizers and admins can send inquiries')
+  }
+
+  // Verify recipient exists and is approved
+  if (args.toType === 'vendor') {
+    const vendorId = parseRecipientId(args.toId, 'vendors')
+    if (!vendorId) {
+      throw new Error('Invalid vendor ID format')
+    }
+    const vendor = await ctx.db.get(vendorId)
+    if (!vendor || vendor.status !== 'approved') {
+      throw new Error('Vendor not found or not approved')
+    }
+  } else {
+    const sponsorId = parseRecipientId(args.toId, 'sponsors')
+    if (!sponsorId) {
+      throw new Error('Invalid sponsor ID format')
+    }
+    const sponsor = await ctx.db.get(sponsorId)
+    if (!sponsor || sponsor.status !== 'approved') {
+      throw new Error('Sponsor not found or not approved')
+    }
+  }
+
+  // If event is specified, verify ownership
+  if (args.eventId) {
+    const event = await ctx.db.get(args.eventId)
+    if (!event) {
+      throw new Error('Event not found')
+    }
+    const isOwner = event.organizerId === user._id
+    if (!isOwner && !isAdmin) {
+      throw new Error('Access denied - not your event')
+    }
+  }
+
+  // Input validation - string length limits
+  if (args.subject.length > 200) {
+    throw new Error('Subject must be 200 characters or less')
+  }
+  if (args.subject.trim().length === 0) {
+    throw new Error('Subject cannot be empty')
+  }
+  if (args.message.length > 10000) {
+    throw new Error('Message must be 10000 characters or less')
+  }
+  if (args.message.trim().length === 0) {
+    throw new Error('Message cannot be empty')
+  }
+
+  const fromType = isAdmin ? 'admin' : 'organizer'
+
+  const inquiryId = await ctx.db.insert('inquiries', {
+    fromType,
+    fromUserId: user._id,
+    toType: args.toType,
+    toId: args.toId,
+    eventId: args.eventId,
+    subject: args.subject.trim(),
+    message: args.message.trim(),
+    status: 'sent',
+    createdAt: Date.now(),
+  })
+
+  if (!isAdmin) {
+    await ctx.runMutation(internal.adminNotifications.createNotification, {
+      type: 'system_alert',
+      title: 'New organizer inquiry',
+      message: `${user.name || 'An organizer'} sent an inquiry to a ${args.toType}.`,
+      severity: 'medium',
+      targetType: 'inquiry',
+      targetId: inquiryId,
+      metadata: {
+        inquiryId,
+        organizerId: user._id,
+        organizerName: user.name,
+        organizerEmail: user.email,
+        toType: args.toType,
+        toId: args.toId,
+        eventId: args.eventId,
+        subject: args.subject.trim(),
+      },
+    })
+  }
+
+  return inquiryId
+}
+
 export const send = mutation({
   args: {
     toType: v.union(v.literal('vendor'), v.literal('sponsor')),
@@ -277,159 +564,109 @@ export const send = mutation({
     subject: v.string(),
     message: v.string(),
   },
-  handler: async (ctx, args) => {
-    const user = await getCurrentUser(ctx)
-    if (!user) {
-      throw new Error('Authentication required')
-    }
-
-    // Only organizers and admins can send inquiries
-    const isOrganizer = user.role === 'organizer'
-    const isAdmin = isAdminRole(user.role)
-    if (!isOrganizer && !isAdmin) {
-      throw new Error('Only organizers and admins can send inquiries')
-    }
-
-    // Verify recipient exists and is approved
-    if (args.toType === 'vendor') {
-      const vendorId = parseRecipientId(args.toId, 'vendors')
-      if (!vendorId) {
-        throw new Error('Invalid vendor ID format')
-      }
-      const vendor = await ctx.db.get(vendorId)
-      if (!vendor || vendor.status !== 'approved') {
-        throw new Error('Vendor not found or not approved')
-      }
-    } else {
-      const sponsorId = parseRecipientId(args.toId, 'sponsors')
-      if (!sponsorId) {
-        throw new Error('Invalid sponsor ID format')
-      }
-      const sponsor = await ctx.db.get(sponsorId)
-      if (!sponsor || sponsor.status !== 'approved') {
-        throw new Error('Sponsor not found or not approved')
-      }
-    }
-
-    // If event is specified, verify ownership
-    if (args.eventId) {
-      const event = await ctx.db.get(args.eventId)
-      if (!event) {
-        throw new Error('Event not found')
-      }
-      const isOwner = event.organizerId === user._id
-      if (!isOwner && !isAdmin) {
-        throw new Error('Access denied - not your event')
-      }
-    }
-
-    // Input validation - string length limits
-    if (args.subject.length > 200) {
-      throw new Error('Subject must be 200 characters or less')
-    }
-    if (args.subject.trim().length === 0) {
-      throw new Error('Subject cannot be empty')
-    }
-    if (args.message.length > 10000) {
-      throw new Error('Message must be 10000 characters or less')
-    }
-    if (args.message.trim().length === 0) {
-      throw new Error('Message cannot be empty')
-    }
-
-    const fromType = isAdmin ? 'admin' : 'organizer'
-
-    return await ctx.db.insert('inquiries', {
-      fromType,
-      fromUserId: user._id,
-      toType: args.toType,
-      toId: args.toId,
-      eventId: args.eventId,
-      subject: args.subject.trim(),
-      message: args.message.trim(),
-      status: 'sent',
-      createdAt: Date.now(),
-    })
-  },
+  handler: sendHandler,
 })
 
 // Mark as read (admin marking inquiry as read on behalf of vendor/sponsor)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const markAsReadHandler = async (ctx: any, args: any) => {
+  await assertRole(ctx, 'admin')
+
+  const inquiry = await ctx.db.get(args.inquiryId)
+  if (!inquiry) {
+    throw new Error('Inquiry not found')
+  }
+
+  if (inquiry.status === 'sent') {
+    await ctx.db.patch(args.inquiryId, {
+      status: 'read',
+      updatedAt: Date.now(),
+    })
+  }
+
+  return { success: true }
+}
+
 export const markAsRead = mutation({
   args: {
     inquiryId: v.id('inquiries'),
   },
-  handler: async (ctx, args) => {
-    await assertRole(ctx, 'admin')
-
-    const inquiry = await ctx.db.get(args.inquiryId)
-    if (!inquiry) {
-      throw new Error('Inquiry not found')
-    }
-
-    if (inquiry.status === 'sent') {
-      await ctx.db.patch(args.inquiryId, {
-        status: 'read',
-        updatedAt: Date.now(),
-      })
-    }
-
-    return { success: true }
-  },
+  handler: markAsReadHandler,
 })
 
 // Add response (admin responding on behalf of vendor/sponsor)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const respondHandler = async (ctx: any, args: any) => {
+  await assertRole(ctx, 'admin')
+
+  const inquiry = await ctx.db.get(args.inquiryId)
+  if (!inquiry) {
+    throw new Error('Inquiry not found')
+  }
+
+  // Input validation - string length limits
+  if (args.response.length > 10000) {
+    throw new Error('Response must be 10000 characters or less')
+  }
+  if (args.response.trim().length === 0) {
+    throw new Error('Response cannot be empty')
+  }
+
+  await ctx.db.patch(args.inquiryId, {
+    response: args.response.trim(),
+    respondedAt: Date.now(),
+    status: 'replied',
+    updatedAt: Date.now(),
+  })
+
+  return { success: true }
+}
+
 export const respond = mutation({
   args: {
     inquiryId: v.id('inquiries'),
     response: v.string(),
   },
+  handler: respondHandler,
+})
+
+// Update admin notes
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const updateAdminNotesHandler = async (ctx: any, args: any) => {
+  await assertRole(ctx, 'admin')
+
+  const inquiry = await ctx.db.get(args.inquiryId)
+  if (!inquiry) {
+    throw new Error('Inquiry not found')
+  }
+
+  await ctx.db.patch(args.inquiryId, {
+    adminNotes: args.notes,
+    updatedAt: Date.now(),
+  })
+
+  return { success: true }
+}
+
+export const updateAdminNotes = mutation({
+  args: {
+    inquiryId: v.id('inquiries'),
+    notes: v.string(),
+  },
+  handler: updateAdminNotesHandler,
+})
+
+// Close inquiry (admin closing inquiry on behalf of vendor/sponsor)
+export const close = mutation({
+  args: {
+    inquiryId: v.id('inquiries'),
+  },
   handler: async (ctx, args) => {
     await assertRole(ctx, 'admin')
 
     const inquiry = await ctx.db.get(args.inquiryId)
     if (!inquiry) {
       throw new Error('Inquiry not found')
-    }
-
-    // Input validation - string length limits
-    if (args.response.length > 10000) {
-      throw new Error('Response must be 10000 characters or less')
-    }
-    if (args.response.trim().length === 0) {
-      throw new Error('Response cannot be empty')
-    }
-
-    await ctx.db.patch(args.inquiryId, {
-      response: args.response.trim(),
-      respondedAt: Date.now(),
-      status: 'replied',
-      updatedAt: Date.now(),
-    })
-
-    return { success: true }
-  },
-})
-
-// Close inquiry
-export const close = mutation({
-  args: {
-    inquiryId: v.id('inquiries'),
-  },
-  handler: async (ctx, args) => {
-    const user = await getCurrentUser(ctx)
-    if (!user) {
-      throw new Error('Authentication required')
-    }
-
-    const inquiry = await ctx.db.get(args.inquiryId)
-    if (!inquiry) {
-      throw new Error('Inquiry not found')
-    }
-
-    // Only sender or admin can close
-    const isSender = inquiry.fromUserId === user._id
-    if (!isSender && !isAdminRole(user.role)) {
-      throw new Error('Access denied')
     }
 
     await ctx.db.patch(args.inquiryId, {

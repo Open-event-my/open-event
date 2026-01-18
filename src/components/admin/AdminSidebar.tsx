@@ -18,6 +18,7 @@ import {
   UserGear,
   Flag,
   Buildings,
+  PaperPlaneTilt,
 } from '@phosphor-icons/react'
 
 const navigationItems = [
@@ -26,6 +27,7 @@ const navigationItems = [
   { label: 'Organizations', icon: Buildings, path: '/admin/organizations' },
   { label: 'Vendors', icon: Storefront, path: '/admin/vendors' },
   { label: 'Sponsors', icon: Handshake, path: '/admin/sponsors' },
+  { label: 'Inquiries', icon: PaperPlaneTilt, path: '/admin#inquiries' },
   { label: 'Applications', icon: ClipboardText, path: '/admin/applications' },
   { label: 'Moderation', icon: ShieldCheck, path: '/admin/moderation' },
   { label: 'Event Moderation', icon: Flag, path: '/admin/event-moderation' },
@@ -49,10 +51,17 @@ export function AdminSidebar() {
   const isSuperadmin = currentUser?.role === 'superadmin'
 
   const isActive = (path: string) => {
-    if (path === '/admin') {
-      return location.pathname === '/admin'
+    const [pathname, hash] = path.split('#')
+
+    if (hash) {
+      return location.pathname === pathname && location.hash === `#${hash}`
     }
-    return location.pathname.startsWith(path)
+
+    if (pathname === '/admin') {
+      return location.pathname === '/admin' && !location.hash
+    }
+
+    return location.pathname.startsWith(pathname)
   }
 
   return (

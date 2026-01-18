@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { formatRelativeTime } from '@/lib/formatters'
+import { QueryErrorBoundary } from '@/components/QueryErrorBoundary'
+import { SectionErrorFallback } from '@/components/RouteErrorFallback'
 import {
   Users,
   Storefront,
@@ -40,6 +42,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
 import { ExportModal } from '@/components/admin'
+import { AdminInquiries } from './AdminInquiries'
 
 type ExportType = 'users' | 'vendors' | 'sponsors' | 'events' | 'moderationLogs'
 type AnalyticsPeriod = '7d' | '30d' | '90d'
@@ -60,6 +63,13 @@ export function AdminDashboard() {
   const [exportModalOpen, setExportModalOpen] = useState(false)
   const [exportType, setExportType] = useState<ExportType>('users')
   const [analyticsPeriod, setAnalyticsPeriod] = useState<AnalyticsPeriod>('30d')
+  const location = useLocation()
+
+  useEffect(() => {
+    if (location.hash === '#inquiries') {
+      document.getElementById('inquiries')?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [location.hash])
 
   const user = useQuery(api.queries.auth.getCurrentUser)
   const analytics = useQuery(api.adminAnalytics.getDashboardAnalytics, { period: analyticsPeriod })
@@ -72,6 +82,10 @@ export function AdminDashboard() {
   const suspendedCount = useQuery(api.moderation.getSuspendedUsersCount)
   const pendingVendors = useQuery(api.vendors.getPendingCount)
   const pendingSponsors = useQuery(api.sponsors.getPendingCount)
+  const superadminDashboard = useQuery(
+    api.queries.dashboard.getSuperadminDashboard,
+    user?.role === 'superadmin' ? {} : 'skip'
+  )
 
   const stats = [
     {
@@ -229,6 +243,20 @@ export function AdminDashboard() {
             </TooltipProvider>
           )
         })}
+      </div>
+
+      <div id="inquiries" className="scroll-mt-20">
+        <QueryErrorBoundary
+          compact
+          fallback={({ retry }) => (
+            <SectionErrorFallback
+              onRetry={retry}
+              message="Inquiries failed to load. Ensure Convex is running and deployed."
+            />
+          )}
+        >
+          <AdminInquiries />
+        </QueryErrorBoundary>
       </div>
 
       {/* Analytics Section */}
@@ -544,7 +572,53 @@ export function AdminDashboard() {
       </div>
 
       {/* Content Grid */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div
+        className={cn(
+          'grid gap-6',
+          user?.role === 'superadmin' ? 'lg:grid-cols-3' : 'lg:grid-cols-2'
+        )}
+      >
+        {user?.role === 'superadmin' && (
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+              <div className="flex items-center gap-2">
+                <CalendarBlank size={18} weight="duotone" className="text-emerald-600" />
+                <h2 className="font-semibold">Recent Events</h2>
+              </div>
+            </div>
+            <div className="divide-y divide-border">
+              {superadminDashboard === undefined ? (
+                <div className="px-5 py-8 text-center text-muted-foreground">
+                  <p className="text-sm">Loading events…</p>
+                </div>
+              ) : superadminDashboard.recentEvents.length > 0 ? (
+                superadminDashboard.recentEvents.map((event) => (
+                  <div
+                    key={event.id}
+                    className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-muted/30 transition-colors"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm truncate">{event.title}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {event.organizerName}
+                      </p>
+                    </div>
+                    <div className="flex-shrink-0 text-right">
+                      <p className="text-xs text-muted-foreground">
+                        {formatRelativeTime(event.date)}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="px-5 py-8 text-center text-muted-foreground">
+                  <CalendarBlank size={32} weight="duotone" className="mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No events found</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         {/* Recent Users */}
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">

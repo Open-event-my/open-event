@@ -667,13 +667,21 @@ export default defineSchema({
     response: v.optional(v.string()),
     respondedAt: v.optional(v.number()),
 
+    // Admin internal notes
+    adminNotes: v.optional(v.string()),
+
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
   })
     .index('by_from', ['fromUserId'])
     .index('by_to', ['toType', 'toId'])
     .index('by_event', ['eventId'])
-    .index('by_status', ['status']),
+    .index('by_status', ['status'])
+    .index('by_type_status', ['toType', 'status'])
+    .searchIndex('search_content', {
+      searchField: 'subject',
+      filterFields: ['status', 'toType'],
+    }),
 
   // Budget Items - Track event spending
   budgetItems: defineTable({
