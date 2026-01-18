@@ -1,7 +1,26 @@
 import { useState, useEffect, useMemo } from 'react'
 import { usePaginatedQuery, useQuery, useMutation } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
-import type { Id } from '../../../convex/_generated/dataModel'
+import type { Id, Doc } from '../../../convex/_generated/dataModel'
+
+interface EnrichedInquiry extends Doc<'inquiries'> {
+  senderDetails?: {
+    name?: string
+    email?: string
+    image?: string
+  } | null
+  recipientDetails?: {
+    name?: string
+    email?: string
+    contactEmail?: string
+    category?: string
+    industry?: string
+  } | null
+  eventDetails?: {
+    title?: string
+    startDate?: number
+  } | null
+}
 import { cn } from '@/lib/utils'
 import { useAsyncAction } from '@/hooks/useAsyncAction'
 import {
@@ -88,11 +107,15 @@ export function AdminInquiries() {
     debouncedSearch ? { query: debouncedSearch } : 'skip'
   )
 
+  // Cast results to EnrichedInquiry type (both queries return enriched data)
+  const enrichedResults = paginatedResults as unknown as EnrichedInquiry[]
+  const enrichedSearchResults = searchResults as unknown as EnrichedInquiry[] | undefined
+
   // Derived Inquiries List
   const inquiries = useMemo(() => {
-    if (debouncedSearch) return searchResults || []
-    return paginatedResults || []
-  }, [debouncedSearch, searchResults, paginatedResults])
+    if (debouncedSearch) return enrichedSearchResults || []
+    return enrichedResults || []
+  }, [debouncedSearch, enrichedSearchResults, enrichedResults])
 
   // Selected Inquiry Data
   const selectedInquiry = useMemo(
@@ -202,7 +225,7 @@ export function AdminInquiries() {
                 {inquiries.map((inquiry) => (
                   <InquiryListItem
                     key={inquiry._id}
-                    inquiry={inquiry}
+                    inquiry={inquiry as unknown as EnrichedInquiry}
                     selected={selectedId === inquiry._id}
                     onClick={() => setSelectedId(inquiry._id)}
                   />
@@ -255,13 +278,12 @@ export function AdminInquiries() {
 // Sub-components
 // ----------------------------------------------------------------------------
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function InquiryListItem({
   inquiry,
   selected,
   onClick,
 }: {
-  inquiry: any
+  inquiry: EnrichedInquiry
   selected: boolean
   onClick: () => void
 }) {
@@ -308,8 +330,7 @@ function InquiryListItem({
   )
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function InquiryDetailView({ inquiry, onBack }: { inquiry: any; onBack: () => void }) {
+function InquiryDetailView({ inquiry, onBack }: { inquiry: EnrichedInquiry; onBack: () => void }) {
   const { execute } = useAsyncAction()
   const markAsRead = useMutation(api.inquiries.markAsRead)
   const close = useMutation(api.inquiries.close)

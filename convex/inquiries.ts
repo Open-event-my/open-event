@@ -262,7 +262,7 @@ export const listAllForAdminHandler = async (ctx: any, args: any) => {
   return {
     page: filteredPage,
     isDone: !hasMore,
-    continueCursor: nextCursor,
+    continueCursor: nextCursor ?? '',
   }
 }
 
