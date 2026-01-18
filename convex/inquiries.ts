@@ -1,8 +1,10 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
+import type { QueryCtx } from './_generated/server'
 import type { Doc, Id } from './_generated/dataModel'
 import { internal } from './_generated/api'
 import { getCurrentUser, assertRole, isAdminRole } from './lib/auth'
+import { paginationOptsValidator, type PaginationOptions } from 'convex/server'
 
 /**
  * Safely parse a recipient ID string to the appropriate Id type.
@@ -154,12 +156,17 @@ export const listByRecipient = query({
 })
 
 // Paginated list for admin
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const listAllForAdminHandler = async (ctx: any, args: any) => {
+type ListAllForAdminHandlerArgs = {
+  status?: string
+  toType?: 'vendor' | 'sponsor'
+  paginationOpts: PaginationOptions
+}
+
+export const listAllForAdminHandler = async (ctx: QueryCtx, args: ListAllForAdminHandlerArgs) => {
   await assertRole(ctx, 'admin')
 
   // Determine which index to use for better performance
-  let inquiriesQuery
+  let inquiriesQuery = ctx.db.query('inquiries').withIndex('by_createdAt').order('desc')
   if (args.status && args.status !== 'all') {
     inquiriesQuery = ctx.db
       .query('inquiries')
@@ -172,9 +179,6 @@ export const listAllForAdminHandler = async (ctx: any, args: any) => {
       .query('inquiries')
       .withIndex('by_type_status', (q) => q.eq('toType', args.toType as 'vendor' | 'sponsor'))
       .order('desc')
-  } else {
-    // Use the new createdAt index for sorting
-    inquiriesQuery = ctx.db.query('inquiries').withIndex('by_createdAt').order('desc')
   }
 
   // Use Convex's built-in pagination
@@ -182,7 +186,7 @@ export const listAllForAdminHandler = async (ctx: any, args: any) => {
     page: paginatedResults,
     isDone,
     continueCursor,
-  } = await inquiriesQuery.paginate(args.paginationOpts || { numItems: 20, cursor: null })
+  } = await inquiriesQuery.paginate(args.paginationOpts)
 
   // Enrich results
   const enrichedResults = await Promise.all(
@@ -254,6 +258,7 @@ export const listAllForAdmin = query({
   args: {
     status: v.optional(v.string()),
     toType: v.optional(v.union(v.literal('vendor'), v.literal('sponsor'))),
+    paginationOpts: paginationOptsValidator,
   },
   handler: listAllForAdminHandler,
 })
