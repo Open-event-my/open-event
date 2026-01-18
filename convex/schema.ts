@@ -678,6 +678,7 @@ export default defineSchema({
     .index('by_event', ['eventId'])
     .index('by_status', ['status'])
     .index('by_type_status', ['toType', 'status'])
+    .index('by_createdAt', ['createdAt'])
     .searchIndex('search_content', {
       searchField: 'subject',
       filterFields: ['status', 'toType'],

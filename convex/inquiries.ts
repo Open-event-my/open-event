@@ -158,56 +158,38 @@ export const listByRecipient = query({
 export const listAllForAdminHandler = async (ctx: any, args: any) => {
   await assertRole(ctx, 'admin')
 
+  // Determine which index to use for better performance
   let inquiriesQuery
-
-  if (args.toType && args.status && args.status !== 'all') {
-    // Use compound index
+  if (args.status && args.status !== 'all') {
     inquiriesQuery = ctx.db
       .query('inquiries')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_type_status', (q: any) =>
-        q
-          .eq('toType', args.toType!)
-          .eq('status', args.status as 'sent' | 'read' | 'replied' | 'closed')
-      )
-  } else if (args.status && args.status !== 'all') {
-    // Use status index
-    inquiriesQuery = ctx.db
-      .query('inquiries')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_status', (q: any) =>
+      .withIndex('by_status', (q) =>
         q.eq('status', args.status as 'sent' | 'read' | 'replied' | 'closed')
       )
+      .order('desc')
+  } else if (args.toType) {
+    inquiriesQuery = ctx.db
+      .query('inquiries')
+      .withIndex('by_type_status', (q) => q.eq('toType', args.toType as 'vendor' | 'sponsor'))
+      .order('desc')
   } else {
-    // Use creation time (default)
-    inquiriesQuery = ctx.db.query('inquiries').order('desc')
+    // Use the new createdAt index for sorting
+    inquiriesQuery = ctx.db.query('inquiries').withIndex('by_createdAt').order('desc')
   }
 
-  // Get all results and handle pagination manually
-  const allResults = await inquiriesQuery.collect()
-
-  // Implement manual pagination
-  const pageNum = args.paginationOpts?.cursor ? parseInt(args.paginationOpts.cursor) : 0
-  const pageSize = args.paginationOpts?.numItems || 20
-  const startIndex = pageNum * pageSize
-  const endIndex = startIndex + pageSize
-
-  const paginatedResults = allResults.slice(startIndex, endIndex)
-  const hasMore = endIndex < allResults.length
-  const nextCursor = hasMore ? (pageNum + 1).toString() : null
+  // Use Convex's built-in pagination
+  const {
+    page: paginatedResults,
+    isDone,
+    continueCursor,
+  } = await inquiriesQuery.paginate(args.paginationOpts || { numItems: 20, cursor: null })
 
   // Enrich results
-  const page = await Promise.all(
+  const enrichedResults = await Promise.all(
     paginatedResults.map(async (inquiry: Doc<'inquiries'>) => {
-      // Filter in memory if needed (e.g. toType was passed but we used default query)
-      // Note: this is imperfect for pagination size but ensures correctness
-      if (
-        args.toType &&
-        (!args.status || args.status === 'all') &&
-        inquiry.toType !== args.toType
-      ) {
-        return null
-      }
+      // Secondary filter for cases where we couldn't filter by both in the index
+      if (args.toType && inquiry.toType !== args.toType) return null
+      if (args.status && args.status !== 'all' && inquiry.status !== args.status) return null
 
       const sender = await ctx.db.get(inquiry.fromUserId)
       let recipientDetails = null
@@ -256,13 +238,15 @@ export const listAllForAdminHandler = async (ctx: any, args: any) => {
     })
   )
 
-  // Filter out null results and return
-  const filteredPage = page.filter(Boolean)
+  // Filter out null results (from secondary filter)
+  const filteredPage = enrichedResults.filter(
+    (item): item is NonNullable<typeof item> => item !== null
+  )
 
   return {
     page: filteredPage,
-    isDone: !hasMore,
-    continueCursor: nextCursor ?? '',
+    isDone,
+    continueCursor: continueCursor ?? '',
   }
 }
 
