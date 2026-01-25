@@ -10,13 +10,16 @@
  */
 
 import { v } from 'convex/values'
-import { action } from './_generated/server'
+import { action, internalMutation, internalAction } from './_generated/server'
 import { api, internal } from './_generated/api'
 import { makeFunctionReference } from 'convex/server'
 import Stripe from 'stripe'
+import { PLANS, type PlanKey } from './config/plans'
+import type { Id } from './_generated/dataModel'
 import { logger } from './lib/monitoring/logger'
 import { PaymentAuditLogger } from './lib/payment/paymentAuditLog'
 import { validateCheckoutAmounts } from './lib/payment/paymentSecurity'
+import { getSafeBillingError } from './lib/security'
 
 // Create function references for paymentIdempotency functions
 // These will be properly typed after running `npx convex dev`
@@ -28,6 +31,8 @@ const paymentIdempotency = {
 // Platform fee percentage (configurable) - reserved for future use
 // const PLATFORM_FEE_PERCENT = 0.03 // 3%
 
+import { STRIPE_API_VERSION } from './config/stripe'
+
 // Initialize Stripe with correct API version
 const getStripe = () => {
   const key = process.env.STRIPE_SECRET_KEY
@@ -37,7 +42,7 @@ const getStripe = () => {
     )
   }
   return new Stripe(key, {
-    apiVersion: '2025-12-15.clover',
+    apiVersion: STRIPE_API_VERSION,
     typescript: true,
   })
 }
@@ -348,32 +353,130 @@ export const handleWebhook = action({
       switch (event.type) {
         case 'checkout.session.completed': {
           const session = event.data.object as Stripe.Checkout.Session
-          logger.info('Stripe checkout completed', {
-            orderNumber: session.metadata?.orderNumber,
-            sessionId: session.id,
+
+          // Check if this is a subscription checkout
+          if (session.mode === 'subscription') {
+            const organizationId = session.metadata?.organizationId
+            const plan = session.metadata?.plan
+
+            if (!organizationId || !plan) {
+              logger.warn('Missing metadata in subscription checkout session', {
+                sessionId: session.id,
+                hasOrgId: !!organizationId,
+                hasPlan: !!plan,
+              })
+              return { received: true, status: 'skipped', reason: 'Missing metadata' }
+            }
+
+            // Get subscription details
+            const subscriptionId = session.subscription as string
+            const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+
+            // Access current_period_end safely
+            const currentPeriodEnd =
+              typeof subscription === 'object' && 'current_period_end' in subscription
+                ? (subscription as { current_period_end: number }).current_period_end
+                : Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60
+
+            await ctx.runMutation(internal.stripe.handleSubscriptionCheckoutComplete, {
+              organizationId: organizationId as Id<'organizations'>,
+              subscriptionId,
+              plan,
+              customerId: session.customer as string,
+              currentPeriodEnd,
+            })
+
+            logger.info('Subscription checkout completed', {
+              organizationId,
+              plan,
+              subscriptionId,
+            })
+          } else {
+            // Standard one-time payment checkout
+            logger.info('Stripe checkout completed', {
+              orderNumber: session.metadata?.orderNumber,
+              sessionId: session.id,
+            })
+
+            await ctx.runMutation(internal.orders.updatePaymentStatus, {
+              stripeSessionId: session.id,
+              paymentStatus: 'completed',
+              paymentMethod: session.payment_method_types?.[0] || 'card',
+              stripeCustomerId: session.customer as string | undefined,
+              stripePaymentIntentId: session.payment_intent as string | undefined,
+            })
+
+            // Log payment audit event
+            await PaymentAuditLogger.logCheckout(ctx, 'checkout_completed', {
+              orderId: session.metadata?.orderId || '',
+              orderNumber: session.metadata?.orderNumber || '',
+              amount: session.amount_total || 0,
+              currency: session.currency || 'usd',
+              buyerEmail: session.customer_email || undefined,
+              eventId: session.metadata?.eventId,
+              stripeEventId: event.id,
+              stripeSessionId: session.id,
+              stripePaymentIntentId: session.payment_intent as string | undefined,
+              paymentMethod: session.payment_method_types?.[0] || 'card',
+            })
+          }
+          break
+        }
+
+        case 'customer.subscription.updated': {
+          const subscription = event.data.object as Stripe.Subscription
+          const priceId = subscription.items.data[0]?.price.id
+          const subCurrentPeriodEnd =
+            typeof subscription === 'object' && 'current_period_end' in subscription
+              ? (subscription as { current_period_end: number }).current_period_end
+              : Math.floor(Date.now() / 1000)
+
+          await ctx.runMutation(internal.stripe.handleSubscriptionUpdated, {
+            subscriptionId: subscription.id,
+            status: subscription.status,
+            currentPeriodEnd: subCurrentPeriodEnd,
+            cancelAtPeriodEnd: subscription.cancel_at_period_end,
+            priceId,
           })
 
-          await ctx.runMutation(internal.orders.updatePaymentStatus, {
-            stripeSessionId: session.id,
-            paymentStatus: 'completed',
-            paymentMethod: session.payment_method_types?.[0] || 'card',
-            stripeCustomerId: session.customer as string | undefined,
-            stripePaymentIntentId: session.payment_intent as string | undefined,
+          logger.info('Subscription updated', {
+            subscriptionId: subscription.id,
+            status: subscription.status,
+          })
+          break
+        }
+
+        case 'customer.subscription.deleted': {
+          const subscription = event.data.object as Stripe.Subscription
+
+          await ctx.runMutation(internal.stripe.handleSubscriptionDeleted, {
+            subscriptionId: subscription.id,
           })
 
-          // Log payment audit event
-          await PaymentAuditLogger.logCheckout(ctx, 'checkout_completed', {
-            orderId: session.metadata?.orderId || '',
-            orderNumber: session.metadata?.orderNumber || '',
-            amount: session.amount_total || 0,
-            currency: session.currency || 'usd',
-            buyerEmail: session.customer_email || undefined,
-            eventId: session.metadata?.eventId,
-            stripeEventId: event.id,
-            stripeSessionId: session.id,
-            stripePaymentIntentId: session.payment_intent as string | undefined,
-            paymentMethod: session.payment_method_types?.[0] || 'card',
+          logger.info('Subscription deleted', {
+            subscriptionId: subscription.id,
           })
+          break
+        }
+
+        case 'invoice.payment_failed': {
+          const invoice = event.data.object as Stripe.Invoice
+          const invoiceSubscription =
+            typeof invoice === 'object' && 'subscription' in invoice
+              ? (invoice as { subscription: string | null }).subscription
+              : null
+
+          if (invoiceSubscription) {
+            await ctx.runMutation(internal.stripe.handleSubscriptionPaymentFailed, {
+              subscriptionId: invoiceSubscription,
+              attemptCount: invoice.attempt_count || 1,
+            })
+
+            logger.warn('Subscription payment failed', {
+              subscriptionId: invoiceSubscription,
+              attemptCount: invoice.attempt_count,
+            })
+          }
           break
         }
 
@@ -776,5 +879,574 @@ export const getPaymentDetails = action({
     } catch {
       return null
     }
+  },
+})
+
+// ============================================================================
+// SUBSCRIPTION BILLING - Organization Plan Upgrades
+// ============================================================================
+
+/**
+ * Create a Stripe Checkout session for subscription upgrade
+ * SECURITY: Requires user to be owner or admin of the organization
+ */
+export const createSubscriptionCheckout = action({
+  args: {
+    organizationId: v.id('organizations'),
+    plan: v.string(),
+  },
+  handler: async (ctx, args): Promise<{ url: string | null; error?: string }> => {
+    const stripe = getStripe()
+    const appUrl = process.env.APP_URL || 'http://localhost:5173'
+
+    // SECURITY: Use centralized permission check
+    const permCheck = await ctx.runMutation(internal.stripe.checkBillingPermissionInternal, {
+      organizationId: args.organizationId,
+    })
+
+    if (!permCheck.authorized) {
+      logger.warn('Billing checkout permission denied', {
+        organizationId: args.organizationId,
+        reason: permCheck.reason,
+      })
+      return { url: null, error: permCheck.reason || getSafeBillingError() }
+    }
+
+    const org = permCheck.organization
+    if (!org || !('plan' in org)) {
+      return { url: null, error: 'Organization not found' }
+    }
+
+    // Get price ID for the plan from environment
+    const priceIdKey = `STRIPE_${args.plan.toUpperCase()}_PRICE_ID`
+    const priceId = process.env[priceIdKey]
+
+    if (!priceId) {
+      logger.warn('Stripe price ID not configured for plan', {
+        plan: args.plan,
+        expectedEnvVar: priceIdKey,
+      })
+      return {
+        url: null,
+        error: `Stripe price ID not configured for ${args.plan} plan. Please set ${priceIdKey} environment variable.`,
+      }
+    }
+
+    try {
+      // Get or create Stripe customer
+      let customerId = org.stripeCustomerId
+
+      if (!customerId) {
+        // Create a new customer
+        const customer = await stripe.customers.create({
+          metadata: {
+            organizationId: args.organizationId,
+            organizationName: org.name,
+          },
+        })
+        customerId = customer.id
+
+        // Save customer ID to organization
+        await ctx.runMutation(internal.organizations.updateStripeCustomer, {
+          organizationId: args.organizationId,
+          stripeCustomerId: customerId,
+        })
+      }
+
+      // Create checkout session for subscription
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        mode: 'subscription',
+        line_items: [
+          {
+            price: priceId,
+            quantity: 1,
+          },
+        ],
+        success_url: `${appUrl}/dashboard/settings?tab=billing&success=true`,
+        cancel_url: `${appUrl}/dashboard/settings?tab=billing&canceled=true`,
+        metadata: {
+          organizationId: args.organizationId,
+          plan: args.plan,
+        },
+        subscription_data: {
+          metadata: {
+            organizationId: args.organizationId,
+            plan: args.plan,
+          },
+        },
+      })
+
+      logger.info('Subscription checkout session created', {
+        organizationId: args.organizationId,
+        plan: args.plan,
+        sessionId: session.id,
+      })
+
+      return { url: session.url }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error'
+      logger.error('Failed to create subscription checkout session', error, {
+        organizationId: args.organizationId,
+        plan: args.plan,
+        message,
+      })
+      return { url: null, error: message }
+    }
+  },
+})
+
+/**
+ * Create a Stripe Customer Portal session for managing subscriptions
+ * SECURITY: Requires user to be owner or admin of the organization
+ */
+export const createBillingPortalSession = action({
+  args: {
+    organizationId: v.id('organizations'),
+  },
+  handler: async (ctx, args): Promise<{ url: string | null; error?: string }> => {
+    const stripe = getStripe()
+    const appUrl = process.env.APP_URL || 'http://localhost:5173'
+
+    // SECURITY: Use centralized permission check
+    const permCheck = await ctx.runMutation(internal.stripe.checkBillingPermissionInternal, {
+      organizationId: args.organizationId,
+    })
+
+    if (!permCheck.authorized) {
+      logger.warn('Billing portal permission denied', {
+        organizationId: args.organizationId,
+        reason: permCheck.reason,
+      })
+      return { url: null, error: permCheck.reason || getSafeBillingError() }
+    }
+
+    const org = permCheck.organization
+    if (!org || !('stripeCustomerId' in org)) {
+      return { url: null, error: 'Organization not found' }
+    }
+
+    if (!org.stripeCustomerId) {
+      return { url: null, error: 'No billing account found. Please subscribe to a plan first.' }
+    }
+
+    try {
+      const session = await stripe.billingPortal.sessions.create({
+        customer: org.stripeCustomerId,
+        return_url: `${appUrl}/dashboard/settings?tab=billing`,
+      })
+
+      return { url: session.url }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error'
+      logger.error('Failed to create billing portal session', error, {
+        organizationId: args.organizationId,
+        message,
+      })
+      return { url: null, error: message }
+    }
+  },
+})
+
+/**
+ * Cancel a subscription immediately (internal use only)
+ * Called by downgradeToFree action to actually cancel the Stripe subscription
+ */
+export const cancelSubscriptionImmediately = internalAction({
+  args: {
+    stripeSubscriptionId: v.string(),
+  },
+  handler: async (_ctx, args): Promise<{ success: boolean; status: string }> => {
+    const stripe = getStripe()
+
+    try {
+      // Cancel immediately, not at period end
+      const subscription = await stripe.subscriptions.cancel(args.stripeSubscriptionId)
+
+      logger.info('Subscription cancelled immediately', {
+        subscriptionId: args.stripeSubscriptionId,
+        status: subscription.status,
+      })
+
+      return { success: true, status: subscription.status }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error'
+      logger.error('Failed to cancel subscription immediately', error, {
+        subscriptionId: args.stripeSubscriptionId,
+        message,
+      })
+      throw new Error(`Failed to cancel Stripe subscription: ${message}`)
+    }
+  },
+})
+
+/**
+ * Cancel an organization's subscription at period end
+ * SECURITY: Requires user to be owner or admin of the organization
+ */
+export const cancelOrganizationSubscription = action({
+  args: {
+    organizationId: v.id('organizations'),
+  },
+  handler: async (ctx, args): Promise<{ success: boolean; error?: string }> => {
+    const stripe = getStripe()
+
+    // SECURITY: Use centralized permission check
+    const permCheck = await ctx.runMutation(internal.stripe.checkBillingPermissionInternal, {
+      organizationId: args.organizationId,
+    })
+
+    if (!permCheck.authorized) {
+      logger.warn('Subscription cancellation permission denied', {
+        organizationId: args.organizationId,
+        reason: permCheck.reason,
+      })
+      return { success: false, error: permCheck.reason || getSafeBillingError() }
+    }
+
+    const org = permCheck.organization
+    if (!org || !('stripeSubscriptionId' in org)) {
+      return { success: false, error: 'Organization not found' }
+    }
+
+    if (!org.stripeSubscriptionId) {
+      return { success: false, error: 'No active subscription found' }
+    }
+
+    try {
+      // Cancel at period end (not immediately)
+      await stripe.subscriptions.update(org.stripeSubscriptionId, {
+        cancel_at_period_end: true,
+      })
+
+      logger.info('Subscription marked for cancellation', {
+        organizationId: args.organizationId,
+        subscriptionId: org.stripeSubscriptionId,
+      })
+
+      return { success: true }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error'
+      logger.error('Failed to cancel subscription', error, {
+        organizationId: args.organizationId,
+        message,
+      })
+      return { success: false, error: message }
+    }
+  },
+})
+
+// ============================================================================
+// INTERNAL MUTATIONS - Called by webhook handlers
+// ============================================================================
+
+/**
+ * Handle successful subscription checkout completion
+ */
+export const handleSubscriptionCheckoutComplete = internalMutation({
+  args: {
+    organizationId: v.id('organizations'),
+    subscriptionId: v.string(),
+    plan: v.string(),
+    customerId: v.string(),
+    currentPeriodEnd: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const planConfig = PLANS[args.plan as PlanKey]
+    if (!planConfig) {
+      logger.error('Invalid plan in subscription checkout', { plan: args.plan })
+      throw new Error(`Invalid plan: ${args.plan}`)
+    }
+
+    await ctx.db.patch(args.organizationId, {
+      stripeCustomerId: args.customerId,
+      stripeSubscriptionId: args.subscriptionId,
+      subscriptionStatus: 'active',
+      currentPeriodEnd: args.currentPeriodEnd * 1000, // Convert to milliseconds
+      plan: args.plan as 'free' | 'pro' | 'business' | 'enterprise',
+      maxMembers: planConfig.maxMembers,
+      maxEvents: planConfig.maxEvents === Infinity ? undefined : planConfig.maxEvents,
+      updatedAt: Date.now(),
+    })
+
+    logger.info('Organization plan updated after checkout', {
+      organizationId: args.organizationId,
+      plan: args.plan,
+      subscriptionId: args.subscriptionId,
+    })
+  },
+})
+
+/**
+ * Handle subscription updates (status changes, plan changes)
+ */
+export const handleSubscriptionUpdated = internalMutation({
+  args: {
+    subscriptionId: v.string(),
+    status: v.string(),
+    currentPeriodEnd: v.number(),
+    cancelAtPeriodEnd: v.boolean(),
+    priceId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Find organization by subscription ID
+    const org = await ctx.db
+      .query('organizations')
+      .withIndex('by_stripe_subscription', (q) => q.eq('stripeSubscriptionId', args.subscriptionId))
+      .first()
+
+    if (!org) {
+      logger.warn('Organization not found for subscription update', {
+        subscriptionId: args.subscriptionId,
+      })
+      return
+    }
+
+    // Map Stripe status to our status type
+    const statusMap: Record<string, string> = {
+      active: 'active',
+      past_due: 'past_due',
+      canceled: 'canceled',
+      trialing: 'trialing',
+      incomplete: 'incomplete',
+      incomplete_expired: 'incomplete_expired',
+      unpaid: 'unpaid',
+    }
+
+    const subscriptionStatus = statusMap[args.status] || 'active'
+
+    await ctx.db.patch(org._id, {
+      subscriptionStatus: subscriptionStatus as
+        | 'active'
+        | 'past_due'
+        | 'canceled'
+        | 'trialing'
+        | 'incomplete'
+        | 'incomplete_expired'
+        | 'unpaid',
+      currentPeriodEnd: args.currentPeriodEnd * 1000,
+      updatedAt: Date.now(),
+    })
+
+    logger.info('Organization subscription updated', {
+      organizationId: org._id,
+      subscriptionId: args.subscriptionId,
+      status: subscriptionStatus,
+      cancelAtPeriodEnd: args.cancelAtPeriodEnd,
+    })
+  },
+})
+
+/**
+ * Handle subscription deletion (cancellation completed)
+ */
+export const handleSubscriptionDeleted = internalMutation({
+  args: {
+    subscriptionId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Find organization by subscription ID
+    const org = await ctx.db
+      .query('organizations')
+      .withIndex('by_stripe_subscription', (q) => q.eq('stripeSubscriptionId', args.subscriptionId))
+      .first()
+
+    if (!org) {
+      logger.warn('Organization not found for subscription deletion', {
+        subscriptionId: args.subscriptionId,
+      })
+      return
+    }
+
+    // Downgrade to free plan
+    const freePlan = PLANS.free
+
+    await ctx.db.patch(org._id, {
+      stripeSubscriptionId: undefined,
+      subscriptionStatus: 'canceled',
+      plan: 'free',
+      maxMembers: freePlan.maxMembers,
+      maxEvents: freePlan.maxEvents,
+      updatedAt: Date.now(),
+    })
+
+    logger.info('Organization downgraded to free plan after subscription deletion', {
+      organizationId: org._id,
+      subscriptionId: args.subscriptionId,
+    })
+  },
+})
+
+/**
+ * Handle failed subscription payment
+ */
+export const handleSubscriptionPaymentFailed = internalMutation({
+  args: {
+    subscriptionId: v.string(),
+    attemptCount: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // Find organization by subscription ID
+    const org = await ctx.db
+      .query('organizations')
+      .withIndex('by_stripe_subscription', (q) => q.eq('stripeSubscriptionId', args.subscriptionId))
+      .first()
+
+    if (!org) {
+      logger.warn('Organization not found for payment failure', {
+        subscriptionId: args.subscriptionId,
+      })
+      return
+    }
+
+    // Update status to past_due
+    await ctx.db.patch(org._id, {
+      subscriptionStatus: 'past_due',
+      updatedAt: Date.now(),
+    })
+
+    logger.warn('Organization subscription payment failed', {
+      organizationId: org._id,
+      subscriptionId: args.subscriptionId,
+      attemptCount: args.attemptCount,
+    })
+
+    // TODO: Send notification to organization owner about failed payment
+  },
+})
+
+// ============================================================================
+// INTERNAL QUERIES - For permission checks in actions
+// ============================================================================
+
+import { getCurrentUser } from './lib/auth'
+
+/**
+ * Internal mutation to check billing permission and log security events
+ * Used by actions that need to verify billing access
+ * Note: This is a mutation (not query) because it logs audit events
+ */
+export const checkBillingPermissionInternal = internalMutation({
+  args: {
+    organizationId: v.id('organizations'),
+  },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx)
+
+    if (!user) {
+      return {
+        authorized: false as const,
+        organization: null as null,
+        reason: 'Authentication required',
+      }
+    }
+
+    const organization = await ctx.db.get(args.organizationId)
+    if (!organization) {
+      return {
+        authorized: false as const,
+        organization: null as null,
+        reason: 'Organization not found',
+      }
+    }
+
+    const membership = await ctx.db
+      .query('organizationMembers')
+      .withIndex('by_org_user', (q) =>
+        q.eq('organizationId', args.organizationId).eq('userId', user._id)
+      )
+      .first()
+
+    if (!membership || membership.status !== 'active') {
+      // Log the blocked access attempt
+      await ctx.db.insert('auditLogs', {
+        userId: user._id,
+        userEmail: user.email,
+        action: 'billing_access_denied',
+        resource: 'billing',
+        resourceId: args.organizationId,
+        metadata: {
+          reason: 'Not a member of organization',
+          membershipStatus: membership?.status,
+        },
+        status: 'blocked',
+        createdAt: Date.now(),
+      })
+
+      return {
+        authorized: false as const,
+        organization,
+        reason: 'Not authorized to manage billing for this organization',
+      }
+    }
+
+    const billingRoles = ['owner', 'admin']
+    if (!billingRoles.includes(membership.role)) {
+      // Log the blocked access attempt
+      await ctx.db.insert('auditLogs', {
+        userId: user._id,
+        userEmail: user.email,
+        action: 'billing_access_denied',
+        resource: 'billing',
+        resourceId: args.organizationId,
+        metadata: {
+          reason: 'Insufficient role',
+          userRole: membership.role,
+          requiredRoles: billingRoles,
+        },
+        status: 'blocked',
+        createdAt: Date.now(),
+      })
+
+      return {
+        authorized: false as const,
+        organization,
+        reason: 'Only owners and admins can manage billing',
+      }
+    }
+
+    return {
+      authorized: true as const,
+      organization,
+      reason: undefined,
+    }
+  },
+})
+
+/**
+ * Internal mutation to log security events for billing operations
+ * This allows actions to create audit trail entries
+ */
+export const logBillingSecurityEvent = internalMutation({
+  args: {
+    userId: v.optional(v.id('users')),
+    organizationId: v.id('organizations'),
+    action: v.string(),
+    status: v.union(v.literal('success'), v.literal('failure'), v.literal('blocked')),
+    reason: v.optional(v.string()),
+    metadata: v.optional(v.any()),
+  },
+  handler: async (ctx, args) => {
+    // Get user email if userId is provided
+    let userEmail: string | undefined
+    if (args.userId) {
+      const user = await ctx.db.get(args.userId)
+      userEmail = user?.email
+    }
+
+    await ctx.db.insert('auditLogs', {
+      userId: args.userId,
+      userEmail,
+      action: args.action,
+      resource: 'billing',
+      resourceId: args.organizationId,
+      metadata: {
+        organizationId: args.organizationId,
+        reason: args.reason,
+        ...args.metadata,
+      },
+      status: args.status,
+      createdAt: Date.now(),
+    })
   },
 })
