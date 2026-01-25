@@ -55,3 +55,28 @@ export {
 export { EncryptionService, encryptionService, encryptAPIKey, decryptAPIKey } from './encryption'
 
 export * from './requestSizeValidator'
+
+// Organization permission utilities
+export {
+  // Types
+  type OrganizationRole,
+  type PermissionCheckResult,
+  type BillingPermissionResult,
+  // Constants
+  ROLE_HIERARCHY,
+  BILLING_ROLES,
+  EVENT_MANAGEMENT_ROLES,
+  MEMBER_MANAGEMENT_ROLES,
+  // Permission checkers
+  hasMinimumRole,
+  isRoleAllowed,
+  getOrganizationMembership,
+  checkBillingPermission,
+  checkEventManagementPermission,
+  checkMemberManagementPermission,
+  canInviteToRole,
+  canChangeRole,
+  // Safe error messages
+  getGenericPermissionError,
+  getSafeBillingError,
+} from './permissions'

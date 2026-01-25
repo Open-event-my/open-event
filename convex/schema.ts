@@ -130,9 +130,25 @@ export default defineSchema({
       })
     ),
 
+    // Usage counters for atomic limit enforcement (prevents race conditions)
+    activeEventCount: v.optional(v.number()), // Current count of active events
+    pendingInvitationCount: v.optional(v.number()), // Current count of pending invitations
+
     // Billing info (for Stripe)
     stripeCustomerId: v.optional(v.string()),
     stripeSubscriptionId: v.optional(v.string()),
+    subscriptionStatus: v.optional(
+      v.union(
+        v.literal('active'),
+        v.literal('past_due'),
+        v.literal('canceled'),
+        v.literal('trialing'),
+        v.literal('incomplete'),
+        v.literal('incomplete_expired'),
+        v.literal('unpaid')
+      )
+    ),
+    currentPeriodEnd: v.optional(v.number()), // Unix timestamp when subscription period ends
 
     // Status
     status: v.union(
@@ -152,7 +168,8 @@ export default defineSchema({
     .index('by_slug', ['slug'])
     .index('by_owner', ['ownerId'])
     .index('by_status', ['status'])
-    .index('by_plan', ['plan']),
+    .index('by_plan', ['plan'])
+    .index('by_stripe_subscription', ['stripeSubscriptionId']),
 
   // Organization Members - Team membership
   organizationMembers: defineTable({
@@ -1403,6 +1420,23 @@ export default defineSchema({
   // ============================================================================
   // Account Security
   // ============================================================================
+
+  // Session Blacklist - Real-time session revocation
+  // Provides immediate suspension blocking without waiting for token refresh
+  sessionBlacklist: defineTable({
+    userId: v.id('users'),
+    invalidatedAt: v.number(), // Timestamp when sessions were invalidated
+    reason: v.union(
+      v.literal('password_change'),
+      v.literal('admin_suspension'),
+      v.literal('security_breach'),
+      v.literal('user_logout_all'),
+      v.literal('manual_admin_action')
+    ),
+    expiresAt: v.number(), // TTL - automatically cleanup after 7 days
+  })
+    .index('by_user', ['userId'])
+    .index('by_expiry', ['expiresAt']),
 
   // CSRF Tokens - Cross-Site Request Forgery protection
   csrfTokens: defineTable({
