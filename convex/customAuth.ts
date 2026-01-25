@@ -10,12 +10,25 @@
  */
 
 import { v } from 'convex/values'
-import { action, internalAction, internalMutation, internalQuery, query } from './_generated/server'
+import {
+  action,
+  internalAction,
+  internalMutation,
+  internalQuery,
+  query,
+  mutation,
+} from './_generated/server'
 import { internal } from './_generated/api'
 import bcrypt from 'bcryptjs'
 import { validatePassword } from './lib/passwordValidation'
 import { isValidEmail } from './lib/emailValidation'
 import type { Id } from './_generated/dataModel'
+import {
+  isSessionRevoked,
+  invalidateAllUserSessions,
+  revokeSpecificSession,
+} from './lib/security/sessionRevocation'
+import { logger } from './lib/monitoring/logger'
 
 // Token expiry constants
 const ACCESS_TOKEN_EXPIRY = 15 * 60 * 1000 // 15 minutes
@@ -386,6 +399,31 @@ export const getCurrentUser = query({
       return null
     }
 
+    // SECURITY: Real-time suspension check (eliminates 15-minute delay)
+    // This blocks suspended users on their NEXT request, not after token refresh
+    if (user.status === 'suspended') {
+      await logger.warn('Suspended user access attempt blocked', {
+        userId: user._id,
+        email: user.email,
+        sessionId: session._id,
+        action: 'auth:suspended_user_blocked',
+      })
+      return null
+    }
+
+    // SECURITY: Check session blacklist for mass revocation
+    // (password changes, security breaches, admin actions)
+    const isRevoked = await isSessionRevoked(ctx, user._id)
+    if (isRevoked) {
+      await logger.warn('Revoked session access attempt blocked', {
+        userId: user._id,
+        email: user.email,
+        sessionId: session._id,
+        action: 'auth:revoked_session_blocked',
+      })
+      return null
+    }
+
     return {
       _id: user._id,
       email: user.email,
@@ -632,6 +670,14 @@ export const refreshSessionInternal = internalMutation({
       return { success: false, error: 'User not found' }
     }
 
+    // SECURITY FIX: Check if user account is suspended
+    // This prevents suspended users from maintaining access via token refresh
+    if (user.status === 'suspended') {
+      // Delete the session to fully revoke access
+      await ctx.db.delete(session._id)
+      return { success: false, error: 'Account has been suspended' }
+    }
+
     // Generate new tokens (rotation)
     const newAccessToken = crypto.randomUUID()
     const newRefreshToken = crypto.randomUUID()
@@ -772,5 +818,96 @@ export const getUserByAccessToken = internalQuery({
       image: user.image,
       status: user.status,
     }
+  },
+})
+
+// ============================================================================
+// SESSION REVOCATION - Real-time session invalidation
+// ============================================================================
+
+/**
+ * Revoke all sessions for a user
+ * Use cases:
+ * - Password change (invalidate all existing sessions)
+ * - Security breach (force re-authentication)
+ * - Admin suspension (immediate blocking)
+ */
+export const revokeAllSessions = mutation({
+  args: {
+    userId: v.id('users'),
+    reason: v.union(
+      v.literal('password_change'),
+      v.literal('security_breach'),
+      v.literal('user_logout_all'),
+      v.literal('admin_suspension'),
+      v.literal('manual_admin_action')
+    ),
+  },
+  handler: async (ctx, args) => {
+    // Invalidate all sessions via blacklist
+    await invalidateAllUserSessions(ctx, args.userId, args.reason)
+
+    // Log the action
+    await logger.info('All user sessions revoked', {
+      userId: args.userId,
+      reason: args.reason,
+      timestamp: Date.now(),
+    })
+
+    return { success: true }
+  },
+})
+
+/**
+ * Revoke a specific session
+ * Use cases:
+ * - User logs out from specific device
+ * - Admin revokes suspicious session
+ */
+export const revokeSession = mutation({
+  args: {
+    sessionId: v.id('sessions'),
+  },
+  handler: async (ctx, args) => {
+    const session = await ctx.db.get(args.sessionId)
+
+    if (!session) {
+      return { success: false, error: 'Session not found' }
+    }
+
+    // Revoke the specific session
+    await revokeSpecificSession(ctx, args.sessionId)
+
+    return { success: true }
+  },
+})
+
+/**
+ * Logout - Revoke current session
+ */
+export const logout = mutation({
+  args: {
+    accessToken: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Find session by access token
+    const session = await ctx.db
+      .query('sessions')
+      .withIndex('by_access_token', (q) => q.eq('accessToken', args.accessToken))
+      .first()
+
+    if (!session) {
+      return { success: false, error: 'Session not found' }
+    }
+
+    // Delete the session
+    await ctx.db.delete(session._id)
+
+    await logger.info('User logged out', {
+      userId: session.userId,
+      sessionId: session._id,
+    })
+
+    return { success: true }
   },
 })

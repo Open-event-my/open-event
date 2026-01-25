@@ -35,7 +35,10 @@ import {
   CaretDown,
   Trash,
   CircleNotch,
+  Users,
+  RocketLaunch,
 } from '@phosphor-icons/react'
+import { useNavigate } from 'react-router-dom'
 
 interface TeamMembersListProps {
   organizationId: Id<'organizations'>
@@ -53,7 +56,9 @@ const ROLE_CONFIG = {
 const ROLE_ORDER = ['owner', 'admin', 'manager', 'member', 'viewer'] as const
 
 export function TeamMembersList({ organizationId, currentUserRole }: TeamMembersListProps) {
+  const navigate = useNavigate()
   const members = useQuery(api.organizations.listMembers, { organizationId })
+  const capacity = useQuery(api.organizations.getCapacity, { organizationId })
   const updateMemberRole = useMutation(api.organizations.updateMemberRole)
   const removeMember = useMutation(api.organizations.removeMember)
 
@@ -120,8 +125,66 @@ export function TeamMembersList({ organizationId, currentUserRole }: TeamMembers
     return aIndex - bIndex
   })
 
+  const isNearCapacity =
+    capacity?.members.remaining !== undefined &&
+    capacity.members.remaining <= 2 &&
+    capacity.members.remaining > 0
+  const isAtCapacity = capacity?.members.isAtCapacity
+
   return (
     <>
+      {/* Capacity indicator */}
+      {capacity && (
+        <div
+          className={cn(
+            'flex items-center justify-between px-4 py-3 mb-4 rounded-lg border',
+            isAtCapacity
+              ? 'bg-amber-500/10 border-amber-500/30'
+              : isNearCapacity
+                ? 'bg-amber-500/5 border-amber-500/20'
+                : 'bg-muted/50 border-border'
+          )}
+        >
+          <div className="flex items-center gap-2">
+            <Users
+              size={16}
+              className={cn(isAtCapacity ? 'text-amber-600' : 'text-muted-foreground')}
+            />
+            <span className="text-sm font-medium">Team Members</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span
+              className={cn(
+                'font-mono text-sm',
+                isAtCapacity
+                  ? 'text-amber-600 font-bold'
+                  : isNearCapacity
+                    ? 'text-amber-600'
+                    : 'text-muted-foreground'
+              )}
+            >
+              {capacity.members.total} / {capacity.members.limit}
+            </span>
+            {capacity.members.pending > 0 && (
+              <span className="text-xs text-muted-foreground">
+                ({capacity.members.pending} pending)
+              </span>
+            )}
+            {isAtCapacity && canManageMembers && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1.5 border-amber-500/30 text-amber-600 hover:bg-amber-500/10"
+                onClick={() => navigate('/dashboard/settings?tab=billing')}
+              >
+                <RocketLaunch size={12} />
+                Upgrade
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="divide-y divide-border rounded-lg border border-border">
         {sortedMembers.map((member) => {
           const roleConfig = ROLE_CONFIG[member.role as keyof typeof ROLE_CONFIG]

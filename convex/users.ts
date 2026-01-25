@@ -1,7 +1,9 @@
 import { v } from 'convex/values'
-import { mutation, query } from './_generated/server'
+import { mutation, query, internalQuery } from './_generated/server'
 import { assertRole, getCurrentUser } from './lib/auth'
 import { isValidEmail } from './lib/emailValidation'
+import { withAuth, assertRole as assertRoleMiddleware } from './lib/security/queryMiddleware'
+import { createUserDTO } from './lib/security/dtos'
 
 // List users - superadmin only
 export const list = query({
@@ -40,8 +42,9 @@ export const get = query({
   },
 })
 
-// Get user by email - internal use only (for auth lookup)
-export const getByEmail = query({
+// Get user by email - INTERNAL USE ONLY (for auth/system operations)
+// SECURITY: This is now internalQuery to prevent public enumeration
+export const getByEmail = internalQuery({
   args: { email: v.string() },
   handler: async (ctx, args) => {
     return await ctx.db
@@ -49,6 +52,24 @@ export const getByEmail = query({
       .withIndex('email', (q) => q.eq('email', args.email))
       .first()
   },
+})
+
+// Get user by email (admin only) - For admin panel user lookup
+// SECURITY: Requires admin authentication and returns filtered DTO
+export const getByEmailAdmin = query({
+  args: { email: v.string() },
+  handler: withAuth(async (ctx, args: { email: string }) => {
+    // Only admins can look up users by email
+    await assertRoleMiddleware(ctx, 'admin')
+
+    const user = await ctx.db
+      .query('users')
+      .withIndex('email', (q) => q.eq('email', args.email))
+      .first()
+
+    // Return filtered admin DTO (no passwords/secrets)
+    return user ? createUserDTO(user, 'admin') : null
+  }),
 })
 
 // Create user - superadmin only

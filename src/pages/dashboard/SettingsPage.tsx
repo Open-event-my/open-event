@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useAction } from 'convex/react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../../../convex/_generated/api'
 import { usePWA } from '@/hooks/use-pwa'
 import { useAuth } from '@/contexts/AuthContext'
@@ -28,6 +28,7 @@ import {
   Check,
   X,
   CircleNotch,
+  CreditCard,
 } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useState, useEffect } from 'react'
@@ -42,9 +43,13 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { TwoFactorSetup, TwoFactorStatus } from '@/components/security'
 import { DataExportSection, DataDeletionSection, CookiePreferences } from '@/components/compliance'
+import { BillingTab } from '@/components/organizations/BillingTab'
+import { useOrganizationRole } from '@/hooks/useOrganizationRole'
+import { useOrganization } from '@/contexts/OrganizationContext'
 
 const organizationTypes = [
   { value: 'company', label: 'Company' },
@@ -94,10 +99,11 @@ export function SettingsPage() {
   const saveProfile = useMutation(api.organizerProfiles.saveProfile)
   const updateUser = useMutation(api.users.update)
   const { isInstalled, isInstallable, isOnline, promptInstall, getPlatform } = usePWA()
+  const [searchParams] = useSearchParams()
 
   const [isSaving, setIsSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
-  const [activeTab, setActiveTab] = useState('profile')
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'profile')
   const [showTwoFactorSetup, setShowTwoFactorSetup] = useState(false)
   const [displayName, setDisplayName] = useState('')
 
@@ -132,6 +138,8 @@ export function SettingsPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   const changePassword = useAction(api.passwordReset.changePassword)
+  const { role, isAdmin } = useOrganizationRole()
+  useOrganization() // For organization context
 
   // Password validation
   const passwordRequirements = [
@@ -300,7 +308,16 @@ export function SettingsPage() {
             )}
           </div>
           <div className="flex-1">
-            <h2 className="text-lg font-semibold">{displayName || currentUser?.name || 'User'}</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold">
+                {displayName || currentUser?.name || 'User'}
+              </h2>
+              <Badge
+                variant={role === 'owner' ? 'default' : role === 'admin' ? 'secondary' : 'outline'}
+              >
+                {role ? role.charAt(0).toUpperCase() + role.slice(1) : 'Viewer'}
+              </Badge>
+            </div>
             <p className="text-sm text-muted-foreground flex items-center gap-1.5">
               <Envelope size={14} />
               {currentUser?.email || 'Not set'}
@@ -317,7 +334,7 @@ export function SettingsPage() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:w-[500px]">
+        <TabsList className="grid w-full grid-cols-5 lg:w-[625px]">
           <TabsTrigger value="profile" className="flex items-center gap-2">
             <User size={16} weight="duotone" />
             <span className="hidden sm:inline">Profile</span>
@@ -325,6 +342,10 @@ export function SettingsPage() {
           <TabsTrigger value="organization" className="flex items-center gap-2">
             <Buildings size={16} weight="duotone" />
             <span className="hidden sm:inline">Organization</span>
+          </TabsTrigger>
+          <TabsTrigger value="billing" className="flex items-center gap-2">
+            <CreditCard size={16} weight="duotone" />
+            <span className="hidden sm:inline">Billing</span>
           </TabsTrigger>
           <TabsTrigger value="security" className="flex items-center gap-2">
             <Shield size={16} weight="duotone" />
@@ -591,6 +612,19 @@ export function SettingsPage() {
               Organization Details
             </h3>
 
+            {!isAdmin && (
+              <div className="mb-6 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-start gap-3">
+                <Shield size={20} className="text-amber-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="text-sm font-medium text-amber-600">Access Restricted</h4>
+                  <p className="text-xs text-amber-600/90 mt-1">
+                    Only organization admins can update these details. Please contact your
+                    administrator to make changes.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-6">
               <div>
                 <Label htmlFor="orgName">Organization Name</Label>
@@ -600,6 +634,7 @@ export function SettingsPage() {
                   onChange={(e) => handleChange('organizationName', e.target.value)}
                   placeholder="e.g., Acme Corp"
                   className="mt-1.5"
+                  disabled={!isAdmin}
                 />
               </div>
 
@@ -608,6 +643,7 @@ export function SettingsPage() {
                 <Select
                   value={formData.organizationType}
                   onValueChange={(value) => handleChange('organizationType', value)}
+                  disabled={!isAdmin}
                 >
                   <SelectTrigger className="mt-1.5">
                     <SelectValue placeholder="Select organization type" />
@@ -633,6 +669,11 @@ export function SettingsPage() {
 
             <OrgStats />
           </div>
+        </TabsContent>
+
+        {/* Billing Tab */}
+        <TabsContent value="billing" className="space-y-6">
+          <BillingTab />
         </TabsContent>
 
         {/* Security Tab */}
@@ -1061,7 +1102,7 @@ function OrgStats() {
 
 // AI Usage Stats Component
 function AIUsageStats() {
-  const usage = useQuery(api.aiUsage.getMyUsage)
+  const usage = useQuery(api.aiUsage.getMyUsage, {})
 
   if (usage === undefined) {
     return (

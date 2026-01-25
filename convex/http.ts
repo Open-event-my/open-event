@@ -1947,7 +1947,7 @@ http.route({
 // Stripe Webhook Endpoint
 // ============================================================================
 
-// POST /api/stripe/webhook - Handle Stripe webhook events
+// POST /api/stripe/webhook - Handle Stripe webhook events (ticket payments)
 http.route({
   path: '/api/stripe/webhook',
   method: 'POST',

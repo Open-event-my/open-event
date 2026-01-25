@@ -604,7 +604,6 @@ The recommendation tools use scoring algorithms to find the best matches:
 │                              users                                       │
 ├─────────────────────────────────────────────────────────────────────────┤
 │  _id           │  Id<'users'>                                           │
-│  clerkId       │  string           │  Auth provider user ID             │
 │  email         │  string           │  User email                        │
 │  name          │  string           │  Display name                      │
 │  imageUrl      │  string?          │  Profile image                     │

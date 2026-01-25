@@ -1,5 +1,7 @@
 import { ConvexAuthProvider } from '@convex-dev/auth/react'
 import { ConvexReactClient } from 'convex/react'
+import { OrganizationProvider } from '@/contexts/OrganizationContext'
+import { AuthProvider } from '@/contexts/AuthContext'
 
 // Convex URL
 const convexUrl = import.meta.env.VITE_CONVEX_URL
@@ -11,5 +13,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
     return <>{children}</>
   }
 
-  return <ConvexAuthProvider client={convex}>{children}</ConvexAuthProvider>
+  return (
+    <ConvexAuthProvider client={convex}>
+      <AuthProvider>
+        <OrganizationProvider>{children}</OrganizationProvider>
+      </AuthProvider>
+    </ConvexAuthProvider>
+  )
 }

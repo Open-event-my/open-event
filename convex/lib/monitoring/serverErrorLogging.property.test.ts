@@ -199,7 +199,7 @@ describe('Server-Side Error Logging - Property Tests', () => {
         'Bearer abc123token',
         'password=secret123',
         'api_key: sk-12345',
-        'jwt eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
+        'jwt eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
         'credit_card 4111111111111111',
         'ssn 123-45-6789'
       )

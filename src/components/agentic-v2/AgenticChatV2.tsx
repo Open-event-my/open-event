@@ -2,10 +2,12 @@ import { useState, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from 'convex/react'
 import { useHybridAuth } from '@/hooks/useHybridAuth'
+import { useOrganization } from '@/contexts/OrganizationContext'
 import { api } from '../../../convex/_generated/api'
 import { CheckCircle } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import type { Id } from '../../../convex/_generated/dataModel'
 
 // Components
 import { AgenticAvatar } from './AgenticAvatar'
@@ -35,10 +37,13 @@ export function AgenticChatV2({
 }: AgenticChatV2Props) {
   const navigate = useNavigate()
   const { token: authToken, isAuthenticated } = useHybridAuth()
+  const { organization } = useOrganization()
   const convexUrl = import.meta.env.VITE_CONVEX_URL as string
 
-  // AI Usage/Rate limit
-  const aiUsage = useQuery(api.aiUsage.getMyUsage)
+  // AI Usage/Rate limit - scoped to current organization context
+  const aiUsage = useQuery(api.aiUsage.getMyUsage, {
+    organizationId: organization?.id as Id<'organizations'> | undefined,
+  })
   const [localRemaining, setLocalRemaining] = useState<number | null>(null)
 
   // Use local state if available, otherwise use query result
@@ -86,9 +91,10 @@ export function AgenticChatV2({
       if (isRateLimited && !isAdmin) {
         toast.error(`Daily limit reached. Resets in ${timeUntilReset || 'a few hours'}.`, {
           action: {
-            label: 'View Usage',
-            onClick: () => navigate('/dashboard/settings'),
+            label: 'Upgrade Plan',
+            onClick: () => navigate('/dashboard/settings?tab=billing'),
           },
+          duration: 8000,
         })
         return
       }
@@ -154,7 +160,7 @@ export function AgenticChatV2({
 
   // Navigate to settings
   const handleNavigateToSettings = useCallback(() => {
-    navigate('/dashboard/settings')
+    navigate('/dashboard/settings?tab=billing')
   }, [navigate])
 
   // Get confirmation quick replies

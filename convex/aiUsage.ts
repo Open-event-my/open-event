@@ -1,7 +1,14 @@
 import { v } from 'convex/values'
-import { query, mutation, internalMutation } from './_generated/server'
+import {
+  query,
+  mutation,
+  internalMutation,
+  type QueryCtx,
+  type MutationCtx,
+} from './_generated/server'
 import { getCurrentUser, isAdminRole } from './lib/auth'
 import type { Id } from './_generated/dataModel'
+import { PLANS, type PlanKey } from './config/plans'
 
 // ============================================================================
 // Configuration - Easy to modify rate limiting settings
@@ -9,7 +16,7 @@ import type { Id } from './_generated/dataModel'
 
 export const RATE_LIMIT_CONFIG = {
   // Default daily limit for free users
-  FREE_DAILY_LIMIT: 5,
+  FREE_DAILY_LIMIT: PLANS.free.aiDailyLimit,
   // Limit for premium users (future use)
   PREMIUM_DAILY_LIMIT: 50,
   // Unlimited marker for admins
@@ -78,11 +85,69 @@ function getUsageStatus(
 // ============================================================================
 
 /**
+ * Get effective daily limit for a user.
+ * If organizationId is provided, returns the limit for that specific org's plan.
+ * Otherwise, returns the highest limit from all active org memberships.
+ */
+async function getEffectiveDailyLimit(
+  ctx: QueryCtx | MutationCtx,
+  userId: Id<'users'>,
+  organizationId?: Id<'organizations'>
+): Promise<number> {
+  // If organizationId provided, use that org's plan limit
+  if (organizationId) {
+    const org = await ctx.db.get(organizationId)
+    if (org) {
+      // Verify user is an active member of this org
+      const membership = await ctx.db
+        .query('organizationMembers')
+        .withIndex('by_org_user', (q) =>
+          q.eq('organizationId', organizationId).eq('userId', userId)
+        )
+        .first()
+
+      if (membership?.status === 'active') {
+        const plan = PLANS[(org.plan as PlanKey) || 'free'] || PLANS.free
+        return plan.aiDailyLimit
+      }
+    }
+    // Fall through to default if org not found or user not a member
+  }
+
+  // Get all active organization memberships
+  const memberships = await ctx.db
+    .query('organizationMembers')
+    .withIndex('by_user', (q) => q.eq('userId', userId))
+    .filter((q) => q.eq(q.field('status'), 'active'))
+    .collect()
+
+  if (memberships.length === 0) {
+    return RATE_LIMIT_CONFIG.FREE_DAILY_LIMIT
+  }
+
+  // Get the plan for each organization
+  const planLimits = await Promise.all(
+    memberships.map(async (m) => {
+      const org = await ctx.db.get(m.organizationId)
+      if (!org) return 0
+      const plan = PLANS[(org.plan as PlanKey) || 'free'] || PLANS.free
+      return plan.aiDailyLimit
+    })
+  )
+
+  // Return the maximum limit available
+  return Math.max(RATE_LIMIT_CONFIG.FREE_DAILY_LIMIT, ...planLimits)
+}
+
+/**
  * Get current user's AI usage stats with detailed information
+ * @param organizationId - Optional: scope limits to a specific organization's plan
  */
 export const getMyUsage = query({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    organizationId: v.optional(v.id('organizations')),
+  },
+  handler: async (ctx, args) => {
     let user
     try {
       user = await getCurrentUser(ctx)
@@ -116,12 +181,15 @@ export const getMyUsage = query({
       .withIndex('by_user', (q) => q.eq('userId', user._id))
       .first()
 
+    // Get effective limit - scoped to organization if provided
+    const effectiveLimit = await getEffectiveDailyLimit(ctx, user._id, args.organizationId)
+
     if (!usage) {
       // No usage record yet - user has full quota
       return {
         promptsUsed: 0,
-        promptsRemaining: RATE_LIMIT_CONFIG.FREE_DAILY_LIMIT,
-        dailyLimit: RATE_LIMIT_CONFIG.FREE_DAILY_LIMIT,
+        promptsRemaining: effectiveLimit,
+        dailyLimit: effectiveLimit,
         totalPrompts: 0,
         resetsAt: getNextResetTime(),
         timeUntilReset,
@@ -133,7 +201,7 @@ export const getMyUsage = query({
 
     // Check if we need to reset (new day)
     const promptCount = usage.lastResetDate === today ? usage.promptCount : 0
-    const dailyLimit = usage.dailyLimit ?? RATE_LIMIT_CONFIG.FREE_DAILY_LIMIT
+    const dailyLimit = usage.dailyLimit ?? effectiveLimit
     const remaining = Math.max(0, dailyLimit - promptCount)
     const percentageUsed = Math.round((promptCount / dailyLimit) * 100)
 
@@ -155,10 +223,12 @@ export const getMyUsage = query({
 /**
  * Check if user can make an AI request (has remaining quota)
  * Returns detailed rate limit information for better error handling
+ * @param organizationId - Optional: scope limits to a specific organization's plan
  */
 export const checkRateLimit = query({
   args: {
     userId: v.optional(v.id('users')),
+    organizationId: v.optional(v.id('organizations')),
   },
   handler: async (ctx, args) => {
     let userId: Id<'users'> | null = args.userId ?? null
@@ -209,18 +279,21 @@ export const checkRateLimit = query({
       .withIndex('by_user', (q) => q.eq('userId', userId!))
       .first()
 
+    // Get effective limit - scoped to organization if provided
+    const effectiveLimit = await getEffectiveDailyLimit(ctx, userId!, args.organizationId)
+
     if (!usage) {
       return {
         allowed: true,
-        remaining: RATE_LIMIT_CONFIG.FREE_DAILY_LIMIT,
-        limit: RATE_LIMIT_CONFIG.FREE_DAILY_LIMIT,
+        remaining: effectiveLimit,
+        limit: effectiveLimit,
         code: 'OK',
       }
     }
 
     // Check if we need to reset (new day)
     const promptCount = usage.lastResetDate === today ? usage.promptCount : 0
-    const dailyLimit = usage.dailyLimit ?? RATE_LIMIT_CONFIG.FREE_DAILY_LIMIT
+    const dailyLimit = usage.dailyLimit ?? effectiveLimit
     const remaining = dailyLimit - promptCount
 
     if (remaining <= 0) {
@@ -360,10 +433,12 @@ export const incrementUsageInternal = internalMutation({
 /**
  * Atomic check-and-increment for HTTP actions
  * Prevents race conditions by checking AND incrementing in a single transaction
+ * @param organizationId - Optional: scope limits to a specific organization's plan
  */
 export const checkAndIncrementUsage = internalMutation({
   args: {
     userId: v.id('users'),
+    organizationId: v.optional(v.id('organizations')),
   },
   handler: async (ctx, args) => {
     const today = getTodayDateString()
@@ -399,7 +474,9 @@ export const checkAndIncrementUsage = internalMutation({
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
       .first()
 
-    const dailyLimit = usage?.dailyLimit ?? RATE_LIMIT_CONFIG.FREE_DAILY_LIMIT
+    // Get effective limit - scoped to organization if provided
+    const effectiveLimit = await getEffectiveDailyLimit(ctx, args.userId, args.organizationId)
+    const dailyLimit = usage?.dailyLimit ?? effectiveLimit
 
     if (!usage) {
       // First usage ever - create record with count of 1

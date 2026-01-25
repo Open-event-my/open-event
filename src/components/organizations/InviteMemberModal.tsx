@@ -1,9 +1,11 @@
 import { useState } from 'react'
-import { useMutation } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { useNavigate } from 'react-router-dom'
+import { PLANS, type PlanKey } from '../../../convex/config/plans'
 import {
   Dialog,
   DialogContent,
@@ -16,7 +18,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { CircleNotch, UserPlus, EnvelopeSimple } from '@phosphor-icons/react'
+import {
+  CircleNotch,
+  UserPlus,
+  EnvelopeSimple,
+  Users,
+  Warning,
+  RocketLaunch,
+} from '@phosphor-icons/react'
 
 interface InviteMemberModalProps {
   open: boolean
@@ -25,7 +34,7 @@ interface InviteMemberModalProps {
   organizationName: string
 }
 
-const ROLES = [
+export const ROLES = [
   {
     id: 'admin',
     name: 'Admin',
@@ -56,6 +65,7 @@ export function InviteMemberModal({
   organizationId,
   organizationName,
 }: InviteMemberModalProps) {
+  const navigate = useNavigate()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     email: '',
@@ -64,6 +74,26 @@ export function InviteMemberModal({
   })
 
   const inviteMember = useMutation(api.organizations.inviteMember)
+
+  // Fetch organization details for plan limits
+  const orgDetails = useQuery(api.organizations.get, { id: organizationId })
+
+  // Fetch current members
+  const members = useQuery(api.organizations.listMembers, { organizationId })
+
+  // Fetch pending invitations
+  const invitations = useQuery(api.organizations.listInvitations, { organizationId })
+
+  // Calculate capacity
+  const currentPlanKey = (orgDetails?.plan as PlanKey) || 'free'
+  const planConfig = PLANS[currentPlanKey]
+  const currentMemberCount = members?.length ?? 0
+  const pendingInviteCount = invitations?.length ?? 0
+  const totalSeatsUsed = currentMemberCount + pendingInviteCount
+  const effectiveLimit = Math.max(orgDetails?.maxMembers ?? 0, planConfig.maxMembers)
+  const remainingSeats = effectiveLimit - totalSeatsUsed
+  const isAtCapacity = remainingSeats <= 0
+  const isNearCapacity = remainingSeats > 0 && remainingSeats <= 2
 
   const updateField = (field: keyof typeof formData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -111,6 +141,76 @@ export function InviteMemberModal({
     })
   }
 
+  const handleUpgrade = () => {
+    onOpenChange(false)
+    navigate('/dashboard/settings?tab=billing')
+  }
+
+  // Show limit reached state
+  if (isAtCapacity) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-amber-500/10">
+                <Warning size={24} className="text-amber-500" weight="duotone" />
+              </div>
+              <div>
+                <DialogTitle>Team Limit Reached</DialogTitle>
+                <DialogDescription>
+                  <strong>{organizationName}</strong> has reached its member limit
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="py-6 space-y-4">
+            <div className="p-4 rounded-lg bg-muted/50 border border-border">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium flex items-center gap-2">
+                  <Users size={16} className="text-muted-foreground" />
+                  Seats Used
+                </span>
+                <span className="font-mono text-sm font-bold text-amber-600">
+                  {totalSeatsUsed} / {effectiveLimit}
+                </span>
+              </div>
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                <div className="h-full bg-amber-500 w-full" />
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                {currentMemberCount} active members + {pendingInviteCount} pending invitations
+              </p>
+            </div>
+
+            <div className="text-center space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Upgrade to <strong>{currentPlanKey === 'free' ? 'Pro' : 'Business'}</strong> to add
+                more team members.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {currentPlanKey === 'free'
+                  ? 'Pro plan includes up to 5 team members'
+                  : 'Business plan includes up to 20 team members'}
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpgrade} className="gap-2">
+              <RocketLaunch size={16} weight="duotone" />
+              Upgrade Plan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
@@ -128,7 +228,43 @@ export function InviteMemberModal({
           </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
+        {/* Capacity indicator */}
+        <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-muted/50 border border-border">
+          <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+            <Users size={14} />
+            Seats Used
+          </span>
+          <span
+            className={cn(
+              'font-mono text-xs font-medium',
+              isNearCapacity ? 'text-amber-600' : 'text-muted-foreground'
+            )}
+          >
+            {totalSeatsUsed} / {effectiveLimit}
+            {isNearCapacity && (
+              <span className="ml-2 text-amber-600">({remainingSeats} remaining)</span>
+            )}
+          </span>
+        </div>
+
+        {isNearCapacity && (
+          <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-start gap-2">
+            <Warning size={16} className="text-amber-600 mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-amber-600">
+              You're almost at capacity. Consider{' '}
+              <button
+                type="button"
+                onClick={handleUpgrade}
+                className="underline hover:no-underline font-medium"
+              >
+                upgrading your plan
+              </button>{' '}
+              for more seats.
+            </p>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4 py-2">
           <div className="space-y-2">
             <Label htmlFor="email">
               Email Address <span className="text-destructive">*</span>

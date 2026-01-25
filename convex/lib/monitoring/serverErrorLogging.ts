@@ -30,7 +30,7 @@ const SENSITIVE_PATTERNS = [
   /ssn/i,
   /social[_-]?security/i,
   /bearer\s+[a-zA-Z0-9._-]+/i,
-  /jwt/i,
+  /eyJ[a-zA-Z0-9\-_]+\.[a-zA-Z0-9\-_]+\.[a-zA-Z0-9\-_]+/,
 ]
 
 /**

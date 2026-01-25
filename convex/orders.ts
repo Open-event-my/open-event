@@ -15,6 +15,10 @@ import { query, mutation, internalMutation, internalQuery } from './_generated/s
 import { getAuthUserId } from '@convex-dev/auth/server'
 import type { Id } from './_generated/dataModel'
 import { logger } from './lib/monitoring/logger'
+import { withAuth } from './lib/security/queryMiddleware'
+import { createOrderDTO, createOrderStatsDTO, type OrderVisibilityLevel } from './lib/security/dtos'
+import { checkEventManagementPermission } from './lib/security/permissions'
+import { AppError, ErrorCodes } from './lib/errors'
 
 // Platform fee percentage
 const PLATFORM_FEE_PERCENT = 0.03 // 3%
@@ -97,69 +101,89 @@ export const getById = internalQuery({
 })
 
 // Get orders for a buyer by email
+// SECURITY: Requires authentication. Only the buyer or admin can access orders.
 export const getByEmail = query({
   args: { email: v.string() },
-  handler: async (ctx, args) => {
-    return await ctx.db
+  handler: withAuth(async (ctx, args: { email: string }) => {
+    // Normalize email for comparison
+    const normalizedEmail = args.email.trim().toLowerCase()
+
+    // Authorization check: only the order owner or admin can access
+    const isAdmin = ctx.user.role === 'admin' || ctx.user.role === 'superadmin'
+    const isOwner = ctx.user.email?.toLowerCase() === normalizedEmail
+
+    if (!isAdmin && !isOwner) {
+      // Log unauthorized access attempt for security monitoring
+      await logger.warn('Unauthorized order access attempt', {
+        userId: ctx.user._id,
+        requestedEmail: normalizedEmail,
+        userEmail: ctx.user.email,
+        action: 'orders:getByEmail',
+        status: 'blocked',
+      })
+
+      throw new AppError('You can only access your own orders', ErrorCodes.FORBIDDEN, 403)
+    }
+
+    // Fetch orders
+    const orders = await ctx.db
       .query('orders')
-      .withIndex('by_email', (q) => q.eq('buyerEmail', args.email.toLowerCase()))
+      .withIndex('by_email', (q) => q.eq('buyerEmail', normalizedEmail))
       .collect()
-  },
+
+    // Apply field filtering based on role
+    const visibilityLevel: OrderVisibilityLevel = isAdmin ? 'admin' : 'buyer'
+    return orders.map((order) => createOrderDTO(order, visibilityLevel))
+  }),
 })
 
 // Get order stats for an event
+// SECURITY: Requires authentication. Only event organizer, org managers, or admins can access.
 export const getStats = query({
   args: { eventId: v.id('events') },
-  handler: async (ctx, args) => {
+  handler: withAuth(async (ctx, args: { eventId: Id<'events'> }) => {
+    // Get the event
+    const event = await ctx.db.get(args.eventId)
+    if (!event) {
+      throw new AppError('Event not found', ErrorCodes.NOT_FOUND, 404)
+    }
+
+    // Authorization check
+    const isAdmin = ctx.user.role === 'admin' || ctx.user.role === 'superadmin'
+    const isOrganizer = event.organizerId === ctx.user._id
+    let authorized = isAdmin || isOrganizer
+
+    // Check if user has organization-level permissions
+    if (!authorized && event.organizationId) {
+      const permCheck = await checkEventManagementPermission(ctx, event.organizationId)
+      authorized = permCheck.authorized
+    }
+
+    if (!authorized) {
+      await logger.warn('Unauthorized stats access attempt', {
+        userId: ctx.user._id,
+        eventId: args.eventId,
+        action: 'orders:getStats',
+        status: 'blocked',
+      })
+
+      throw new AppError(
+        'You do not have permission to view statistics for this event',
+        ErrorCodes.FORBIDDEN,
+        403
+      )
+    }
+
+    // Fetch orders
     const orders = await ctx.db
       .query('orders')
       .withIndex('by_event', (q) => q.eq('eventId', args.eventId))
       .collect()
 
-    const completed = orders.filter((o) => o.paymentStatus === 'completed')
-    const pending = orders.filter(
-      (o) => o.paymentStatus === 'pending' || o.paymentStatus === 'processing'
-    )
-    const refunded = orders.filter((o) => o.paymentStatus === 'refunded')
-    const failed = orders.filter(
-      (o) => o.paymentStatus === 'failed' || o.paymentStatus === 'cancelled'
-    )
-
-    const totalRevenue = completed.reduce((sum, o) => sum + o.total, 0)
-    const refundedAmount = refunded.reduce((sum, o) => sum + (o.refundAmount || o.total), 0)
-    const netRevenue = totalRevenue - refundedAmount
-    const totalTickets = completed.reduce(
-      (sum, o) => sum + o.items.reduce((s, i) => s + i.quantity, 0),
-      0
-    )
-
-    // Get ticket breakdown
-    const ticketBreakdown: Record<string, { quantity: number; revenue: number }> = {}
-    for (const order of completed) {
-      for (const item of order.items) {
-        if (!ticketBreakdown[item.ticketTypeName]) {
-          ticketBreakdown[item.ticketTypeName] = { quantity: 0, revenue: 0 }
-        }
-        ticketBreakdown[item.ticketTypeName].quantity += item.quantity
-        ticketBreakdown[item.ticketTypeName].revenue += item.subtotal
-      }
-    }
-
-    return {
-      totalOrders: orders.length,
-      completedOrders: completed.length,
-      pendingOrders: pending.length,
-      refundedOrders: refunded.length,
-      failedOrders: failed.length,
-      totalRevenue,
-      refundedAmount,
-      netRevenue,
-      totalTickets,
-      averageOrderValue: completed.length > 0 ? totalRevenue / completed.length : 0,
-      ticketBreakdown,
-      currency: completed[0]?.currency || 'usd',
-    }
-  },
+    // Use DTO to create aggregated stats (prevents buyer enumeration)
+    const currency = event.budgetCurrency || 'usd'
+    return createOrderStatsDTO(orders, currency)
+  }),
 })
 
 // Get sales over time for dashboard charts

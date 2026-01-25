@@ -3,6 +3,8 @@ import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { Logo } from '@/components/ui/logo'
 import { NotificationBell } from '@/components/notifications'
 import { useAuth } from '@/contexts/AuthContext'
+import { useOrganizationRole } from '@/hooks/useOrganizationRole'
+import { Badge } from '@/components/ui/badge'
 import { useAuthActions } from '@convex-dev/auth/react'
 import { SidebarSimple, SignOut, User, CaretDown, ShieldCheck } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
@@ -22,6 +24,7 @@ const mainNavItems = [
 export function TopBar({ onMenuClick, sidebarCollapsed }: TopBarProps) {
   const { user, signOut: customSignOut } = useAuth()
   const { signOut: convexSignOut } = useAuthActions()
+  const { role } = useOrganizationRole()
   const navigate = useNavigate()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -160,9 +163,14 @@ export function TopBar({ onMenuClick, sidebarCollapsed }: TopBarProps) {
               <div className="absolute right-0 top-full mt-2 w-56 bg-popover border border-border rounded-xl shadow-lg py-1 z-50 animate-in fade-in-0 zoom-in-95 duration-100">
                 {/* User info */}
                 <div className="px-3 py-3 border-b border-border">
-                  <p className="font-medium text-sm text-foreground truncate">
-                    {user?.name || 'User'}
-                  </p>
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <p className="font-medium text-sm text-foreground truncate max-w-[120px]">
+                      {user?.name || 'User'}
+                    </p>
+                    <Badge variant="outline" className="text-[10px] px-1.5 h-5 font-normal">
+                      {role ? role.charAt(0).toUpperCase() + role.slice(1) : 'Viewer'}
+                    </Badge>
+                  </div>
                   <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                 </div>
 

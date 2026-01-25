@@ -41,11 +41,13 @@ import { useState } from 'react'
 import { AddToCalendar } from '@/components/calendar'
 import type { CalendarEvent } from '@/lib/calendar'
 import { AddSponsorDialog } from '@/components/events/AddSponsorDialog'
+import { useOrganizationRole } from '@/hooks/useOrganizationRole'
 
 export function EventDetailPage() {
   const { eventId } = useParams<{ eventId: string }>()
   const navigate = useNavigate()
   const [isDeleting, setIsDeleting] = useState(false)
+  const { canManageEvents } = useOrganizationRole()
 
   const event = useQuery(api.events.get, eventId ? { id: eventId as Id<'events'> } : 'skip')
 
@@ -240,30 +242,34 @@ export function EventDetailPage() {
               size="sm"
             />
           )}
-          <Link
-            to={`/dashboard/events/${eventId}/edit`}
-            className={cn(
-              'inline-flex items-center gap-2 px-4 py-2 rounded-lg',
-              'border border-border text-sm font-medium',
-              'hover:bg-muted transition-colors'
-            )}
-          >
-            <PencilSimple size={16} weight="bold" />
-            Edit
-          </Link>
-          <button
-            onClick={handleDelete}
-            disabled={isDeleting}
-            className={cn(
-              'inline-flex items-center gap-2 px-4 py-2 rounded-lg',
-              'border border-destructive/20 text-destructive text-sm font-medium',
-              'hover:bg-destructive/10 transition-colors cursor-pointer',
-              'disabled:opacity-50 disabled:cursor-not-allowed'
-            )}
-          >
-            <Trash size={16} weight="bold" />
-            {isDeleting ? 'Deleting...' : 'Delete'}
-          </button>
+          {canManageEvents && (
+            <>
+              <Link
+                to={`/dashboard/events/${eventId}/edit`}
+                className={cn(
+                  'inline-flex items-center gap-2 px-4 py-2 rounded-lg',
+                  'border border-border text-sm font-medium',
+                  'hover:bg-muted transition-colors'
+                )}
+              >
+                <PencilSimple size={16} weight="bold" />
+                Edit
+              </Link>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className={cn(
+                  'inline-flex items-center gap-2 px-4 py-2 rounded-lg',
+                  'border border-destructive/20 text-destructive text-sm font-medium',
+                  'hover:bg-destructive/10 transition-colors cursor-pointer',
+                  'disabled:opacity-50 disabled:cursor-not-allowed'
+                )}
+              >
+                <Trash size={16} weight="bold" />
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </>
+          )}
         </div>
       </div>
 

@@ -37,9 +37,10 @@ export function BillingTab() {
   )
 
   // Pass organization context to AI usage for org-scoped limits
-  const aiUsage = useQuery(api.aiUsage.getMyUsage, {
-    organizationId: organization?.id as Id<'organizations'> | undefined,
-  })
+  const aiUsage = useQuery(
+    api.aiUsage.getMyUsage,
+    organization?.id ? { organizationId: organization.id as Id<'organizations'> } : 'skip'
+  )
 
   // Plan change action (for downgrading to free)
   const downgradeToFree = useAction(api.organizations.downgradeToFree)
