@@ -263,6 +263,15 @@ export const { auth, signIn, signOut, store } = convexAuth({
               `[AUTH] User ${userId} has pending role ${pendingRole} but email not verified. Keeping as organizer.`
             )
           }
+
+          // Schedule verification email for new unverified users
+          // We only send this for email/password signups that aren't already verified
+          if (args.type === 'credentials' || args.type === 'email') {
+            console.log('[AUTH] Scheduling verification email for new user:', userId)
+            await ctx.scheduler.runAfter(0, internal.emailVerification.sendVerificationEmail, {
+              userId,
+            })
+          }
         }
 
         console.log('[AUTH] Setting role for new user:', finalRole)
