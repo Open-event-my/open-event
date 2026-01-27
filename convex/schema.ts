@@ -82,6 +82,7 @@ export default defineSchema({
   organizerProfiles: defineTable({
     userId: v.id('users'),
     organizationName: v.optional(v.string()),
+    role: v.optional(v.string()),
     organizationType: v.optional(v.string()), // company, nonprofit, government, community
     eventTypes: v.optional(v.array(v.string())), // Conferences, Hackathons, etc.
     eventScale: v.optional(v.string()), // small, medium, large, enterprise

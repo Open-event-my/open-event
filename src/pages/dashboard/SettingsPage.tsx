@@ -138,8 +138,27 @@ export function SettingsPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   const changePassword = useAction(api.passwordReset.changePassword)
+  const [isResending, setIsResending] = useState(false)
+  const resendVerification = useAction(api.emailVerification.resendVerificationEmail)
   const { role, isAdmin } = useOrganizationRole()
   useOrganization() // For organization context
+
+  const handleResendVerification = async () => {
+    if (!currentUser?.email) return
+    setIsResending(true)
+    try {
+      const result = await resendVerification({ email: currentUser.email })
+      if (result.success) {
+        toast.success(result.message)
+      } else {
+        toast.error(result.message)
+      }
+    } catch {
+      toast.error('Failed to send verification email')
+    } finally {
+      setIsResending(false)
+    }
+  }
 
   // Password validation
   const passwordRequirements = [
@@ -444,10 +463,34 @@ export function SettingsPage() {
                     <Envelope size={20} weight="duotone" className="text-muted-foreground" />
                   </div>
                   <div>
-                    <p className="font-medium text-sm">Email Address</p>
-                    <p className="text-xs text-muted-foreground">
-                      {currentUser?.email || 'Not set'}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-sm">Email Address</p>
+                      {currentUser?.emailVerified ? (
+                        <Badge
+                          variant="outline"
+                          className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px] h-5 px-1.5"
+                        >
+                          Verified
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[10px] h-5 px-1.5"
+                        >
+                          Unverified
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">{currentUser?.email || 'Not set'}</p>
+                    {!currentUser?.emailVerified && currentUser?.email && (
+                      <button
+                        onClick={handleResendVerification}
+                        disabled={isResending}
+                        className="text-[10px] text-primary hover:underline mt-1 cursor-pointer disabled:opacity-50"
+                      >
+                        {isResending ? 'Sending...' : 'Resend verification email'}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

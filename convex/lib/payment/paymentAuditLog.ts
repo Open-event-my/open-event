@@ -10,7 +10,8 @@
  */
 
 import { v } from 'convex/values'
-import { internalMutation, internalQuery } from '../../_generated/server'
+import { internalMutation, internalQuery, type MutationCtx, type ActionCtx } from '../../_generated/server'
+import { internal } from '../../_generated/api'
 import type { Id } from '../../_generated/dataModel'
 import { logger } from '../monitoring/logger'
 
@@ -355,10 +356,9 @@ export function isSuccessEvent(eventType: PaymentEventType): boolean {
 // ============================================================================
 
 /**
- * Context type for PaymentAuditLogger - accepts any object with runMutation
+ * Context type for PaymentAuditLogger - accepts MutationCtx or ActionCtx
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AuditLogContext = { runMutation: (...args: any[]) => Promise<any> }
+export type AuditLogContext = MutationCtx | ActionCtx
 
 /**
  * PaymentAuditLogger - Service for logging payment events
@@ -389,7 +389,7 @@ export class PaymentAuditLogger {
     })
 
     // Store in audit log database
-    await ctx.runMutation(logPaymentEventInternal, {
+    await ctx.runMutation(internal.lib.payment.paymentAuditLog.logPaymentEventInternal, {
       eventType: entry.eventType,
       orderId: entry.orderId,
       orderNumber: entry.orderNumber,

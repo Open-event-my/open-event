@@ -275,14 +275,18 @@ export function withAdminAuditLog<Args extends Record<string, unknown>, Output>(
  * });
  * ```
  */
-export function auditedMutation<Args extends Record<string, unknown>, Output>(config: {
+export function auditedMutation<
+  Args extends Record<string, unknown>,
+  Output,
+  ArgsValidator extends Record<string, unknown>
+>(config: {
   audit: AuditLogOptions
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  args: any
+  args: ArgsValidator
   handler: (ctx: MutationCtx, args: Args) => Promise<Output>
 }) {
   return mutation({
-    args: config.args,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    args: config.args as any,
     handler: withAuditLog(config.audit, config.handler),
   })
 }
@@ -313,17 +317,21 @@ export function auditedMutation<Args extends Record<string, unknown>, Output>(co
  * });
  * ```
  */
-export function auditedAdminMutation<Args extends Record<string, unknown>, Output>(config: {
+export function auditedAdminMutation<
+  Args extends Record<string, unknown>,
+  Output,
+  ArgsValidator extends Record<string, unknown>
+>(config: {
   audit: AuditLogOptions & {
     severity?: 'low' | 'medium' | 'high' | 'critical'
     getImpactedUsers?: (args: Args) => string[]
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  args: any
+  args: ArgsValidator
   handler: (ctx: MutationCtx, args: Args) => Promise<Output>
 }) {
   return mutation({
-    args: config.args,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    args: config.args as any,
     handler: withAdminAuditLog(config.audit, config.handler),
   })
 }

@@ -8,7 +8,9 @@ import { action, internalMutation, internalQuery, mutation } from './_generated/
 import { internal } from './_generated/api'
 import { Resend } from 'resend'
 import bcrypt from 'bcryptjs'
+import { Scrypt } from 'lucia'
 import { validatePassword } from './lib/passwordValidation'
+import { Id } from './_generated/dataModel'
 
 // Lazy initialize Resend (API key from environment)
 function getResendClient() {
@@ -58,6 +60,17 @@ export const getUserForReset = internalQuery({
   args: { userId: v.id('users') },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.userId)
+  },
+})
+
+export const checkAuthAccountPassword = internalQuery({
+  args: { userId: v.id('users') },
+  handler: async (ctx, args) => {
+    const authAccount = await ctx.db
+      .query('authAccounts')
+      .filter((q) => q.eq(q.field('userId'), args.userId))
+      .first()
+    return !!(authAccount && authAccount.secret)
   },
 })
 
@@ -134,7 +147,15 @@ export const requestPasswordReset = action({
     }
 
     // Check if user has a password (might be OAuth only)
-    if (!user.passwordHash) {
+    let hasPassword = !!user.passwordHash;
+    if (!hasPassword) {
+      // Check for Convex Auth account
+      hasPassword = await ctx.runQuery(internal.passwordReset.checkAuthAccountPassword, {
+        userId: user._id
+      });
+    }
+
+    if (!hasPassword) {
       // Still return success to not reveal account details
       return {
         success: true,
@@ -332,10 +353,15 @@ export const resetPassword = action({
     const saltRounds = 10
     const passwordHash = await bcrypt.hash(args.newPassword, saltRounds)
 
+    // Hash with Scrypt for Convex Auth
+    const scrypt = new Scrypt();
+    const secret = await scrypt.hash(args.newPassword);
+
     // Update password and mark token as used
     await ctx.runMutation(internal.passwordReset.updatePasswordAndMarkTokenUsed, {
       token: args.token,
       passwordHash,
+      secret,
     })
 
     return {
@@ -385,6 +411,7 @@ export const updatePasswordAndMarkTokenUsed = internalMutation({
   args: {
     token: v.string(),
     passwordHash: v.string(),
+    secret: v.string(),
   },
   handler: async (ctx, args) => {
     // Get token record
@@ -406,11 +433,33 @@ export const updatePasswordAndMarkTokenUsed = internalMutation({
       usedAt: Date.now(),
     })
 
-    // Update user password
+    // Update user password (legacy)
     await ctx.db.patch(tokenRecord.userId, {
       passwordHash: args.passwordHash,
       updatedAt: Date.now(),
     })
+
+    // Update Convex Auth account (primary)
+    const authAccount = await ctx.db
+      .query('authAccounts')
+      .withIndex('userIdAndProvider', (q) => 
+        q.eq('userId', tokenRecord.userId).eq('provider', 'password')
+      )
+      .first();
+
+    if (authAccount) {
+      await ctx.db.patch(authAccount._id, {
+        secret: args.secret,
+      });
+    } else if (user?.email) {
+      // Create new auth account if it doesn't exist (migration)
+      await ctx.db.insert('authAccounts', {
+        userId: tokenRecord.userId,
+        provider: 'password',
+        providerAccountId: user.email,
+        secret: args.secret,
+      });
+    }
 
     // Create audit log entry
     await ctx.db.insert('auditLogs', {
@@ -459,6 +508,7 @@ export const updateUserPassword = internalMutation({
   args: {
     userId: v.id('users'),
     passwordHash: v.string(),
+    secret: v.string(),
   },
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId)
@@ -466,11 +516,33 @@ export const updateUserPassword = internalMutation({
       throw new Error('User not found')
     }
 
-    // Update password
+    // Update password (legacy)
     await ctx.db.patch(args.userId, {
       passwordHash: args.passwordHash,
       updatedAt: Date.now(),
     })
+
+    // Update Convex Auth account (primary)
+    const authAccount = await ctx.db
+      .query('authAccounts')
+      .withIndex('userIdAndProvider', (q) => 
+        q.eq('userId', args.userId).eq('provider', 'password')
+      )
+      .first();
+
+    if (authAccount) {
+      await ctx.db.patch(authAccount._id, {
+        secret: args.secret,
+      });
+    } else if (user.email) {
+      // Create new auth account if it doesn't exist
+      await ctx.db.insert('authAccounts', {
+        userId: args.userId,
+        provider: 'password',
+        providerAccountId: user.email,
+        secret: args.secret,
+      });
+    }
 
     // Create audit log entry
     await ctx.db.insert('auditLogs', {
@@ -504,9 +576,10 @@ export const changePassword = action({
       throw new Error('Not authenticated. Please sign in.')
     }
 
-    // Get user from database
-    const user = await ctx.runQuery(internal.passwordReset.getCurrentUserForPasswordChange, {
-      tokenIdentifier: identity.tokenIdentifier,
+    // Get user from database (Convex Auth uses subject as userId)
+    const userId = identity.subject.split('|')[0] as Id<'users'>
+    const user = await ctx.runQuery(internal.passwordReset.getUserForReset, {
+      userId,
     })
 
     if (!user) {
@@ -540,10 +613,14 @@ export const changePassword = action({
     const saltRounds = 10
     const newPasswordHash = await bcrypt.hash(args.newPassword, saltRounds)
 
+    const scrypt = new Scrypt();
+    const secret = await scrypt.hash(args.newPassword);
+
     // Update password
     await ctx.runMutation(internal.passwordReset.updateUserPassword, {
       userId: user._id,
       passwordHash: newPasswordHash,
+      secret,
     })
 
     return {

@@ -173,8 +173,7 @@ export function AdminInquiries() {
                 {STATUS_FILTERS.map((f) => (
                   <DropdownMenuItem
                     key={f.value}
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    onClick={() => setStatusFilter(f.value as any)}
+                    onClick={() => setStatusFilter(f.value as InquiryStatus | 'all')}
                     className="text-xs"
                   >
                     {f.label}
@@ -195,8 +194,7 @@ export function AdminInquiries() {
                 {TYPE_FILTERS.map((f) => (
                   <DropdownMenuItem
                     key={f.value}
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    onClick={() => setTypeFilter(f.value as any)}
+                    onClick={() => setTypeFilter(f.value as InquiryToType | 'all')}
                     className="text-xs"
                   >
                     {f.label}

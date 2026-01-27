@@ -6,6 +6,7 @@ import { TypeformLayout, TypeformTransition } from '@/components/typeform'
 import { useOnboarding } from '@/hooks/use-onboarding'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import {
+  WelcomeStep,
   RoleStep,
   OrganizationStep,
   EventTypesStep,
@@ -14,47 +15,26 @@ import {
   ExperienceStep,
   ReferralStep,
 } from './steps'
+import type { OnboardingStepId } from '@/hooks/use-onboarding'
 import type { OnboardingAnswers } from '@/types/onboarding'
+import type { StepProps } from '@/types/onboarding'
 
-const steps = [
-  RoleStep,
-  OrganizationStep,
-  EventTypesStep,
-  EventScaleStep,
-  GoalsStep,
-  ExperienceStep,
-  ReferralStep,
-]
+// Map step IDs to components
+const STEP_COMPONENTS: Record<OnboardingStepId, React.ComponentType<StepProps>> = {
+  welcome: WelcomeStep,
+  role: RoleStep,
+  organization: OrganizationStep,
+  eventTypes: EventTypesStep,
+  eventScale: EventScaleStep,
+  goals: GoalsStep,
+  experience: ExperienceStep,
+  referral: ReferralStep,
+}
 
 export function Onboarding() {
   const navigate = useNavigate()
   const { isLoading: authLoading, isAuthenticated } = useConvexAuth()
-  const user = useQuery(api.queries.auth.getCurrentUser)
   const saveProfile = useMutation(api.organizerProfiles.saveProfile)
-
-  // #region agent log
-  useEffect(() => {
-    fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        location: 'src/pages/onboarding/Onboarding.tsx:35',
-        message: 'Onboarding auth state',
-        data: {
-          isAuthenticated,
-          authLoading,
-          hasUser: !!user,
-          userId: user?._id,
-          userRole: user?.role,
-        },
-        timestamp: Date.now(),
-        sessionId: 'debug-session',
-        runId: 'onboarding-auth',
-        hypothesisId: 'O1',
-      }),
-    }).catch(() => {})
-  }, [isAuthenticated, authLoading, user])
-  // #endregion
 
   // Only query profile if authenticated
   const existingProfile = useQuery(
@@ -67,12 +47,14 @@ export function Onboarding() {
   const {
     currentStep,
     totalSteps,
+    currentStepId,
     answers,
     isComplete,
     direction,
     nextStep,
     prevStep,
     skipOnboarding,
+    reset,
   } = useOnboarding()
 
   // Redirect unauthenticated users to sign-in
@@ -84,33 +66,23 @@ export function Onboarding() {
 
   // Redirect users who already have a profile to dashboard
   useEffect(() => {
-    if (existingProfile) {
-      navigate('/dashboard', { replace: true })
+    // If we are in the completion phase (isComplete is true), don't redirect yet
+    // Let the save logic handle the navigation to /onboarding/complete
+    if (existingProfile && !isComplete && !authLoading) {
+       // Check if profile was just created (within last 5 seconds) to assume completion
+       const isRecent = existingProfile.createdAt && (Date.now() - existingProfile.createdAt < 5000);
+       if (!isRecent) {
+           navigate('/dashboard', { replace: true })
+       }
     }
-  }, [existingProfile, navigate])
+  }, [existingProfile, navigate, isComplete, authLoading])
 
   // Save onboarding data and navigate to completion when done
   useEffect(() => {
     if (isComplete && !hasSavedRef.current && isAuthenticated) {
       hasSavedRef.current = true
 
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          location: 'src/pages/onboarding/Onboarding.tsx:70',
-          message: 'Saving onboarding profile',
-          data: { isAuthenticated, hasUser: !!user },
-          timestamp: Date.now(),
-          sessionId: 'debug-session',
-          runId: 'onboarding-save',
-          hypothesisId: 'O2',
-        }),
-      }).catch(() => {})
-      // #endregion
-
-      // Save profile to Convex (no accessToken needed - uses Convex Auth)
+      // Save profile to Convex
       saveProfile({
         organizationName: answers.organizationName,
         organizationType: answers.organizationType,
@@ -121,46 +93,19 @@ export function Onboarding() {
         referralSource: answers.referralSource,
       })
         .then(() => {
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              location: 'src/pages/onboarding/Onboarding.tsx:88',
-              message: 'Onboarding profile saved successfully',
-              data: {},
-              timestamp: Date.now(),
-              sessionId: 'debug-session',
-              runId: 'onboarding-save',
-              hypothesisId: 'O3',
-            }),
-          }).catch(() => {})
-          // #endregion
+          reset() // Clear local storage on success
           navigate('/onboarding/complete', { replace: true })
         })
         .catch((error) => {
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/bf0148c8-69d2-4cb6-82fd-f2bf765adef1', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              location: 'src/pages/onboarding/Onboarding.tsx:92',
-              message: 'Onboarding profile save error',
-              data: { error: error instanceof Error ? error.message : String(error) },
-              timestamp: Date.now(),
-              sessionId: 'debug-session',
-              runId: 'onboarding-save',
-              hypothesisId: 'O4',
-            }),
-          }).catch(() => {})
-          // #endregion
+          console.error('Onboarding save error:', error)
           // Navigate anyway - we don't want to block the user
+          reset()
           navigate('/onboarding/complete', { replace: true })
         })
     }
-  }, [isComplete, answers, saveProfile, navigate, isAuthenticated, user])
+  }, [isComplete, answers, saveProfile, navigate, isAuthenticated, reset])
 
-  const CurrentStepComponent = steps[currentStep - 1]
+  const CurrentStepComponent = STEP_COMPONENTS[currentStepId]
 
   // Show loading while checking auth state
   if (authLoading) {
@@ -196,11 +141,11 @@ export function Onboarding() {
       canGoNext={true}
       canGoPrevious={currentStep > 1}
     >
-      <TypeformTransition transitionKey={currentStep} direction={direction}>
+      <TypeformTransition transitionKey={currentStepId} direction={direction}>
         <CurrentStepComponent
           onNext={handleNext}
           onBack={handleBack}
-          onSkip={currentStep === totalSteps ? handleSkip : undefined}
+          onSkip={currentStepId === 'referral' ? handleSkip : undefined}
           currentData={answers}
         />
       </TypeformTransition>

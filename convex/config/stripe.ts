@@ -55,8 +55,8 @@ export function getPlanFromPriceId(priceId: string): PlanKey | null {
 /**
  * Stripe API version to use
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const STRIPE_API_VERSION = '2023-10-16' as any
+// Cast to string to avoid specific version type dependency issues in this config file
+export const STRIPE_API_VERSION = '2023-10-16' as string
 
 /**
  * Success and cancel URLs for Stripe Checkout

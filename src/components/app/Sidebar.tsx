@@ -1,8 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
-import { useQuery } from 'convex/react'
-import { api } from '../../../convex/_generated/api'
 import { cn } from '@/lib/utils'
 import { Logo, LogoIcon } from '@/components/ui/logo'
+import { useUserContext } from '@/contexts/UserContext'
 import {
   House,
   Calendar,
@@ -18,26 +17,68 @@ interface SidebarProps {
   collapsed: boolean
 }
 
-const navigationItems = [
-  { label: 'Overview', icon: House, path: '/dashboard', number: null },
-  { label: 'Events', icon: Calendar, path: '/dashboard/events', number: 1 },
-  { label: 'Vendors', icon: Storefront, path: '/dashboard/vendors', number: 2 },
-  { label: 'Sponsors', icon: Handshake, path: '/dashboard/sponsors', number: 3 },
-  { label: 'Analytics', icon: ChartLine, path: '/dashboard/analytics', number: 4 },
-]
-
 const bottomItems = [{ label: 'Settings', icon: Gear, path: '/dashboard/settings' }]
 
 export function Sidebar({ collapsed }: SidebarProps) {
   const location = useLocation()
-  const currentUser = useQuery(api.queries.auth.getCurrentUser)
-  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'superadmin'
+  const { isOrganizer, isSponsor, isVendor, isAdmin, isLoading } = useUserContext()
 
   const isActive = (path: string) => {
     if (path === '/dashboard') {
       return location.pathname === '/dashboard'
     }
     return location.pathname.startsWith(path)
+  }
+
+  // Dynamic Navigation Items based on Role
+  const navigationItems = [
+    { 
+      label: 'Overview', 
+      icon: House, 
+      path: '/dashboard', 
+      number: null,
+      visible: true 
+    },
+    { 
+      label: 'Events', 
+      icon: Calendar, 
+      path: '/dashboard/events', 
+      number: 1,
+      visible: isOrganizer || isVendor // Vendors might want to see events they are attending
+    },
+    { 
+      label: 'Vendors', 
+      icon: Storefront, 
+      path: '/dashboard/vendors', 
+      number: 2,
+      visible: isOrganizer // Only organizers manage vendors
+    },
+    { 
+      label: 'Sponsorships', 
+      icon: Handshake, 
+      path: '/dashboard/sponsors', 
+      number: 3,
+      visible: isOrganizer || isSponsor // Both need to see sponsorship deals
+    },
+    { 
+      label: 'Analytics', 
+      icon: ChartLine, 
+      path: '/dashboard/analytics', 
+      number: 4,
+      visible: true 
+    },
+  ].filter(item => item.visible)
+
+  if (isLoading) {
+    return (
+      <aside className={cn(
+        'hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:top-14',
+        'bg-white dark:bg-sidebar transition-all duration-200 ease-out z-30',
+        collapsed ? 'lg:w-16' : 'lg:w-60'
+      )}>
+        {/* Skeleton loading state could go here */}
+      </aside>
+    )
   }
 
   return (
@@ -60,28 +101,33 @@ export function Sidebar({ collapsed }: SidebarProps) {
         </Link>
       </div>
 
-      {/* Create Event Button */}
-      <div className="px-3 pb-3">
-        <Link
-          to="/dashboard/events/new"
-          className={cn(
-            'flex items-center gap-2 w-full py-2.5 rounded-lg',
-            'bg-foreground text-background font-medium text-[14px]',
-            'hover:opacity-90 transition-all duration-150',
-            collapsed ? 'px-2 justify-center' : 'px-3'
-          )}
-          title={collapsed ? 'Create Event' : undefined}
-        >
-          <Plus size={16} weight="bold" />
-          {!collapsed && <span>Add content</span>}
-        </Link>
-      </div>
+      {/* Create Event Button - Only for Organizers */}
+      {isOrganizer && (
+        <div className="px-3 pb-3">
+          <Link
+            to="/dashboard/events/new"
+            className={cn(
+              'flex items-center gap-2 w-full py-2.5 rounded-lg',
+              'bg-foreground text-background font-medium text-[14px]',
+              'hover:opacity-90 transition-all duration-150',
+              collapsed ? 'px-2 justify-center' : 'px-3'
+            )}
+            title={collapsed ? 'Create Event' : undefined}
+          >
+            <Plus size={16} weight="bold" />
+            {!collapsed && <span>Create Event</span>}
+          </Link>
+        </div>
+      )}
 
       {/* Navigation */}
       <nav className="flex-1 px-2 py-1 space-y-0.5 overflow-y-auto">
-        {navigationItems.map((item) => {
+        {navigationItems.map((item, index) => {
           const Icon = item.icon
           const active = isActive(item.path)
+          // Dynamically re-number items based on visibility
+          const displayNum = item.number ? index + 1 : null
+
           return (
             <Link
               key={item.path}
@@ -96,7 +142,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
               )}
             >
               {/* Numbered badge like Typeform */}
-              {item.number && !collapsed ? (
+              {displayNum && !collapsed ? (
                 <span
                   className={cn(
                     'w-6 h-6 rounded-md flex items-center justify-center text-xs font-semibold',
@@ -105,7 +151,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
                       : 'bg-secondary text-muted-foreground'
                   )}
                 >
-                  {item.number}
+                  {displayNum}
                 </span>
               ) : (
                 <Icon size={18} weight={active ? 'fill' : 'regular'} />

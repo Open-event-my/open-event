@@ -1,4 +1,4 @@
-import { useQuery } from 'convex/react'
+import { useQuery, useConvexAuth } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import {
   Calendar,
@@ -13,24 +13,44 @@ import {
   Lightbulb,
   Plus,
   PencilSimple,
+  BookOpen,
+  Upload,
 } from '@phosphor-icons/react'
 import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { formatDate } from '@/lib/constants'
 import { useState } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
 import { NotificationTestHelper } from '@/components/notifications/NotificationTestHelper'
 
 type ViewMode = 'list' | 'grid'
 
+// Icon mapping for suggested actions
+const ACTION_ICONS: Record<string, React.ElementType> = {
+  Plus,
+  Handshake,
+  BookOpen,
+  Upload,
+  Calendar,
+}
+
+interface SuggestedAction {
+  id: string
+  icon: string
+  title: string
+  description: string
+  link: string
+  cta: string
+}
+
 export function DashboardOverview() {
-  const { accessToken } = useAuth()
+  const { isAuthenticated } = useConvexAuth()
   const profile = useQuery(
     api.organizerProfiles.getMyProfile,
-    accessToken ? { accessToken } : 'skip'
+    isAuthenticated ? {} : 'skip'
   )
   const stats = useQuery(api.events.getMyStats)
   const upcomingEvents = useQuery(api.events.getUpcoming, { limit: 6 })
+  const suggestedActions = useQuery(api.recommendations.getSuggestedActions, isAuthenticated ? {} : 'skip')
 
   const [viewMode, setViewMode] = useState<ViewMode>('list')
 
@@ -91,19 +111,38 @@ export function DashboardOverview() {
         </div>
       </div>
 
-      {/* Tip Banner - Clean, warm style */}
-      {hasEvents && (
-        <div className="rounded-xl bg-muted/50 border border-border/50 px-4 py-3 flex items-center gap-4">
-          <div className="w-8 h-8 rounded-lg bg-yellow/20 flex items-center justify-center flex-shrink-0">
-            <Lightbulb size={16} weight="duotone" className="text-amber-600 dark:text-amber-400" />
+      {/* Suggested Actions Feed - AI Driven */}
+      {suggestedActions && suggestedActions.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium uppercase tracking-wider">
+             <Lightbulb size={16} weight="fill" className="text-yellow-500" />
+             <span>Suggested Actions</span>
           </div>
-          <p className="flex-1 text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">Tip:</span> Add vendors and sponsors to
-            your events to unlock analytics and collaboration features.
-          </p>
-          <button className="flex-shrink-0 px-3 py-1.5 text-sm font-medium text-foreground bg-background border border-border hover:bg-muted rounded-lg transition-colors">
-            Learn more
-          </button>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {suggestedActions.map((action: SuggestedAction) => {
+              const Icon = ACTION_ICONS[action.icon] || Lightbulb
+              return (
+                <div key={action.id} className="group rounded-xl border border-border/50 bg-card p-5 hover:border-border transition-colors">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Icon size={16} weight="duotone" className="text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-foreground leading-snug">{action.title}</h3>
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{action.description}</p>
+                    </div>
+                  </div>
+                  <Link 
+                    to={action.link}
+                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium border border-border rounded-lg hover:bg-muted transition-colors"
+                  >
+                    {action.cta}
+                    <ArrowRight size={14} />
+                  </Link>
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
 

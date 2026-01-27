@@ -292,7 +292,7 @@ describe('Data Export Service - Property Tests', () => {
       await fc.assert(
         fc.asyncProperty(
           userArbitrary,
-          fc.array(
+          fc.uniqueArray(
             fc.record({
               _id: fc.string({ minLength: 10, maxLength: 20 }),
               eventId: fc.string({ minLength: 10, maxLength: 20 }),
@@ -302,7 +302,11 @@ describe('Data Export Service - Property Tests', () => {
               paymentStatus: fc.constantFrom('pending', 'completed', 'failed'),
               createdAt: timestampArbitrary,
             }),
-            { minLength: 0, maxLength: 10 }
+            {
+              selector: (item) => item._id,
+              minLength: 0,
+              maxLength: 10,
+            }
           ),
           async (user, orderTemplates) => {
             const ctx = createMockContext()

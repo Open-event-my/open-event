@@ -74,6 +74,7 @@ export const ValidationRules = {
   required: (message?: string): ValidationRule<unknown> => ({
     validate: (value) => {
       if (value === null || value === undefined) return false
+      if (typeof value === 'boolean') return value
       if (typeof value === 'string') return isNotEmpty(value)
       if (typeof value === 'number') return !isNaN(value)
       if (Array.isArray(value)) return value.length > 0

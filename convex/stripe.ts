@@ -41,10 +41,12 @@ const getStripe = () => {
       'STRIPE_SECRET_KEY environment variable not set. Please add it to your Convex dashboard.'
     )
   }
-  return new Stripe(key, {
-    apiVersion: STRIPE_API_VERSION,
+  const stripeConfig: Stripe.StripeConfig = {
+    apiVersion: STRIPE_API_VERSION as Stripe.LatestApiVersion,
     typescript: true,
-  })
+  }
+
+  return new Stripe(key, stripeConfig)
 }
 
 // Check if Stripe is configured

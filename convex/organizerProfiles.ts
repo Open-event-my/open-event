@@ -1,6 +1,7 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { getCurrentUser } from './lib/auth'
+import { createOrganizationInternal } from './organizations'
 
 // Save or update organizer profile (onboarding data)
 export const saveProfile = mutation({
@@ -13,6 +14,7 @@ export const saveProfile = mutation({
     goals: v.optional(v.array(v.string())),
     experienceLevel: v.optional(v.string()),
     referralSource: v.optional(v.string()),
+    role: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const { accessToken, ...profileData } = args
@@ -21,28 +23,46 @@ export const saveProfile = mutation({
       throw new Error('Not authenticated')
     }
 
-    // Check if profile already exists
+    // 1. Handle Profile Creation/Update
     const existingProfile = await ctx.db
       .query('organizerProfiles')
       .withIndex('by_user', (q) => q.eq('userId', user._id))
       .first()
 
+    let profileId
     if (existingProfile) {
-      // Update existing profile
       await ctx.db.patch(existingProfile._id, {
         ...profileData,
         updatedAt: Date.now(),
       })
-      return existingProfile._id
+      profileId = existingProfile._id
     } else {
-      // Create new profile
-      const profileId = await ctx.db.insert('organizerProfiles', {
+      profileId = await ctx.db.insert('organizerProfiles', {
         userId: user._id,
         ...profileData,
         createdAt: Date.now(),
       })
-      return profileId
     }
+
+    // 2. Handle Organization Creation (if name provided and no org exists)
+    if (profileData.organizationName) {
+      // Check if user already owns an organization
+      const existingOrg = await ctx.db
+        .query('organizations')
+        .withIndex('by_owner', (q) => q.eq('ownerId', user._id))
+        .first()
+
+      // Only create if they don't own one yet
+      if (!existingOrg) {
+        // Use shared logic from organizations.ts
+        await createOrganizationInternal(ctx, user, {
+          name: profileData.organizationName,
+          plan: 'free',
+        })
+      }
+    }
+
+    return profileId
   },
 })
 

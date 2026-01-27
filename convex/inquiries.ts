@@ -1,6 +1,6 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import type { QueryCtx } from './_generated/server'
+import type { QueryCtx, MutationCtx } from './_generated/server'
 import type { Doc, Id } from './_generated/dataModel'
 import { internal } from './_generated/api'
 import { getCurrentUser, assertRole, isAdminRole } from './lib/auth'
@@ -264,14 +264,12 @@ export const listAllForAdmin = query({
 })
 
 // Search inquiries (admin only)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const searchAdminInquiriesHandler = async (ctx: any, args: any) => {
+export const searchAdminInquiriesHandler = async (ctx: QueryCtx, args: { query: string }) => {
   await assertRole(ctx, 'admin')
 
   const inquiries = await ctx.db
     .query('inquiries')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withSearchIndex('search_content', (q: any) => q.search('subject', args.query))
+    .withSearchIndex('search_content', (q) => q.search('subject', args.query))
     .take(20)
 
   // Enrich results
@@ -449,8 +447,16 @@ export const getMyUnreadCount = query({
 // ============================================================================
 
 // Send inquiry (organizer or admin only)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const sendHandler = async (ctx: any, args: any) => {
+export const sendHandler = async (
+  ctx: MutationCtx,
+  args: {
+    toType: 'vendor' | 'sponsor'
+    toId: string
+    eventId?: Id<'events'>
+    subject: string
+    message: string
+  }
+) => {
   const user = await getCurrentUser(ctx)
   if (!user) {
     throw new Error('Authentication required')
@@ -560,8 +566,7 @@ export const send = mutation({
 })
 
 // Mark as read (admin marking inquiry as read on behalf of vendor/sponsor)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const markAsReadHandler = async (ctx: any, args: any) => {
+export const markAsReadHandler = async (ctx: MutationCtx, args: { inquiryId: Id<'inquiries'> }) => {
   await assertRole(ctx, 'admin')
 
   const inquiry = await ctx.db.get(args.inquiryId)
@@ -587,8 +592,10 @@ export const markAsRead = mutation({
 })
 
 // Add response (admin responding on behalf of vendor/sponsor)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const respondHandler = async (ctx: any, args: any) => {
+export const respondHandler = async (
+  ctx: MutationCtx,
+  args: { inquiryId: Id<'inquiries'>; response: string }
+) => {
   await assertRole(ctx, 'admin')
 
   const inquiry = await ctx.db.get(args.inquiryId)
@@ -623,8 +630,10 @@ export const respond = mutation({
 })
 
 // Update admin notes
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const updateAdminNotesHandler = async (ctx: any, args: any) => {
+export const updateAdminNotesHandler = async (
+  ctx: MutationCtx,
+  args: { inquiryId: Id<'inquiries'>; notes: string }
+) => {
   await assertRole(ctx, 'admin')
 
   const inquiry = await ctx.db.get(args.inquiryId)

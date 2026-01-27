@@ -160,7 +160,19 @@ export async function revokeSpecificSession(
   ctx: MutationCtx,
   sessionId: Id<'authSessions'> | Id<'sessions'>
 ): Promise<void> {
-  const session = await ctx.db.get(sessionId)
+  // Try to find in authSessions first
+  const authSession = await ctx.db.get(sessionId as Id<'authSessions'>)
+  let session: { userId: Id<'users'> } | null = authSession
+    ? { userId: authSession.userId }
+    : null
+
+  // If not found, try generic sessions table
+  if (!session) {
+    const genericSession = await ctx.db.get(sessionId as Id<'sessions'>)
+    if (genericSession) {
+      session = { userId: genericSession.userId }
+    }
+  }
 
   if (!session) {
     await logger.warn('Attempted to revoke non-existent session', { sessionId })

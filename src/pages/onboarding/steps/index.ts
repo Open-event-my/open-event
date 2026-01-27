@@ -1,3 +1,4 @@
+export { WelcomeStep } from './WelcomeStep'
 export { RoleStep } from './RoleStep'
 export { OrganizationStep } from './OrganizationStep'
 export { EventTypesStep } from './EventTypesStep'

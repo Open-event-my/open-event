@@ -83,30 +83,37 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     })
 
   // Auto-select first organization if none selected (derived state)
-  const autoSelectedOrgId = !isLoading && organizations.length > 0 && !currentOrgId
-    ? organizations[0].id
-    : currentOrgId
-
-  // Sync auto-selected org to state and localStorage
-  useEffect(() => {
-    if (autoSelectedOrgId && autoSelectedOrgId !== currentOrgId) {
-      setCurrentOrgId(autoSelectedOrgId)
-      localStorage.setItem(ORG_STORAGE_KEY, autoSelectedOrgId)
-    }
-  }, [autoSelectedOrgId, currentOrgId])
-
-  // Clear organization when user logs out (sync to external system)
-  useEffect(() => {
-    if (!isAuthenticated && currentOrgId !== null) {
-      setCurrentOrgId(null)
-      localStorage.removeItem(ORG_STORAGE_KEY)
-    }
-  }, [isAuthenticated, currentOrgId])
+  // We don't sync this to state to avoid useEffect loops
+  const effectiveOrgId = currentOrgId || (organizations.length > 0 ? organizations[0].id : null)
 
   // Find current organization from the list
-  const organization = autoSelectedOrgId
-    ? organizations.find((org) => org.id === autoSelectedOrgId) || null
-    : organizations[0] || null
+  const organization = effectiveOrgId
+    ? organizations.find((org) => org.id === effectiveOrgId) || null
+    : null
+
+  // Sync effectiveOrgId to localStorage if it changed and we don't have a currentOrgId
+  useEffect(() => {
+    if (!currentOrgId && effectiveOrgId) {
+      // Don't set state, just persist the default selection preference for next reload
+      // OR set state if we really want it to be "selected"
+      // The issue is purely the synchronous setState in effect.
+      // We can wrap it in a setTimeout to push it to next tick, or just rely on derived state.
+      // For now, let's just persist it.
+      localStorage.setItem(ORG_STORAGE_KEY, effectiveOrgId)
+    }
+  }, [currentOrgId, effectiveOrgId])
+
+  // Clear organization when user logs out
+  useEffect(() => {
+    if (!isAuthenticated && currentOrgId !== null) {
+      // Defer state update to avoid "setState during render" warning
+      const timer = setTimeout(() => {
+        setCurrentOrgId(null)
+        localStorage.removeItem(ORG_STORAGE_KEY)
+      }, 0)
+      return () => clearTimeout(timer)
+    }
+  }, [isAuthenticated, currentOrgId])
 
   const setOrganization = useCallback((org: Organization | null) => {
     if (org) {

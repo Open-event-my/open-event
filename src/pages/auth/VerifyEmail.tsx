@@ -149,9 +149,9 @@ export function VerifyEmail() {
                 </p>
                 <Link
                   to="/sign-in"
-                  className="text-sm text-purple-600 dark:text-purple-400 hover:underline"
+                  className="text-sm font-medium text-primary hover:text-primary/90"
                 >
-                  Go to Sign In to resend verification email
+                  Sign in to your account to resend the verification email
                 </Link>
               </div>
 

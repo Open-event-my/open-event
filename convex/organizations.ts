@@ -7,6 +7,7 @@
 
 import { v } from 'convex/values'
 import { mutation, query, action, internalQuery, internalMutation } from './_generated/server'
+import type { MutationCtx } from './_generated/server'
 import { internal } from './_generated/api'
 import type { Doc, Id } from './_generated/dataModel'
 import { getCurrentUser, assertRole } from './lib/auth'
@@ -49,7 +50,7 @@ async function requireUser(ctx: Parameters<typeof getCurrentUser>[0]): Promise<D
 /**
  * Generate a URL-friendly slug from a name
  */
-function generateSlug(name: string): string {
+export function generateSlug(name: string): string {
   return name
     .toLowerCase()
     .trim()
@@ -64,6 +65,85 @@ function generateSlug(name: string): string {
  */
 function hasRolePermission(userRole: OrganizationRole, requiredRole: OrganizationRole): boolean {
   return ROLE_HIERARCHY[userRole] >= ROLE_HIERARCHY[requiredRole]
+}
+
+/**
+ * Shared logic for creating an organization
+ * Used by both the public 'create' mutation and the 'organizerProfiles.saveProfile' mutation
+ */
+export async function createOrganizationInternal(
+  ctx: MutationCtx, // Use MutationCtx explicitly
+  user: Doc<'users'>,
+  args: {
+    name: string
+    description?: string
+    logoUrl?: string
+    website?: string
+    plan?: OrganizationPlan
+  }
+) {
+  // Check limit
+  const userOrgs = await ctx.db
+    .query('organizations')
+    .withIndex('by_owner', (q) => q.eq('ownerId', user._id))
+    .collect()
+
+  if (userOrgs.length >= MAX_ORGS_PER_USER) {
+    throw new AppError(
+      `You have reached the maximum number of organizations (${MAX_ORGS_PER_USER}). Please contact support if you need more.`,
+      ErrorCodes.FORBIDDEN,
+      403
+    )
+  }
+
+  // Generate unique slug
+  let slug = generateSlug(args.name)
+  let suffix = 0
+  let existingOrg = await ctx.db
+    .query('organizations')
+    .withIndex('by_slug', (q) => q.eq('slug', slug))
+    .first()
+
+  while (existingOrg) {
+    suffix++
+    slug = `${generateSlug(args.name)}-${suffix}`
+    existingOrg = await ctx.db
+      .query('organizations')
+      .withIndex('by_slug', (q) => q.eq('slug', slug))
+      .first()
+  }
+
+  const plan = (args.plan || 'free') as OrganizationPlan
+  const planConfig = PLANS[plan as PlanKey]
+  const now = Date.now()
+
+  // Create the organization
+  const organizationId = await ctx.db.insert('organizations', {
+    name: args.name,
+    slug,
+    description: args.description,
+    logoUrl: args.logoUrl,
+    website: args.website,
+    ownerId: user._id,
+    plan,
+    maxMembers: planConfig.maxMembers,
+    maxEvents: planConfig.maxEvents === Infinity ? undefined : planConfig.maxEvents,
+    status: 'active',
+    createdAt: now,
+    updatedAt: now,
+  })
+
+  // Add creator as owner member
+  await ctx.db.insert('organizationMembers', {
+    organizationId,
+    userId: user._id,
+    role: 'owner',
+    status: 'active',
+    joinedAt: now,
+    createdAt: now,
+  })
+
+  return { organizationId, slug }
 }
 
 // ============================================================================
@@ -281,69 +361,14 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx)
 
-    // SECURITY FIX: Limit organizations per user to prevent free tier abuse
-    // A user creating many free orgs could bypass event limits
-    const userOrgs = await ctx.db
-      .query('organizations')
-      .withIndex('by_owner', (q) => q.eq('ownerId', user._id))
-      .collect()
-
-    if (userOrgs.length >= MAX_ORGS_PER_USER) {
-      throw new AppError(
-        `You have reached the maximum number of organizations (${MAX_ORGS_PER_USER}). Please contact support if you need more.`,
-        ErrorCodes.FORBIDDEN,
-        403
-      )
-    }
-
-    // Generate unique slug
-    let slug = generateSlug(args.name)
-    let suffix = 0
-    let existingOrg = await ctx.db
-      .query('organizations')
-      .withIndex('by_slug', (q) => q.eq('slug', slug))
-      .first()
-
-    while (existingOrg) {
-      suffix++
-      slug = `${generateSlug(args.name)}-${suffix}`
-      existingOrg = await ctx.db
-        .query('organizations')
-        .withIndex('by_slug', (q) => q.eq('slug', slug))
-        .first()
-    }
-
-    const plan = (args.plan || 'free') as OrganizationPlan
-    const planConfig = PLANS[plan as PlanKey]
-    const now = Date.now()
-
-    // Create the organization
-    const organizationId = await ctx.db.insert('organizations', {
+    // Use shared logic for creation
+    return createOrganizationInternal(ctx, user, {
       name: args.name,
-      slug,
       description: args.description,
       logoUrl: args.logoUrl,
       website: args.website,
-      ownerId: user._id,
-      plan,
-      maxMembers: planConfig.maxMembers,
-      maxEvents: planConfig.maxEvents === Infinity ? undefined : planConfig.maxEvents,
-      status: 'active',
-      createdAt: now,
-      updatedAt: now,
+      plan: args.plan as OrganizationPlan,
     })
-
-    // Add creator as owner member
-    await ctx.db.insert('organizationMembers', {
-      organizationId,
-      userId: user._id,
-      role: 'owner',
-      status: 'active',
-      joinedAt: now,
-      createdAt: now,
-    })
-
-    return { organizationId, slug }
   },
 })
 
