@@ -16,6 +16,7 @@ import { setUser as setSentryUser } from '@/lib/sentry'
 interface User {
   _id: Id<'users'>
   email?: string
+  emailVerified?: boolean
   name?: string
   role?: 'superadmin' | 'admin' | 'organizer'
   image?: string

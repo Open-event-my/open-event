@@ -10,7 +10,7 @@ import { Resend } from 'resend'
 import bcrypt from 'bcryptjs'
 import { Scrypt } from 'lucia'
 import { validatePassword } from './lib/passwordValidation'
-import { Id } from './_generated/dataModel'
+import type { Id } from './_generated/dataModel'
 
 // Lazy initialize Resend (API key from environment)
 function getResendClient() {

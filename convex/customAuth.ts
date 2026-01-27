@@ -44,6 +44,7 @@ type UserStatus = 'active' | 'suspended' | 'pending'
 interface PublicUser {
   _id: Id<'users'>
   email: string | undefined
+  emailVerified?: boolean
   name: string | undefined
   role: UserRole | undefined
   image: string | undefined
@@ -311,9 +312,11 @@ export const signin = action({
         user: {
           _id: user._id,
           email: user.email,
+          emailVerified: user.emailVerified ?? false,
           name: user.name,
           role: user.role,
           image: user.image,
+          status: user.status,
         },
       }
     } catch (error) {
@@ -427,6 +430,7 @@ export const getCurrentUser = query({
     return {
       _id: user._id,
       email: user.email,
+      emailVerified: user.emailVerified ?? false,
       name: user.name,
       role: user.role,
       image: user.image,
@@ -528,6 +532,7 @@ export const createUserWithSession = internalMutation({
       passwordHash: args.passwordHash,
       role: 'organizer', // Default role
       status: 'active',
+      emailVerified: false,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     })
@@ -557,9 +562,11 @@ export const createUserWithSession = internalMutation({
       user: {
         _id: userId,
         email: args.email,
+        emailVerified: false,
         name: args.name,
         role: 'organizer' as const,
         image: undefined,
+        status: 'active' as const,
       },
     }
   },
@@ -701,9 +708,11 @@ export const refreshSessionInternal = internalMutation({
       user: {
         _id: user._id,
         email: user.email,
+          emailVerified: user.emailVerified ?? false,
         name: user.name,
         role: user.role,
         image: user.image,
+          status: user.status,
       },
     }
   },
@@ -762,9 +771,11 @@ export const signInInternal = internalAction({
       user: {
         _id: user._id,
         email: user.email,
+        emailVerified: user.emailVerified ?? false,
         name: user.name,
         role: user.role,
         image: user.image,
+        status: user.status,
       },
     }
   },
@@ -813,6 +824,7 @@ export const getUserByAccessToken = internalQuery({
     return {
       _id: user._id,
       email: user.email,
+      emailVerified: user.emailVerified ?? false,
       name: user.name,
       role: user.role,
       image: user.image,
