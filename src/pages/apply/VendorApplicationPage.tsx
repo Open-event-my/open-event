@@ -12,6 +12,7 @@ import {
   TypeformInput,
   TypeformTextarea,
   TypeformSelect,
+  TypeformSelectItem,
 } from '@/components/typeform'
 import { OptionCard } from '@/components/onboarding'
 import {
@@ -414,13 +415,13 @@ export function VendorApplicationPage() {
             />
             <TypeformSelect
               value={formData.referralSource}
-              onChange={(e) => updateField('referralSource', e.target.value)}
+              onValueChange={(value) => updateField('referralSource', value)}
+              placeholder="Select an option"
             >
-              <option value="">Select an option</option>
               {formOptions?.referralSources.map((source) => (
-                <option key={source} value={source}>
+                <TypeformSelectItem key={source} value={source}>
                   {source.charAt(0).toUpperCase() + source.slice(1).replace('_', ' ')}
-                </option>
+                </TypeformSelectItem>
               ))}
             </TypeformSelect>
             <TypeformNavigation onPrevious={prevStep} onNext={nextStep} />

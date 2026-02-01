@@ -10,7 +10,9 @@ export {
   TypeformInput,
   TypeformTextarea,
   TypeformSelect,
+  TypeformSelectItem,
   type TypeformInputProps,
   type TypeformTextareaProps,
   type TypeformSelectProps,
+  type TypeformSelectItemProps,
 } from './TypeformInput'
