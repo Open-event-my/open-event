@@ -12,7 +12,7 @@ The platform includes an AI-powered event assistant, real-time dashboards, task 
 
 ## Tech Stack
 
-- **Frontend**: React 19 + TypeScript + Vite + TailwindCSS 4
+- **Frontend**: React 18 + TypeScript + Vite + TailwindCSS 4
 - **Backend**: Convex (real-time database + serverless functions)
 - **AI**: OpenAI GPT-4o-mini with function calling
 - **Auth**: Convex Auth (Google OAuth, Email/Password)
@@ -73,6 +73,7 @@ The backend is organized by domain:
 - **`settlements.ts`** - Event settlement calculations and payouts
 - **`sponsorLeads.ts`** - Sponsor lead capture system
 - **`sponsorReports.ts`** - Sponsor ROI reports and analytics
+- **`recommendations.ts`** - Recommendation engine
 - **`http.ts`** - HTTP endpoints (AI streaming, public API routes)
 - **`auth.config.ts`** - Auth configuration
 - **`paymentIdempotency.ts`** - Payment idempotency tracking
@@ -81,13 +82,16 @@ The backend is organized by domain:
 
 **Subdirectories:**
 
+- **`config/`** - Configuration modules (plans.ts, stripe.ts)
 - **`lib/agent/`** - AI agent system (tools, handlers, types)
 - **`lib/ai/`** - AI provider abstraction (OpenAI, Anthropic, Groq adapters)
 - **`lib/compliance/`** - GDPR and data retention utilities
 - **`lib/monitoring/`** - Logging, metrics, and alerts
 - **`lib/security/`** - Security utilities (rate limiting, encryption)
 - **`lib/resilience/`** - Resilience and recovery patterns
+- **`lib/payment/`** - Payment utilities (fraudDetection.ts, refundService.ts, paymentAuditLog.ts, paymentSecurity.ts)
 - **`lib/performance/`** - Performance optimization utilities
+- **`lib/validation/`** - Input validation utilities (currencyValidation.ts, inputValidation.ts)
 - **`lib/emailValidation.ts`** - Email validation utilities
 - **`lib/errorLogging.ts`** - Error logging utilities
 - **`lib/notificationEmails.ts`** - Email notification templates
@@ -170,6 +174,12 @@ The backend is organized by domain:
 - **`useFormFocusManagement.ts`** - Keyboard navigation for forms
 - **`useSessionTimeout.ts`** - Session timeout handling
 - **`useTermsAcceptance.ts`** - Terms acceptance tracking
+- **`useErrorNavigation.ts`** - Error navigation hook
+- **`useFieldErrorAria.ts`** - Field error ARIA accessibility
+- **`useFormValidation.ts`** - Form validation hook
+- **`useLoadingState.ts`** - Loading state management
+- **`useOptimisticState.ts`** - Optimistic state management
+- **`useOrganizationRole.ts`** - Organization role management
 
 **Note:** Unit tests for hooks are co-located (e.g., `use-audience-toggle.test.ts`).
 
@@ -203,11 +213,14 @@ The backend is organized by domain:
 - **`AuthContext.tsx`** - Authentication context provider
 - **`CSRFContext.tsx`** - CSRF protection context
 - **`ErrorStateContext.tsx`** - Error state management context
+- **`OrganizationContext.tsx`** - Organization context provider
+- **`UserContext.tsx`** - User state context
 
 #### `/src/types` - TypeScript Type Definitions
 
 - **`index.ts`** - Shared types
 - **`onboarding.ts`** - Onboarding-specific types
+- **`errors.ts`** - Error type definitions
 
 ### `/docs` - Documentation
 
@@ -225,6 +238,7 @@ The backend is organized by domain:
 - **`convex/monitoring/`** - Monitoring integration guides
 - **`convex/security/`** - Security implementation docs
 - **`specs/`** - Feature specifications (production-readiness, real-time-collaboration, etc.)
+- **`steering/`** - Project steering docs (product.md, structure.md, tech.md, subscription-plan.md)
 
 ### `/.cursor` - Cursor IDE Configuration
 
@@ -267,6 +281,9 @@ The backend is organized by domain:
 - **`event-tasks.spec.ts`** - Event task management E2E tests
 - **`integrations.spec.ts`** - Integrations E2E tests
 - **`settings.spec.ts`** - Settings page E2E tests
+- **`inquiries.spec.ts`** - Inquiries/messaging E2E tests
+- **`onboarding-flow.spec.ts`** - Onboarding flow E2E tests
+- **`subscription-and-org-settings.spec.ts`** - Subscription and org settings E2E tests
 
 **Note:** Unit tests are co-located with their components/utilities (e.g., `SignUpForm.test.tsx` next to `SignUpForm.tsx`). Security module tests are in `src/lib/` (accountLockout.test.ts, globalRateLimit.test.ts, auditLog.test.ts). Test setup is in `src/test/setup.ts`.
 
@@ -279,6 +296,12 @@ The backend is organized by domain:
 - **`verifyAuthConfig.mjs`** - Auth configuration verification
 - **`verifyCompliance.ts`** - Compliance verification
 - **`verifyMonitoring.ts`** - Monitoring verification
+- **`diagnoseKeyIssue.mjs`** - Key issue diagnosis
+- **`formatKeyForConvex.mjs`** - Key formatting utility
+- **`validateKeyFormat.mjs`** - Key format validation
+- **`testPlayground.ts`** - Playground testing
+- **`testRateLimit.ts`** - Rate limit testing
+- **`testResilience.ts`** - Resilience testing
 
 ### `/public` - Static Assets
 
@@ -320,7 +343,7 @@ The backend is organized by domain:
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                              CLIENT LAYER                                    │
-│                         (React 19 + TypeScript)                              │
+│                         (React 18 + TypeScript)                              │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   │

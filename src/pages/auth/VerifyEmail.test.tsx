@@ -233,7 +233,9 @@ describe('VerifyEmail', () => {
 
       await waitFor(() => {
         expect(screen.getByText(/need a new verification link\?/i)).toBeInTheDocument()
-        expect(screen.getByText(/go to sign in to resend verification email/i)).toBeInTheDocument()
+        expect(
+          screen.getByText(/sign in to your account to resend the verification email/i)
+        ).toBeInTheDocument()
       })
     })
 
@@ -255,7 +257,9 @@ describe('VerifyEmail', () => {
       renderWithRouter(<VerifyEmail />, 'token=expired-token')
 
       await waitFor(() => {
-        expect(screen.getByText(/go to sign in to resend verification email/i)).toBeInTheDocument()
+        expect(
+          screen.getByText(/sign in to your account to resend the verification email/i)
+        ).toBeInTheDocument()
       })
     })
 
@@ -264,7 +268,9 @@ describe('VerifyEmail', () => {
       renderWithRouter(<VerifyEmail />, 'token=expired-token')
 
       await waitFor(() => {
-        const resendLink = screen.getByText(/go to sign in to resend verification email/i)
+        const resendLink = screen.getByText(
+          /sign in to your account to resend the verification email/i
+        )
         expect(resendLink.closest('a')).toHaveAttribute('href', '/sign-in')
       })
     })

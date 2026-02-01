@@ -278,7 +278,7 @@ export function withAdminAuditLog<Args extends Record<string, unknown>, Output>(
 export function auditedMutation<
   Args extends Record<string, unknown>,
   Output,
-  ArgsValidator extends Record<string, unknown>
+  ArgsValidator extends Record<string, unknown>,
 >(config: {
   audit: AuditLogOptions
   args: ArgsValidator
@@ -286,7 +286,7 @@ export function auditedMutation<
 }) {
   return mutation({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    args: config.args as any,
+    args: config.args as unknown as any,
     handler: withAuditLog(config.audit, config.handler),
   })
 }
@@ -320,7 +320,7 @@ export function auditedMutation<
 export function auditedAdminMutation<
   Args extends Record<string, unknown>,
   Output,
-  ArgsValidator extends Record<string, unknown>
+  ArgsValidator extends Record<string, unknown>,
 >(config: {
   audit: AuditLogOptions & {
     severity?: 'low' | 'medium' | 'high' | 'critical'
@@ -331,7 +331,7 @@ export function auditedAdminMutation<
 }) {
   return mutation({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    args: config.args as any,
+    args: config.args as unknown as any,
     handler: withAdminAuditLog(config.audit, config.handler),
   })
 }
