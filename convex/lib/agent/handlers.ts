@@ -578,137 +578,53 @@ async function handleGetRecommendedVendors(
   args: Record<string, unknown>
 ): Promise<ToolResult> {
   const eventId = args.eventId as string
-  const category = args.category as string | undefined
   const limit = (args.limit as number) || 5
 
-  // Get event details for matching
-  const event = await ctx.runQuery(api.events.get, { id: eventId as Id<'events'> })
-  if (!event) {
-    return {
-      toolCallId: '',
-      name: 'getRecommendedVendors',
-      success: false,
-      error: 'Event not found',
-      summary: 'Could not find the specified event',
-    }
-  }
+  try {
+    // Use the new Semantic Vector Search action
+    const results = await ctx.runAction(api.recommendations.recommendVendors, {
+      eventId: eventId as Id<'events'>,
+      limit,
+    })
 
-  // Get vendors (filtered by category if provided)
-  const vendors = await ctx.runQuery(api.vendors.list, { category })
-  type VendorType = (typeof vendors)[number]
-
-  // Score and sort vendors based on event fit
-  const scoredVendors = vendors.map((vendor: VendorType) => {
-    let score = 0
-    const matchReasons: string[] = []
-
-    // Location-based scoring (new!)
-    const eventLocation = event.venueAddress || event.venueName
-    const locationResult = calculateLocationScore(eventLocation, vendor.location)
-    if (locationResult.score > 0) {
-      score += locationResult.score
-      if (locationResult.reason) matchReasons.push(locationResult.reason)
-    }
-
-    // Rating bonus with explanation
-    if (vendor.rating) {
-      const ratingScore = vendor.rating * 10
-      score += ratingScore
-      if (vendor.rating >= 4.5) {
-        matchReasons.push(`Excellent rating (${vendor.rating}★)`)
-      } else if (vendor.rating >= 4.0) {
-        matchReasons.push(`Highly rated (${vendor.rating}★)`)
+    if (results.length === 0) {
+      return {
+        toolCallId: '',
+        name: 'getRecommendedVendors',
+        success: true,
+        data: [],
+        summary: 'No matched vendors found for this event.',
       }
     }
 
-    // Verified bonus with explanation
-    if (vendor.verified) {
-      score += 20
-      matchReasons.push('Verified vendor')
-    }
-
-    // Price range match with explanation
-    if (event.budget && vendor.priceRange) {
-      const budgetPerVendor = event.budget / 5
-      let priceMatch = false
-      if (budgetPerVendor < 5000 && vendor.priceRange === 'budget') {
-        score += 15
-        priceMatch = true
-      } else if (budgetPerVendor < 20000 && vendor.priceRange === 'mid-range') {
-        score += 15
-        priceMatch = true
-      } else if (budgetPerVendor < 50000 && vendor.priceRange === 'premium') {
-        score += 15
-        priceMatch = true
-      } else if (budgetPerVendor >= 50000 && vendor.priceRange === 'luxury') {
-        score += 15
-        priceMatch = true
-      }
-      if (priceMatch) {
-        matchReasons.push(`Fits your budget (${vendor.priceRange})`)
-      }
-    }
-
-    // Event size match (based on expected attendees)
-    if (event.expectedAttendees && vendor.capacity?.maxEventsPerMonth) {
-      if (event.expectedAttendees <= 100 || vendor.capacity.maxEventsPerMonth >= 4) {
-        score += 10
-        matchReasons.push('Available capacity')
-      }
-    }
-
-    // Category relevance
-    if (category && vendor.category.toLowerCase() === category.toLowerCase()) {
-      score += 10
-      matchReasons.push(`Specializes in ${vendor.category}`)
-    }
-
-    return { vendor, score, matchReasons }
-  })
-
-  // Sort by score and take top N
-  type ScoredVendor = { vendor: VendorType; score: number; matchReasons: string[] }
-  const topVendors = scoredVendors
-    .sort((a: ScoredVendor, b: ScoredVendor) => b.score - a.score)
-    .slice(0, limit)
-    .map(({ vendor, score, matchReasons }: ScoredVendor) => ({
-      id: vendor._id,
-      name: vendor.name,
-      category: vendor.category,
-      description: vendor.description,
-      rating: vendor.rating,
-      priceRange: vendor.priceRange,
-      location: vendor.location,
-      verified: vendor.verified,
+    const recommendations = results.map(({ vendor, score }) => ({
+      id: vendor?._id,
+      name: vendor?.name,
+      category: vendor?.category,
+      description: vendor?.description,
       matchScore: score,
-      // Detailed explanation of why this vendor is recommended
-      matchReasons: matchReasons.length > 0 ? matchReasons : ['Available for booking'],
-      whyRecommended:
-        matchReasons.length > 0
-          ? matchReasons.slice(0, 3).join(' • ')
-          : 'Available vendor in your category',
+      whyRecommended: `Strong semantic match (${(score * 100).toFixed(0)}%) based on event requirements.`,
     }))
 
-  if (topVendors.length === 0) {
     return {
       toolCallId: '',
       name: 'getRecommendedVendors',
       success: true,
-      data: [],
-      summary: `No ${category ? `${category} ` : ''}vendors found for "${event.title}"`,
+      data: {
+        eventId,
+        recommendations,
+      },
+      summary: `Found ${results.length} semantically matched vendors.`,
     }
-  }
-
-  return {
-    toolCallId: '',
-    name: 'getRecommendedVendors',
-    success: true,
-    data: {
-      eventTitle: event.title,
-      eventLocation: event.venueAddress || event.venueName,
-      recommendations: topVendors,
-    },
-    summary: `Found ${topVendors.length} recommended ${category ? `${category} ` : ''}vendor${topVendors.length !== 1 ? 's' : ''} for "${event.title}"`,
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    return {
+      toolCallId: '',
+      name: 'getRecommendedVendors',
+      success: false,
+      error: errorMessage,
+      summary: `Error getting recommendations: ${errorMessage}`,
+    }
   }
 }
 
@@ -718,146 +634,53 @@ async function handleGetRecommendedSponsors(
   args: Record<string, unknown>
 ): Promise<ToolResult> {
   const eventId = args.eventId as string
-  const tier = args.tier as string | undefined
   const limit = (args.limit as number) || 5
 
-  // Get event details for matching
-  const event = await ctx.runQuery(api.events.get, { id: eventId as Id<'events'> })
-  if (!event) {
-    return {
-      toolCallId: '',
-      name: 'getRecommendedSponsors',
-      success: false,
-      error: 'Event not found',
-      summary: 'Could not find the specified event',
-    }
-  }
+  try {
+    // Use the new Semantic Vector Search action
+    const results = await ctx.runAction(api.recommendations.recommendSponsors, {
+      eventId: eventId as Id<'events'>,
+      limit,
+    })
 
-  // Get sponsors
-  const sponsors = await ctx.runQuery(api.sponsors.list, {})
-  type SponsorType = (typeof sponsors)[number]
-
-  // Score and sort sponsors based on event fit
-  const scoredSponsors = sponsors.map((sponsor: SponsorType) => {
-    let score = 0
-    const matchReasons: string[] = []
-
-    // Verified bonus with explanation
-    if (sponsor.verified) {
-      score += 20
-      matchReasons.push('Verified sponsor')
-    }
-
-    // Event type match with explanation
-    if (sponsor.targetEventTypes && event.eventType) {
-      const matchingType = sponsor.targetEventTypes.find(
-        (t: string) =>
-          t.toLowerCase().includes(event.eventType!.toLowerCase()) ||
-          event.eventType!.toLowerCase().includes(t.toLowerCase())
-      )
-      if (matchingType) {
-        score += 30
-        matchReasons.push(`Targets ${event.eventType} events`)
+    if (results.length === 0) {
+      return {
+        toolCallId: '',
+        name: 'getRecommendedSponsors',
+        success: true,
+        data: [],
+        summary: 'No matched sponsors found for this event.',
       }
     }
 
-    // Industry relevance for event type
-    const industryEventMatch: Record<string, string[]> = {
-      technology: ['conference', 'workshop', 'meetup', 'webinar'],
-      finance: ['conference', 'seminar', 'corporate'],
-      healthcare: ['conference', 'seminar', 'workshop'],
-      entertainment: ['festival', 'concert', 'party', 'celebration'],
-      education: ['workshop', 'seminar', 'conference'],
-      sports: ['tournament', 'competition', 'sports'],
-    }
-    const eventTypeLower = event.eventType?.toLowerCase() || ''
-    const industryLower = sponsor.industry.toLowerCase()
-    if (industryEventMatch[industryLower]?.some((t) => eventTypeLower.includes(t))) {
-      score += 15
-      matchReasons.push(`${sponsor.industry} industry aligns with your event type`)
-    }
-
-    // Budget alignment with event size
-    if (event.expectedAttendees && sponsor.budgetMin !== undefined) {
-      if (event.expectedAttendees > 500 && sponsor.budgetMin > 10000) {
-        score += 20
-        matchReasons.push('Budget matches large event scale')
-      } else if (event.expectedAttendees > 100 && sponsor.budgetMin > 5000) {
-        score += 15
-        matchReasons.push('Budget fits medium-sized events')
-      } else if (event.expectedAttendees <= 100 && sponsor.budgetMin < 5000) {
-        score += 15
-        matchReasons.push('Budget appropriate for event size')
-      }
-    }
-
-    // Tier filter with explanation
-    if (tier && sponsor.sponsorshipTiers) {
-      if (sponsor.sponsorshipTiers.includes(tier)) {
-        score += 25
-        matchReasons.push(`Offers ${tier} sponsorship tier`)
-      }
-    } else if (sponsor.sponsorshipTiers && sponsor.sponsorshipTiers.length > 0) {
-      score += 5
-      matchReasons.push(`Available tiers: ${sponsor.sponsorshipTiers.slice(0, 2).join(', ')}`)
-    }
-
-    // Past sponsorship experience bonus
-    if (sponsor.pastSponsorships && sponsor.pastSponsorships.length > 0) {
-      score += 10
-      matchReasons.push(`${sponsor.pastSponsorships.length} past sponsorships`)
-    }
-
-    return { sponsor, score, matchReasons }
-  })
-
-  // Sort by score and take top N
-  type ScoredSponsor = { sponsor: SponsorType; score: number; matchReasons: string[] }
-  const topSponsors = scoredSponsors
-    .sort((a: ScoredSponsor, b: ScoredSponsor) => b.score - a.score)
-    .slice(0, limit)
-    .map(({ sponsor, score, matchReasons }: ScoredSponsor) => ({
-      id: sponsor._id,
-      name: sponsor.name,
-      industry: sponsor.industry,
-      description: sponsor.description,
-      budgetRange:
-        sponsor.budgetMin !== undefined && sponsor.budgetMax !== undefined
-          ? `$${sponsor.budgetMin.toLocaleString()} - $${sponsor.budgetMax.toLocaleString()}`
-          : undefined,
-      sponsorshipTiers: sponsor.sponsorshipTiers,
-      verified: sponsor.verified,
+    const recommendations = results.map(({ sponsor, score }) => ({
+      id: sponsor?._id,
+      name: sponsor?.name,
+      industry: sponsor?.industry,
+      description: sponsor?.description,
       matchScore: score,
-      // Detailed explanation of why this sponsor is recommended
-      matchReasons:
-        matchReasons.length > 0 ? matchReasons : ['Open to new sponsorship opportunities'],
-      whyRecommended:
-        matchReasons.length > 0
-          ? matchReasons.slice(0, 3).join(' • ')
-          : 'Available for sponsorship inquiries',
+      whyRecommended: `Strong semantic match (${(score * 100).toFixed(0)}%) based on event profile.`,
     }))
 
-  if (topSponsors.length === 0) {
     return {
       toolCallId: '',
       name: 'getRecommendedSponsors',
       success: true,
-      data: [],
-      summary: `No sponsors found for "${event.title}"`,
+      data: {
+        eventId,
+        recommendations,
+      },
+      summary: `Found ${results.length} semantically matched sponsors.`,
     }
-  }
-
-  return {
-    toolCallId: '',
-    name: 'getRecommendedSponsors',
-    success: true,
-    data: {
-      eventTitle: event.title,
-      eventType: event.eventType,
-      expectedAttendees: event.expectedAttendees,
-      recommendations: topSponsors,
-    },
-    summary: `Found ${topSponsors.length} recommended sponsor${topSponsors.length !== 1 ? 's' : ''} for "${event.title}"`,
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    return {
+      toolCallId: '',
+      name: 'getRecommendedSponsors',
+      success: false,
+      error: errorMessage,
+      summary: `Error getting recommendations: ${errorMessage}`,
+    }
   }
 }
 

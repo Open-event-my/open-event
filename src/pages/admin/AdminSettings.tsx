@@ -62,15 +62,15 @@ export function AdminSettings() {
 
   const stats = {
     totalUsers: users?.length || 0,
-    totalAdmins: users?.filter((u) => u.role === 'admin').length || 0,
-    totalOrganizers: users?.filter((u) => u.role === 'organizer' || !u.role).length || 0,
-    suspendedUsers: users?.filter((u) => u.status === 'suspended').length || 0,
+    totalAdmins: users?.filter((u: { role?: string }) => u.role === 'admin').length || 0,
+    totalOrganizers: users?.filter((u: { role?: string }) => u.role === 'organizer' || !u.role).length || 0,
+    suspendedUsers: users?.filter((u: { status?: string }) => u.status === 'suspended').length || 0,
     totalVendors: vendors?.length || 0,
-    approvedVendors: vendors?.filter((v) => v.status === 'approved').length || 0,
-    pendingVendors: vendors?.filter((v) => v.status === 'pending').length || 0,
+    approvedVendors: vendors?.filter((v: { status: string }) => v.status === 'approved').length || 0,
+    pendingVendors: vendors?.filter((v: { status: string }) => v.status === 'pending').length || 0,
     totalSponsors: sponsors?.length || 0,
-    approvedSponsors: sponsors?.filter((s) => s.status === 'approved').length || 0,
-    pendingSponsors: sponsors?.filter((s) => s.status === 'pending').length || 0,
+    approvedSponsors: sponsors?.filter((s: { status: string }) => s.status === 'approved').length || 0,
+    pendingSponsors: sponsors?.filter((s: { status: string }) => s.status === 'pending').length || 0,
   }
 
   // Check if settings are initialized

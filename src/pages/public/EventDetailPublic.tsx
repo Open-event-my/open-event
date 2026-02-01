@@ -197,7 +197,7 @@ export function EventDetailPublic() {
                         <h3 className="font-medium mb-1">Vendors</h3>
                         {event.vendorCategories && event.vendorCategories.length > 0 && (
                           <div className="flex flex-wrap gap-2 mt-2">
-                            {event.vendorCategories.map((cat) => (
+                            {event.vendorCategories.map((cat: string) => (
                               <span
                                 key={cat}
                                 className="px-2 py-1 text-xs bg-orange-500/10 text-orange-600 dark:text-orange-400 rounded-md"

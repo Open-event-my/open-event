@@ -256,7 +256,7 @@ export function AdminVendors() {
             </p>
           </div>
         ) : (
-          filteredVendors?.map((vendor) => {
+          filteredVendors?.map((vendor: { _id: Id<'vendors'>; status: VendorStatus; name: string; category: string; priceRange?: string; description?: string; location?: string; contactEmail?: string; contactPhone?: string; website?: string; createdAt: number; rejectionReason?: string }) => {
             const status = statusConfig[vendor.status]
             return (
               <div

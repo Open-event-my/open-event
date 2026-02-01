@@ -173,9 +173,7 @@ export function TypeformSelect({
           aria-describedby={error ? errorId : undefined}
           className={cn(
             'flex w-full items-center justify-between',
-            'bg-transparent text-foreground text-base sm:text-lg lg:text-xl',
-            'py-2.5 sm:py-3 px-0 border-b-2 border-border rounded-none',
-            'transition-colors duration-200',
+            'typeform-input',
             'focus:outline-none focus:border-primary',
             'data-[placeholder]:text-muted-foreground/70',
             'disabled:cursor-not-allowed disabled:opacity-50',

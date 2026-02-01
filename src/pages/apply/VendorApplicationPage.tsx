@@ -274,7 +274,7 @@ export function VendorApplicationPage() {
               description="Select your primary service category."
             />
             <div className="grid grid-cols-2 gap-3">
-              {formOptions?.vendorCategories.map((cat, index) => (
+              {formOptions?.vendorCategories.map((cat: string, index: number) => (
                 <OptionCard
                   key={cat}
                   label={cat.charAt(0).toUpperCase() + cat.slice(1).replace('_', ' ')}
@@ -418,7 +418,7 @@ export function VendorApplicationPage() {
               onValueChange={(value) => updateField('referralSource', value)}
               placeholder="Select an option"
             >
-              {formOptions?.referralSources.map((source) => (
+              {formOptions?.referralSources.map((source: string) => (
                 <TypeformSelectItem key={source} value={source}>
                   {source.charAt(0).toUpperCase() + source.slice(1).replace('_', ' ')}
                 </TypeformSelectItem>

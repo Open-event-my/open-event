@@ -130,7 +130,7 @@ export function EventDirectory() {
                 )}
               >
                 <option value="all">All Event Types</option>
-                {eventTypes?.map((type) => (
+                {eventTypes?.map((type: string) => (
                   <option key={type} value={type}>
                     {type}
                   </option>
@@ -199,7 +199,7 @@ export function EventDirectory() {
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {events.map((event) => (
+            {events.map((event: any) => (
               <Link
                 key={event._id}
                 to={`/events/${event._id}`}
@@ -275,7 +275,7 @@ export function EventDirectory() {
                   <div className="mt-4 pt-4 border-t border-border">
                     <p className="text-xs font-medium text-muted-foreground mb-2">Looking for:</p>
                     <div className="flex flex-wrap gap-1">
-                      {event.vendorCategories.slice(0, 3).map((cat) => (
+                      {event.vendorCategories.slice(0, 3).map((cat: string) => (
                         <span key={cat} className="px-2 py-0.5 text-xs bg-muted rounded-md">
                           {cat}
                         </span>

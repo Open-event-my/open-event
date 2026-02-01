@@ -269,7 +269,7 @@ export function EventAttendeesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {attendeesData?.attendees.map((attendee) => {
+              {attendeesData?.attendees.map((attendee: any) => {
                 const status = statusConfig[attendee.status as AttendeeStatus]
                 const StatusIcon = status?.icon || Clock
                 return (

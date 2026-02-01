@@ -265,7 +265,7 @@ export function DashboardOverview() {
         ) : viewMode === 'list' ? (
           /* List View - Clean style */
           <div className="rounded-xl border border-border/50 bg-card overflow-hidden">
-            {upcomingEvents.map((event, index) => (
+            {upcomingEvents.map((event: any, index: number) => (
               <Link
                 key={event._id}
                 to={`/dashboard/events/${event._id}`}
@@ -310,7 +310,7 @@ export function DashboardOverview() {
         ) : (
           /* Grid View - Clean card style */
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {upcomingEvents.map((event) => (
+            {upcomingEvents.map((event: any) => (
               <Link
                 key={event._id}
                 to={`/dashboard/events/${event._id}`}

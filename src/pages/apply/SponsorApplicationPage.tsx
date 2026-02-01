@@ -249,7 +249,7 @@ export function SponsorApplicationPage() {
               description="This helps us match you with relevant events."
             />
             <div className="grid grid-cols-2 gap-3">
-              {formOptions?.sponsorIndustries.map((ind, index) => (
+              {formOptions?.sponsorIndustries.map((ind: string, index: number) => (
                 <OptionCard
                   key={ind}
                   label={ind.charAt(0).toUpperCase() + ind.slice(1).replace('_', ' ')}
@@ -319,7 +319,7 @@ export function SponsorApplicationPage() {
               </div>
             </TypeformQuestion>
             <div className="flex flex-wrap gap-3">
-              {formOptions?.sponsorshipTiers.map((tier) => (
+              {formOptions?.sponsorshipTiers.map((tier: string) => (
                 <button
                   key={tier}
                   type="button"
@@ -471,7 +471,7 @@ export function SponsorApplicationPage() {
               onValueChange={(value) => updateField('referralSource', value)}
               placeholder="Select an option"
             >
-              {formOptions?.referralSources.map((source) => (
+              {formOptions?.referralSources.map((source: string) => (
                 <TypeformSelectItem key={source} value={source}>
                   {source.charAt(0).toUpperCase() + source.slice(1).replace('_', ' ')}
                 </TypeformSelectItem>

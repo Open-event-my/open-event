@@ -84,7 +84,7 @@ export function AdminSponsors() {
   const statusCounts = useMemo(() => {
     if (!allSponsors) return {}
     return allSponsors.reduce(
-      (acc, sponsor) => {
+      (acc: Record<string, number>, sponsor) => {
         acc[sponsor.status] = (acc[sponsor.status] || 0) + 1
         return acc
       },
@@ -92,7 +92,7 @@ export function AdminSponsors() {
     )
   }, [allSponsors])
 
-  const filteredSponsors = sponsors?.filter((s) => {
+  const filteredSponsors = sponsors?.filter((s: { name: string; industry: string; contactEmail?: string; contactName?: string }) => {
     if (!searchQuery.trim()) return true
     const search = searchQuery.toLowerCase()
     return (
@@ -267,7 +267,7 @@ export function AdminSponsors() {
             </p>
           </div>
         ) : (
-          filteredSponsors?.map((sponsor) => {
+          filteredSponsors?.map((sponsor: { _id: Id<'sponsors'>; status: SponsorStatus; name: string; logoUrl?: string; industry: string; sponsorshipTiers?: string[]; description?: string; budgetMin?: number; budgetMax?: number; contactName?: string; contactEmail?: string; website?: string; createdAt: number; targetEventTypes?: string[]; rejectionReason?: string }) => {
             const status = statusConfig[sponsor.status]
             const budgetRange = formatBudget(sponsor.budgetMin, sponsor.budgetMax)
 
@@ -364,7 +364,7 @@ export function AdminSponsors() {
 
                     {sponsor.targetEventTypes && sponsor.targetEventTypes.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 mt-3 ml-15">
-                        {sponsor.targetEventTypes.map((type) => (
+                        {sponsor.targetEventTypes.map((type: string) => (
                           <span key={type} className="px-2 py-0.5 text-xs bg-muted rounded-md">
                             {type}
                           </span>

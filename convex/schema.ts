@@ -526,9 +526,15 @@ export default defineSchema({
 
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
+    // Semantic Search
+    embedding: v.optional(v.array(v.float64())),
   })
     .index('by_status', ['status'])
-    .index('by_industry', ['industry']),
+    .index('by_industry', ['industry'])
+    .vectorIndex('by_embedding', {
+      vectorField: 'embedding',
+      dimensions: 1536,
+    }),
 
   // Event-Vendor relationships with status tracking
   eventVendors: defineTable({

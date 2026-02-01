@@ -185,7 +185,7 @@ export function AdminUsers() {
     if (!searchQuery.trim()) return usersResult.items
     const search = searchQuery.toLowerCase()
     return usersResult.items.filter(
-      (u) => u.name?.toLowerCase().includes(search) || u.email?.toLowerCase().includes(search)
+      (u: { name?: string; email?: string }) => u.name?.toLowerCase().includes(search) || u.email?.toLowerCase().includes(search)
     )
   }, [usersResult, searchQuery])
 
@@ -295,12 +295,12 @@ export function AdminUsers() {
   const toggleSelectAll = useCallback(() => {
     if (!filteredUsers) return
     const selectableUsers = filteredUsers.filter(
-      (u) => u._id !== currentUser?._id && u.role !== 'superadmin'
+      (u: { _id: Id<'users'>; role?: string }) => u._id !== currentUser?._id && u.role !== 'superadmin'
     )
     if (selectedUsers.size === selectableUsers.length) {
       setSelectedUsers(new Set())
     } else {
-      setSelectedUsers(new Set(selectableUsers.map((u) => u._id)))
+      setSelectedUsers(new Set(selectableUsers.map((u: { _id: Id<'users'> }) => u._id)))
     }
   }, [filteredUsers, selectedUsers.size, currentUser?._id])
 
@@ -390,7 +390,7 @@ export function AdminUsers() {
   // Selection info for the bulk action toolbar
   const selectableUsers = useMemo(() => {
     if (!filteredUsers) return []
-    return filteredUsers.filter((u) => u._id !== currentUser?._id && u.role !== 'superadmin')
+    return filteredUsers.filter((u: { _id: Id<'users'>; role?: string }) => u._id !== currentUser?._id && u.role !== 'superadmin')
   }, [filteredUsers, currentUser?._id])
 
   const isAllSelected = selectableUsers.length > 0 && selectedUsers.size === selectableUsers.length
@@ -674,7 +674,7 @@ export function AdminUsers() {
             </p>
           </div>
         ) : (
-          filteredUsers?.map((user) => {
+          filteredUsers?.map((user: { _id: Id<'users'>; status?: string; role?: string; name?: string; email?: string; createdAt?: number; suspendedReason?: string }) => {
             const status = statusConfig[user.status as UserStatus] || statusConfig.active
             const role = roleConfig[user.role as UserRole] || roleConfig.organizer
             const RoleIcon = role.icon
