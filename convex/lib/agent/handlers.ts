@@ -516,62 +516,6 @@ async function handleGetUserProfile(
 // Recommendation/Matching Handlers
 // ============================================================================
 
-/**
- * Calculate location similarity score between two location strings.
- * Returns a score from 0-30 based on how well locations match.
- */
-function calculateLocationScore(
-  eventLocation: string | undefined,
-  vendorLocation: string | undefined
-): { score: number; reason: string | null } {
-  if (!eventLocation || !vendorLocation) {
-    return { score: 0, reason: null }
-  }
-
-  const eventLower = eventLocation.toLowerCase()
-  const vendorLower = vendorLocation.toLowerCase()
-
-  // Extract city/state/country components
-  const extractParts = (loc: string) => {
-    const parts = loc.split(/[,\s]+/).filter(Boolean)
-    return {
-      full: loc,
-      parts: parts.map((p) => p.toLowerCase()),
-    }
-  }
-
-  const eventParts = extractParts(eventLower)
-  const vendorParts = extractParts(vendorLower)
-
-  // Exact match
-  if (eventLower === vendorLower) {
-    return { score: 30, reason: `Located in ${vendorLocation}` }
-  }
-
-  // Check for city match (usually first significant part)
-  const commonParts = eventParts.parts.filter((p) =>
-    vendorParts.parts.some((vp) => vp.includes(p) || p.includes(vp))
-  )
-
-  if (commonParts.length > 0) {
-    // Same region/city
-    if (commonParts.length >= 2) {
-      return { score: 25, reason: `Same area (${vendorLocation})` }
-    }
-    return { score: 15, reason: `Near your venue (${vendorLocation})` }
-  }
-
-  // Check for state/country match
-  const stateCountryMatch = vendorParts.parts.some((vp) =>
-    eventParts.parts.some((ep) => vp === ep && vp.length > 3)
-  )
-  if (stateCountryMatch) {
-    return { score: 10, reason: `Same region (${vendorLocation})` }
-  }
-
-  return { score: 0, reason: null }
-}
-
 async function handleGetRecommendedVendors(
   ctx: ActionCtx,
   _userId: string,
@@ -597,14 +541,22 @@ async function handleGetRecommendedVendors(
       }
     }
 
-    const recommendations = results.map(({ vendor, score }) => ({
-      id: vendor?._id,
-      name: vendor?.name,
-      category: vendor?.category,
-      description: vendor?.description,
-      matchScore: score,
-      whyRecommended: `Strong semantic match (${(score * 100).toFixed(0)}%) based on event requirements.`,
-    }))
+    const recommendations = results.map(
+      ({
+        vendor,
+        score,
+      }: {
+        vendor: { _id?: string; name?: string; category?: string; description?: string } | null
+        score: number
+      }) => ({
+        id: vendor?._id,
+        name: vendor?.name,
+        category: vendor?.category,
+        description: vendor?.description,
+        matchScore: score,
+        whyRecommended: `Strong semantic match (${(score * 100).toFixed(0)}%) based on event requirements.`,
+      })
+    )
 
     return {
       toolCallId: '',
@@ -653,14 +605,22 @@ async function handleGetRecommendedSponsors(
       }
     }
 
-    const recommendations = results.map(({ sponsor, score }) => ({
-      id: sponsor?._id,
-      name: sponsor?.name,
-      industry: sponsor?.industry,
-      description: sponsor?.description,
-      matchScore: score,
-      whyRecommended: `Strong semantic match (${(score * 100).toFixed(0)}%) based on event profile.`,
-    }))
+    const recommendations = results.map(
+      ({
+        sponsor,
+        score,
+      }: {
+        sponsor: { _id?: string; name?: string; industry?: string; description?: string } | null
+        score: number
+      }) => ({
+        id: sponsor?._id,
+        name: sponsor?.name,
+        industry: sponsor?.industry,
+        description: sponsor?.description,
+        matchScore: score,
+        whyRecommended: `Strong semantic match (${(score * 100).toFixed(0)}%) based on event profile.`,
+      })
+    )
 
     return {
       toolCallId: '',

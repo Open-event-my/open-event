@@ -130,11 +130,13 @@ export function EventDirectory() {
                 )}
               >
                 <option value="all">All Event Types</option>
-                {eventTypes?.map((type: string) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
+                {eventTypes
+                  ?.filter((type): type is string => Boolean(type))
+                  .map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
               </select>
 
               {/* Location Type */}
@@ -199,7 +201,7 @@ export function EventDirectory() {
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {events.map((event: any) => (
+            {events.map((event) => (
               <Link
                 key={event._id}
                 to={`/events/${event._id}`}

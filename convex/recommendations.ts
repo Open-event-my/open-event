@@ -1,11 +1,23 @@
-import { action } from './_generated/server'
+import { action, internalQuery } from './_generated/server'
 import { v } from 'convex/values'
 import { internal } from './_generated/api'
+import type { Doc, Id } from './_generated/dataModel'
 import OpenAI from 'openai'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
+
+// Return types for the recommendation functions
+type VendorRecommendation = {
+  vendor: Doc<'vendors'> | null
+  score: number
+}
+
+type SponsorRecommendation = {
+  sponsor: Doc<'sponsors'> | null
+  score: number
+}
 
 /**
  * Recommend vendors for an event using Semantic Vector Search
@@ -15,7 +27,7 @@ export const recommendVendors = action({
     eventId: v.id('events'),
     limit: v.optional(v.number()),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<VendorRecommendation[]> => {
     // 1. Get Event Details
     const event = await ctx.runQuery(internal.recommendations.getEventForMatching, {
       eventId: args.eventId,
@@ -27,7 +39,7 @@ export const recommendVendors = action({
     // Combine title, description, and requirements into a rich text prompt
     const requirementText = event.requirements
       ? Object.entries(event.requirements)
-          .filter(([_, v]) => v)
+          .filter(([, val]) => val)
           .map(([k]) => k)
           .join(', ')
       : ''
@@ -55,16 +67,19 @@ export const recommendVendors = action({
     })
 
     // 4. Fetch full vendor details for the results
-    const vendorIds = results.map((r) => r._id)
-    const vendors = await ctx.runQuery(internal.recommendations.getVendorsByIds, {
-      vendorIds,
-    })
+    const vendorIds: Id<'vendors'>[] = results.map((r) => r._id)
+    const vendors: (Doc<'vendors'> | null)[] = await ctx.runQuery(
+      internal.recommendations.getVendorsByIds,
+      { vendorIds }
+    )
 
     // 5. Merge scores and return
-    return results.map((result, i) => ({
-      vendor: vendors[i],
-      score: result._score,
-    }))
+    return results.map(
+      (result, i): VendorRecommendation => ({
+        vendor: vendors[i],
+        score: result._score,
+      })
+    )
   },
 })
 
@@ -76,7 +91,7 @@ export const recommendSponsors = action({
     eventId: v.id('events'),
     limit: v.optional(v.number()),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<SponsorRecommendation[]> => {
     // 1. Get Event Details
     const event = await ctx.runQuery(internal.recommendations.getEventForMatching, {
       eventId: args.eventId,
@@ -101,30 +116,34 @@ export const recommendSponsors = action({
     const embedding = embeddingResponse.data[0].embedding
 
     // 3. Perform Vector Search
+    // Note: Using `any` type for filter builder because Convex vector search types
+    // are parameterized by indexed fields only, but runtime allows filtering on any field
     const results = await ctx.vectorSearch('sponsors', 'by_embedding', {
       vector: embedding,
       limit: args.limit ?? 20,
-      filter: (q) => q.eq('status', 'approved'),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      filter: (q: any) => q.eq('status', 'approved'),
     })
 
     // 4. Fetch full sponsor details
-    const sponsorIds = results.map((r) => r._id)
-    const sponsors = await ctx.runQuery(internal.recommendations.getSponsorsByIds, {
-      sponsorIds,
-    })
+    const sponsorIds: Id<'sponsors'>[] = results.map((r) => r._id)
+    const sponsors: (Doc<'sponsors'> | null)[] = await ctx.runQuery(
+      internal.recommendations.getSponsorsByIds,
+      { sponsorIds }
+    )
 
-    return results.map((result, i) => ({
-      sponsor: sponsors[i],
-      score: result._score,
-    }))
+    return results.map(
+      (result, i): SponsorRecommendation => ({
+        sponsor: sponsors[i],
+        score: result._score,
+      })
+    )
   },
 })
 
 // ============================================================================
 // Internal Helpers
 // ============================================================================
-
-import { internalQuery } from './_generated/server'
 
 export const getEventForMatching = internalQuery({
   args: { eventId: v.id('events') },

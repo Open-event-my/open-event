@@ -156,7 +156,7 @@ export function EventsPage() {
   const allEvents = useQuery(api.events.getMyEvents, {})
   const events = useMemo(() => {
     if (!allEvents || statusFilter === 'all') return allEvents
-    return allEvents.filter((e: any) => e.status === statusFilter)
+    return allEvents.filter((e) => e.status === statusFilter)
   }, [allEvents, statusFilter])
   const deleteEvent = useMutation(api.events.remove)
   const updateEvent = useMutation(api.events.update)
@@ -166,7 +166,7 @@ export function EventsPage() {
   const statusCounts = useMemo(() => {
     if (!allEvents) return {}
     return allEvents.reduce(
-      (acc: Record<string, number>, event: any) => {
+      (acc: Record<string, number>, event) => {
         acc[event.status] = (acc[event.status] || 0) + 1
         return acc
       },
@@ -307,7 +307,7 @@ export function EventsPage() {
       ) : (
         // Events List
         <div className="space-y-2 sm:space-y-3">
-          {events.map((event: any) => {
+          {events.map((event) => {
             const config = eventStatusConfig[event.status] || eventStatusConfig.draft
             const hasNextAction = config.nextStatus && config.nextAction
 

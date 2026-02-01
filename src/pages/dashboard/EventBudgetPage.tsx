@@ -216,9 +216,9 @@ export function EventBudgetPage() {
   const filteredItems =
     categoryFilter === 'all'
       ? budgetItems
-      : budgetItems.filter((item: any) => item.category === categoryFilter)
+      : budgetItems.filter((item) => item.category === categoryFilter)
 
-  const activeItems = filteredItems.filter((i: any) => i.status !== 'cancelled')
+  const activeItems = filteredItems.filter((i) => i.status !== 'cancelled')
 
   return (
     <div className="space-y-6">
@@ -378,7 +378,7 @@ export function EventBudgetPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {activeItems.map((item: any) => {
+          {activeItems.map((item) => {
             const category = BUDGET_CATEGORIES.find((c) => c.value === item.category)
             const statusInfo = STATUS_OPTIONS.find((s) => s.value === item.status)
             const variance = item.actualAmount ? item.actualAmount - item.estimatedAmount : 0

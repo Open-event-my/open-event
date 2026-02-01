@@ -10,11 +10,11 @@ import {
   SquaresFour,
   Storefront,
   Handshake,
-  Lightbulb,
+  // Lightbulb, // Used by Suggested Actions feature
   Plus,
   PencilSimple,
-  BookOpen,
-  Upload,
+  // BookOpen, // Used by Suggested Actions feature
+  // Upload, // Used by Suggested Actions feature
 } from '@phosphor-icons/react'
 import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
@@ -24,33 +24,31 @@ import { NotificationTestHelper } from '@/components/notifications/NotificationT
 
 type ViewMode = 'list' | 'grid'
 
+// TODO: Used by Suggested Actions feature - uncomment when API is implemented
 // Icon mapping for suggested actions
-const ACTION_ICONS: Record<string, React.ElementType> = {
-  Plus,
-  Handshake,
-  BookOpen,
-  Upload,
-  Calendar,
-}
+// const ACTION_ICONS: Record<string, React.ElementType> = {
+//   Plus,
+//   Handshake,
+//   BookOpen,
+//   Upload,
+//   Calendar,
+// }
 
-interface SuggestedAction {
-  id: string
-  icon: string
-  title: string
-  description: string
-  link: string
-  cta: string
-}
+// interface SuggestedAction {
+//   id: string
+//   icon: string
+//   title: string
+//   description: string
+//   link: string
+//   cta: string
+// }
 
 export function DashboardOverview() {
   const { isAuthenticated } = useConvexAuth()
-  const profile = useQuery(
-    api.organizerProfiles.getMyProfile,
-    isAuthenticated ? {} : 'skip'
-  )
+  const profile = useQuery(api.organizerProfiles.getMyProfile, isAuthenticated ? {} : 'skip')
   const stats = useQuery(api.events.getMyStats)
   const upcomingEvents = useQuery(api.events.getUpcoming, { limit: 6 })
-  const suggestedActions = useQuery(api.recommendations.getSuggestedActions, isAuthenticated ? {} : 'skip')
+  // TODO: Implement getSuggestedActions in recommendations module when API is ready
 
   const [viewMode, setViewMode] = useState<ViewMode>('list')
 
@@ -111,8 +109,8 @@ export function DashboardOverview() {
         </div>
       </div>
 
-      {/* Suggested Actions Feed - AI Driven */}
-      {suggestedActions && suggestedActions.length > 0 && (
+      {/* TODO: Suggested Actions Feed - AI Driven - Requires getSuggestedActions API implementation */}
+      {/* {suggestedActions && suggestedActions.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium uppercase tracking-wider">
              <Lightbulb size={16} weight="fill" className="text-yellow-500" />
@@ -132,7 +130,7 @@ export function DashboardOverview() {
                       <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{action.description}</p>
                     </div>
                   </div>
-                  <Link 
+                  <Link
                     to={action.link}
                     className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium border border-border rounded-lg hover:bg-muted transition-colors"
                   >
@@ -144,7 +142,7 @@ export function DashboardOverview() {
             })}
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Stats Row - Clean, consistent style */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -265,7 +263,7 @@ export function DashboardOverview() {
         ) : viewMode === 'list' ? (
           /* List View - Clean style */
           <div className="rounded-xl border border-border/50 bg-card overflow-hidden">
-            {upcomingEvents.map((event: any, index: number) => (
+            {upcomingEvents.map((event, index) => (
               <Link
                 key={event._id}
                 to={`/dashboard/events/${event._id}`}
@@ -310,7 +308,7 @@ export function DashboardOverview() {
         ) : (
           /* Grid View - Clean card style */
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {upcomingEvents.map((event: any) => (
+            {upcomingEvents.map((event) => (
               <Link
                 key={event._id}
                 to={`/dashboard/events/${event._id}`}

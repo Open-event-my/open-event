@@ -428,9 +428,16 @@ export default defineSchema({
 
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
+    // Semantic Search
+    embedding: v.optional(v.array(v.float64())),
   })
     .index('by_status', ['status'])
-    .index('by_category', ['category']),
+    .index('by_category', ['category'])
+    .vectorIndex('by_embedding', {
+      vectorField: 'embedding',
+      dimensions: 1536,
+      filterFields: ['status'],
+    }),
 
   // Sponsors - Companies looking to sponsor events
   sponsors: defineTable({

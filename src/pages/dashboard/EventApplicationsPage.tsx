@@ -69,7 +69,7 @@ export function EventApplicationsPage() {
 
   const updateStatus = useMutation(api.eventApplications.updateStatus)
 
-  const filteredApplications = applications?.filter((app: any) => {
+  const filteredApplications = applications?.filter((app) => {
     if (!searchQuery.trim()) return true
     const search = searchQuery.toLowerCase()
     return (
@@ -144,7 +144,7 @@ export function EventApplicationsPage() {
     })
   }
 
-  const selectedApp = filteredApplications?.find((a: any) => a._id === selectedApplication)
+  const selectedApp = filteredApplications?.find((a) => a._id === selectedApplication)
 
   // Invalid eventId state (e.g., "new", "edit")
   if (!isValidEventId) {
@@ -310,7 +310,7 @@ export function EventApplicationsPage() {
           </div>
         ) : (
           <div className="divide-y divide-border">
-            {filteredApplications?.map((app: any) => {
+            {filteredApplications?.map((app) => {
               const status = statusColors[app.status as ApplicationStatus]
               const isVendor = app.applicantType === 'vendor'
 

@@ -570,8 +570,9 @@ export const convertToSponsor = mutation({
       createdAt: Date.now(),
     })
 
-    // Trigger embedding generation for AI matching
-    await ctx.scheduler.runAfter(0, internal.embeddings.generateSponsorEmbedding, { sponsorId })
+    // TODO: Trigger embedding generation for AI matching
+    // Requires running `npx convex codegen` to regenerate types
+    // await ctx.scheduler.runAfter(0, internal.embeddings.generateSponsorEmbedding, { sponsorId })
 
     return { sponsorId, autoApproved: args.autoApprove ?? false }
   },
