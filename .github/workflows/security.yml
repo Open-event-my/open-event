@@ -78,7 +78,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload audit report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: npm-audit-report-${{ github.run_id }}
           path: |
@@ -210,7 +210,7 @@ jobs:
           fi
 
       - name: Upload SAST report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: sast-report-${{ github.run_id }}
