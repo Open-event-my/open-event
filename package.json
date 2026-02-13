@@ -48,7 +48,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.77",
-    "@ai-sdk/react": "^2.0.107",
+    "@ai-sdk/react": "^3.0.29",
     "@auth/core": "^0.37.4",
     "@convex-dev/auth": "^0.0.90",
     "@phosphor-icons/react": "^2.1.10",
